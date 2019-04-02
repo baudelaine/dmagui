@@ -2798,6 +2798,10 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
 		table_alias = table_name;
 	}
 
+  if($('#alias').val() != ""){
+    table_alias = $('#alias').val();
+  }
+
 	if(type == undefined){
 		type = 'Final';
 	}
@@ -2847,6 +2851,8 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
     }
 
   });
+
+  $('#alias').val("");
 
 }
 
@@ -3899,6 +3905,32 @@ $("#addLang").click(function(){
 
 $("#langList").on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
 });
+
+$("#SQLLabels").click(function(){
+  OpenQueryModal();
+})
+
+$("#addTableAlias").click(function(){
+	var $id = $(this).attr("id");
+  console.log("$id=" + $id);
+	bootbox.prompt({
+    size: "small",
+    title: "Enter alias name",
+    value: $("#alias").val(),
+    callback: function(result){
+       /* result = String containing user input if OK clicked or null if Cancel clicked */
+      if(result != null){
+        console.log(result);
+        console.log($("#alias").val(result));
+        console.log($("#alias").val());
+      }
+    }
+  });
+})
+
+$("#sortTables").click(function(){
+  SortOnStats();
+})
 
 $("#addFold").click(function(){
 	var $id = $(this).attr("id");

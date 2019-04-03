@@ -100,7 +100,25 @@ qsCols.push({field:"table_alias", title: "table_alias", editable: false, sortabl
 qsCols.push({field:"type", title: "type", sortable: true});
 // qsCols.push({field:"visible", title: "visible", formatter: "boolFormatter", align: "center", sortable: false});
 
-qsCols.push({field:"folder", title: "Folder", editable: {type: "select", mode: "inline", value: "", source: [{value: "", text: ""}]}, sortable: true});
+qsCols.push({field:"folder", title: "Folder", editable: {
+  type: "select",
+  mode: "inline",
+  value: "",
+  source: function(){
+    var source = [];
+    // source.push({"text": "", "value": ""});
+
+    $("#foldSelect option").each(function(){
+      var option = {};
+      option.text = $(this).val();
+      option.value = $(this).val();
+      source.push(option);
+    });
+    return source;
+
+  },
+  sortable: true}
+});
 // qsCols.push({field:"folder", title: "Folder", editable: {type: "select", mode: "inline"}, sortable: true});
 // qsCols.push({field:"folder", title: "Folder", editable: {type: "text", mode: "inline"}, sortable: true});
 qsCols.push({field:"filter", title: "filter", editable: {type: "textarea", mode: "inline"}, sortable: true});
@@ -133,8 +151,8 @@ qsCols.push({field:"recurseCount", title: '<i class="glyphicon glyphicon-repeat"
 qsCols.push({field:"addPKRelation", title: '<i class="glyphicon glyphicon-magnet" title="Add PK relation(s)"></i>', formatter: "addPKRelationFormatter", align: "center"});
 qsCols.push({field:"addRelation", title: '<i class="glyphicon glyphicon-plus-sign" title="Add new relation"></i>', formatter: "addRelationFormatter", align: "center"});
 qsCols.push({field:"addField", title: '<i class="glyphicon glyphicon-plus-sign" title="Add new field"></i>', formatter: "addFieldFormatter", align: "center"});
-qsCols.push({field:"addFolder", title: '<i class="glyphicon glyphicon-folder-open" title="Add new folder name"></i>', formatter: "addFolderFormatter", align: "center"});
-qsCols.push({field:"addDimensionName", title: '<i class="glyphicon glyphicon-zoom-in" title="Add new dimension name"></i>', formatter: "addDimensionNameFormatter", align: "center"});
+// qsCols.push({field:"addFolder", title: '<i class="glyphicon glyphicon-folder-open" title="Add new folder name"></i>', formatter: "addFolderFormatter", align: "center"});
+// qsCols.push({field:"addDimensionName", title: '<i class="glyphicon glyphicon-zoom-in" title="Add new dimension name"></i>', formatter: "addDimensionNameFormatter", align: "center"});
 qsCols.push({field:"remove", title: '<i class="glyphicon glyphicon-trash"></i>', formatter: "removeRootTableFormatter", align: "center"});
 qsCols.push({field:"linker", formatter: "boolFormatter", title: "linker", align: "center"});
 qsCols.push({field:"linker_ids", title: "linker_ids"});
@@ -297,8 +315,8 @@ $qsTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('hideColumn', 'addRelation');
   $datasTable.bootstrapTable('hideColumn', 'addPKRelation');
   $datasTable.bootstrapTable('showColumn', 'addField');
-  $datasTable.bootstrapTable('showColumn', 'addFolder');
-  $datasTable.bootstrapTable('showColumn', 'addDimensionName');
+  // $datasTable.bootstrapTable('showColumn', 'addFolder');
+  // $datasTable.bootstrapTable('showColumn', 'addDimensionName');
   $datasTable.bootstrapTable('hideColumn', 'recurseCount');
   $datasTable.bootstrapTable('hideColumn', '_id');
   $datasTable.bootstrapTable('hideColumn', 'above');
@@ -331,8 +349,8 @@ $finTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('hideColumn', 'addDimensionName');
   $datasTable.bootstrapTable('hideColumn', 'addField');
   $datasTable.bootstrapTable('hideColumn', 'addPKRelation');
-  $datasTable.bootstrapTable('hideColumn', 'addFolder');
-  $datasTable.bootstrapTable('hideColumn', 'addDimension');
+  // $datasTable.bootstrapTable('hideColumn', 'addFolder');
+  // $datasTable.bootstrapTable('hideColumn', 'addDimension');
   $datasTable.bootstrapTable('hideColumn', 'nommageRep');
   $datasTable.bootstrapTable('hideColumn', '_id');
   $datasTable.bootstrapTable('hideColumn', 'linker');
@@ -353,8 +371,8 @@ $refTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('hideColumn', 'filter');
   $datasTable.bootstrapTable('showColumn', 'label');
   $datasTable.bootstrapTable('showColumn', 'addPKRelation');
-  $datasTable.bootstrapTable('hideColumn', 'addFolder');
-  $datasTable.bootstrapTable('hideColumn', 'addDimension');
+  // $datasTable.bootstrapTable('hideColumn', 'addFolder');
+  // $datasTable.bootstrapTable('hideColumn', 'addDimension');
   $datasTable.bootstrapTable('hideColumn', 'addDimensionName');
   $datasTable.bootstrapTable('showColumn', 'addRelation');
   $datasTable.bootstrapTable('showColumn', 'above');
@@ -379,8 +397,8 @@ $secTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('hideColumn', 'filter');
   $datasTable.bootstrapTable('showColumn', 'label');
   $datasTable.bootstrapTable('showColumn', 'addPKRelation');
-  $datasTable.bootstrapTable('hideColumn', 'addFolder');
-  $datasTable.bootstrapTable('hideColumn', 'addDimension');
+  // $datasTable.bootstrapTable('hideColumn', 'addFolder');
+  // $datasTable.bootstrapTable('hideColumn', 'addDimension');
   $datasTable.bootstrapTable('hideColumn', 'addDimensionName');
   $datasTable.bootstrapTable('showColumn', 'addRelation');
   $datasTable.bootstrapTable('hideColumn', 'addField');
@@ -911,7 +929,10 @@ function getDimensions(dimensionSet, selectedQs){
   var dimensions = [];
   var qss = {};
   dimensionSet.forEach(function(value){
-    dimensions.push(value);
+    console.log(value.value);
+    if(value.value != undefined && value.value != ""){
+      dimensions.push(value.value);
+    }
   })
 
   // $datasTable.bootstrapTable("filterBy", {});
@@ -921,6 +942,7 @@ function getDimensions(dimensionSet, selectedQs){
   });
 
   var parms = {dimensions: JSON.stringify(dimensions), qss: JSON.stringify(qss), selectedQs: selectedQs};
+  console.log(parms);
 
   $.ajax({
     type: 'POST',
@@ -1123,21 +1145,21 @@ function addFieldFormatter(value, row, index) {
     ].join('');
 }
 
-function addFolderFormatter(value, row, index) {
-    return [
-        '<a class="addFolder" href="javascript:void(0)" title="Add new folder">',
-        '<i class="glyphicon glyphicon-folder-open"></i>',
-        '</a>'
-    ].join('');
-}
-
-function addDimensionNameFormatter(value, row, index) {
-    return [
-        '<a class="addDimension" href="javascript:void(0)" title="Add new dimension name">',
-        '<i class="glyphicon glyphicon-zoom-in"></i>',
-        '</a>'
-    ].join('');
-}
+// function addFolderFormatter(value, row, index) {
+//     return [
+//         '<a class="addFolder" href="javascript:void(0)" title="Add new folder">',
+//         '<i class="glyphicon glyphicon-folder-open"></i>',
+//         '</a>'
+//     ].join('');
+// }
+//
+// function addDimensionNameFormatter(value, row, index) {
+//     return [
+//         '<a class="addDimension" href="javascript:void(0)" title="Add new dimension name">',
+//         '<i class="glyphicon glyphicon-zoom-in"></i>',
+//         '</a>'
+//     ].join('');
+// }
 
 function addDimensionFormatter(value, row, index) {
     return [
@@ -1578,7 +1600,16 @@ function buildDimensionTable($el, cols, data, fld, qs){
             var fieldName = qs.table_alias + '.' + fld.field_name;
             $('#drillFieldName').text(fieldName);
 
-            var dimensionSet = getSetFromArray(dimensionGlobal);
+            var source = [];
+
+            $("#dimSelect option").each(function(){
+              var option = {};
+              option.text = $(this).val();
+              option.value = $(this).val();
+              source.push(option);
+            });
+
+            var dimensionSet = getSetFromArray(source);
 
             getDimensions(dimensionSet, qs._id);
 
@@ -1692,8 +1723,8 @@ function buildFieldTable($el, cols, data, qs){
 
               case "addDimension":
 
-                if(dimensionGlobal.length < 1){
-                  showalert("buildDimensionTable()", 'No dimension created yet. Create one clicking <i class="glyphicon glyphicon-zoom-in"></i> above.', "alert-warning", "bottom");
+                if($('#dimSelect option').length == 1){
+                  showalert("", 'No dimension created yet. Create one clicking <i class="glyphicon glyphicon-zoom-in"></i> in the toolbar.', "alert-warning", "bottom");
                   return;
                 }
 
@@ -2406,9 +2437,6 @@ function buildTable($el, cols, data) {
 
           $.each($el.bootstrapTable("getData"), function(i, row){
 
-              // if(!activeTab.match("Final") && $activeSubDatasTable == $el){
-              //   $tableRows.eq(i).find('a.remove').remove();
-              // }
               if(activeTab.match("Final") && $activeSubDatasTable == $el){
                 if(row.linker_ids){
                   if(row.linker_ids[0].match("Root") && !row.linker){
@@ -2418,34 +2446,6 @@ function buildTable($el, cols, data) {
                   }
                 }
               }
-
-            if(activeTab.match("Query Subject") && $activeSubDatasTable == $el){
-
-              $tableRows.eq(i).find('a').eq(1).editable('destroy');
-
-              var folderSet = getSetFromArray(folderGlobal);
-
-              var source = [];
-              source.push({"text": "", "value": ""});
-
-              folderSet.forEach(function(value){
-                var option = {};
-                option.text = value;
-                option.value = value;
-                source.push(option);
-              })
-
-              var newEditable = {
-                type: "select",
-                mode: "inline",
-                source: source
-              };
-
-              $tableRows.eq(i).find('a').eq(1).editable(newEditable);
-              $tableRows.eq(i).find('a').eq(1).editable('option', 'defaultValue', '');
-
-            }
-
           })
 
         },
@@ -2457,11 +2457,10 @@ function buildTable($el, cols, data) {
 
         onClickCell: function (field, value, row, $element){
 
-          // RemoveFilter();
           $activeSubDatasTable = $el
 
-          if(field.match("folder") && folderGlobal.length < 1){
-            showalert("buildTable()", 'No folder created yet. Create one clicking <i class="glyphicon glyphicon-folder-open"></i> on the right.', "alert-warning", "bottom");
+          if(field.match('folder') && $('#foldSelect option').length == 1){
+            showalert("buildTable()", 'No folder created yet. Create one clicking <i class="glyphicon glyphicon-folder-open"></i> in the toolbar.', "alert-warning", "bottom");
             return;
           }
 
@@ -2540,7 +2539,6 @@ function buildTable($el, cols, data) {
 
               }
             });
-
 
           }
 
@@ -3852,8 +3850,15 @@ $("#addLangMenu").click(function(){
 
 $("#removeLangMenu").click(function(){
 
+
 	var lang = $("#langSelect").find("option:selected").val();
+
 	var flag = '<span class="lang-sm lang-lbl-full" lang="' + lang + '"></span>';
+
+  if(lang.match(currentProject.languages[0])){
+    showalert("", "Language " + flag + " can't be removed.", "alert-warning", "bottom");
+    return;
+  }
 
 	bootbox.confirm({
     title: "Removing language.",
@@ -3872,7 +3877,7 @@ $("#removeLangMenu").click(function(){
       if(result){
 				$("#langSelect").find("option:selected").remove();
 				var emptyOption = '<option class="fontsize" value="" data-subtext="" data-content=""></option>';
-				$("#langSelect").selectpicker("val", emptyOption);
+				$("#langSelect").selectpicker("val", currentProject.languages[0]);
 				$("#langSelect").selectpicker("refresh");
       }
     }
@@ -3903,7 +3908,39 @@ $("#addLang").click(function(){
 	}
 })
 
-$("#langList").on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+$("#langSelect").on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+
+  console.log(previousValue);
+  console.log($("#langSelect").find("option:selected").val());
+
+  console.log("changed");
+
+  bootbox.confirm({
+    message: "Do you really want to change current language ?",
+    buttons: {
+        confirm: {
+            label: 'Yes',
+            className: 'btn-primary'
+        },
+        cancel: {
+            label: 'No',
+            className: 'btn-default'
+        }
+    },
+    callback: function (result) {
+      if(!result){
+        $("#langSelect").selectpicker('val', currentLanguage);
+        $("#langSelect").selectpicker('refresh');
+        return;
+      }
+      currentLanguage = $('#langSelect').find("option:selected").val();
+      SetLanguage(currentLanguage);
+    }
+
+  });
+
+
+
 });
 
 $("#SQLLabels").click(function(){
@@ -3932,6 +3969,11 @@ $("#sortTables").click(function(){
   SortOnStats();
 })
 
+$('#foldSelect').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+
+});
+
+
 $("#addFold").click(function(){
 	var $id = $(this).attr("id");
   console.log("$id=" + $id);
@@ -3944,12 +3986,17 @@ $("#addFold").click(function(){
 				if($('#foldSelect option[value="' + result + '"]').length == 0){
 					var option = '<option class="fontsize" value="' + result + '" data-subtext="" data-content="">' + result + '</option>';
 					$("#foldSelect").append(option);
-					$("#foldSelect").selectpicker("val", result);
+					$("#foldSelect").selectpicker("val", emptyOption);
 					$("#foldSelect").selectpicker("refresh");
+          showalert("", 'Folder ' + result + ' successfully added.', "alert-success", "bottom");
 				}
+        else{
+          showalert("", 'Folder ' + result + ' already exists.', "alert-info", "bottom");
+        }
       }
     }
   });
+
 })
 
 $("#addDim").click(function(){
@@ -3964,9 +4011,13 @@ $("#addDim").click(function(){
 				if($('#dimSelect option[value="' + result + '"]').length == 0){
 					var option = '<option class="fontsize" value="' + result + '" data-subtext="" data-content="">' + result + '</option>';
 					$("#dimSelect").append(option);
-					$("#dimSelect").selectpicker("val", result);
+					$("#dimSelect").selectpicker("val", emptyOption);
 					$("#dimSelect").selectpicker("refresh");
+          showalert("", 'Dimension ' + result + ' successfully added.', "alert-success", "bottom");
 				}
+        else{
+          showalert("", 'Dimension ' + result + ' already exists.', "alert-info", "bottom");
+        }
       }
     }
   });
@@ -4087,6 +4138,14 @@ $("#removeFold").click(function(){
   console.log("$id=" + $id);
 	var fold = $("#foldSelect").find("option:selected").val();
 
+  console.log(fold);
+  console.log(currentProject.languages[0]);
+
+  if(fold == undefined | fold == ""){
+    showalert("", 'No valid folder selected.', "alert-warning", "bottom");
+    return;
+  }
+
 	bootbox.confirm({
     title: "Removing folder.",
     message: fold + " will be dropped.",
@@ -4115,6 +4174,11 @@ $("#removeDim").click(function(){
 	var $id = $(this).attr("id");
   console.log("$id=" + $id);
 	var dim = $("#dimSelect").find("option:selected").val();
+
+  if(dim == undefined | dim == ""){
+    showalert("", 'No valid dimension selected.', "alert-warning", "bottom");
+    return;
+  }
 
 	bootbox.confirm({
     title: "Removing dimension.",

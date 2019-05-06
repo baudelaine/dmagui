@@ -30,7 +30,7 @@ var langGlobal = [];
 var labelsGlobal = {};
 var $selectedDimension;
 var currentProject;
-var currentLanguage;
+// var currentLanguage;
 
 var countryCodes = ["ar", "be", "bg", "cs", "da", "de", "el", "en", "es", "et", "fi", "fr", "ga", "hi", "hr", "hu", "in", "is", "it", "iw", "ja", "ko", "lt", "lv", "mk", "ms", "mt", "nl", "no", "pl", "pt", "ro", "ru", "sk", "sl", "sq", "sr", "sv", "th", "tr", "uk", "vi", "zh"];
 var emptyOption = '<option class="fontsize" value="" data-subtext="" data-content=""></option>';
@@ -57,7 +57,21 @@ relationCols.push({field:"above", title: "Above", editable: {type: "text", mode:
 // relationCols.push({field:"above", title: "Above", formatter: "aboveFormatter", align: "center", events: "aboveEvents"});
 relationCols.push({field:"leftJoin", title: "Left Join", formatter: "boolFormatter", align: "center"});
 // relationCols.push({field:"usedForDimensions", title: "Used For Dimensions", formatter: "boolFormatter", align: "center"});
-relationCols.push({field:"usedForDimensions", title: "Used For Dimensions", editable: {type: "text", mode: "inline"}, align: "center"});
+relationCols.push({field:"usedForDimensions", title: "Used For Dimensions", editable: {
+  type: "select", mode: "inline", value: "",
+  source: function(){
+    var source = [];
+    // source.push({"text": "", "value": ""});
+
+    $("#dimSelect option").each(function(){
+      var option = {};
+      option.text = $(this).val();
+      option.value = $(this).val();
+      source.push(option);
+    });
+    return source;
+  },
+}, align: "center"});
 
 var usedForDimensionsSelect = {
   type: "select",
@@ -172,7 +186,7 @@ fieldCols.push({field:"label", title: "label", editable: {type: "text", mode: "i
 fieldCols.push({field:"description", title: "Description", sortable: false, editable: {type: "textarea", mode: "inline", rows: 4}});
 fieldCols.push({field:"expression", title: "Expression", sortable: false, editable: {type: "textarea", mode: "inline", rows: 4}});
 // fieldCols.push({field:"traduction", title: "traduction", formatter: "boolFormatter", align: "center", sortable: false});
-fieldCols.push({field:"hidden", title: "Hidden", formatter: "boolFormatter", align: "center", sortable: false});
+fieldCols.push({field:"hidden", title: "Hidden", formatter: "hiddenFormatter", align: "center", sortable: false});
 // fieldCols.push({field:"field_type", title: "field_type", editable: false, sortable: true});
 // fieldCols.push({field:"field_size", title: "field_size", editable: false, sortable: true});
 // fieldCols.push({field:"nullable", title: "nullable", editable: false, sortable: true});
@@ -717,35 +731,6 @@ function addSelectInpKeyPress(t,ev){
    }
 }
 
-$('#languagesSelect').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
-  console.log("changed");
-
-  bootbox.confirm({
-    message: "Do you really want to change current language ?",
-    buttons: {
-        confirm: {
-            label: 'Yes',
-            className: 'btn-primary'
-        },
-        cancel: {
-            label: 'No',
-            className: 'btn-default'
-        }
-    },
-    callback: function (result) {
-      if(!result){
-        $("#languagesSelect").selectpicker('val', currentLanguage);
-        $("#languagesSelect").selectpicker('refresh');
-        return;
-      }
-      currentLanguage = $('#languagesSelect').find("option:selected").val();
-      SetLanguage(currentLanguage);
-    }
-
-  });
-
-});
-
 function SetLanguage(language){
 
   console.log(language);
@@ -804,6 +789,10 @@ function SetLanguage(language){
     else{
       $qsTab.tab('show');
     }
+
+    $("#langSelect").selectpicker('val', language);
+    $("#langSelect").selectpicker('refresh');
+
   }
 
 }
@@ -867,6 +856,16 @@ $('#selectTimeDimension').on('changed.bs.select', function (e, clickedIndex, isS
 });
 
 $("#DrillModal").on('shown.bs.modal', function(){
+
+  var dims = $("#dimSelect option");
+  console.log(dims);
+
+  var values = $.map(dims ,function(dim) {
+      return dim.value;
+  });
+
+  console.log(values);
+
   if($selectedDimension.dimension != "" && Gdimensions[$selectedDimension.dimension] != undefined){
     $('#selectTimeDimension').selectpicker('deselectAll');
     $('#selectDimension').selectpicker('val', $selectedDimension.dimension);
@@ -1167,6 +1166,27 @@ function addDimensionFormatter(value, row, index) {
         '<i class="glyphicon glyphicon-plus-sign"></i>',
         '</a>'
     ].join('');
+}
+
+function hiddenFormatter(value, row, index) {
+
+  // console.log("****** VALUE *********" + value);
+  //
+  // if(value == undefined){
+  //   value = false;
+  // }
+  var icon = value == true ? 'glyphicon-check' : 'glyphicon-unchecked'
+  if(value == undefined){
+      // console.log("****** VALUE *********" + value);
+      // console.log(row);
+      icon = 'glyphicon-unchecked';
+  }
+
+  return [
+    '<a href="javascript:void(0)">',
+    '<i class="glyphicon ' + icon + '"></i> ',
+    '</a>'
+  ].join('');
 }
 
 
@@ -1609,6 +1629,11 @@ function buildDimensionTable($el, cols, data, fld, qs){
               source.push(option);
             });
 
+            // var options = $("#dimSelect option");
+            // var values = $.map(options, function(option){
+            //   return option.value;
+            // })
+
             var dimensionSet = getSetFromArray(source);
 
             getDimensions(dimensionSet, qs._id);
@@ -1670,6 +1695,7 @@ function buildFieldTable($el, cols, data, qs){
           onEditableSave: function (field, row, oldValue, editable) {
             //Fired when an editable cell is saved.
             console.log(row);
+            var currentLanguage = $('#langSelect').find("option:selected").val();
             if(field.match("label")){
               row.labels[currentLanguage] = row.label;
             }
@@ -1766,6 +1792,7 @@ function buildFieldTable($el, cols, data, qs){
 function buildLabelsMap(){
 
   var result = {};
+  var currentLanguage = $('#langSelect').find("option:selected").val();
 
   $.each($datasTable.bootstrapTable("getData"), function(i, qs){
     result[qs._id.toUpperCase()] = qs.labels[currentLanguage];
@@ -1781,6 +1808,7 @@ function buildLabelsMap(){
 function buildDescriptionsMap(){
 
   var result = {};
+  var currentLanguage = $('#langSelect').find("option:selected").val();
 
   $.each($datasTable.bootstrapTable("getData"), function(i, qs){
     result[qs._id.toUpperCase()] = qs.descriptions[currentLanguage];
@@ -1888,26 +1916,26 @@ function buildRelationTable($el, cols, data, qs){
 
           // set usedForDimensionsSelect.source
           // $tableRows.eq(i).find('a').eq(6) = usedForDimensions
-          if(activeTab == "Reference" && qs.type == 'Final'){
-
-            var dimensionSet = getSetFromArray(dimensionGlobal);
-
-            var source = [];
-            source.push({"text": "", "value": ""});
-            dimensionSet.forEach(function(value){
-              var option = {};
-              option.text = value;
-              option.value = value;
-              source.push(option);
-            })
-
-            usedForDimensionsSelect.source = source;
-
-            $tableRows.eq(i).find('a').eq(6).editable('destroy');
-            $tableRows.eq(i).find('a').eq(6).editable(usedForDimensionsSelect);
-            $tableRows.eq(i).find('a').eq(6).editable('option', 'defaultValue', '');
-
-          }
+          // if(activeTab == "Reference" && qs.type == 'Final'){
+          //
+          //   var dimensionSet = getSetFromArray(dimensionGlobal);
+          //
+          //   var source = [];
+          //   source.push({"text": "", "value": ""});
+          //   dimensionSet.forEach(function(value){
+          //     var option = {};
+          //     option.text = value;
+          //     option.value = value;
+          //     source.push(option);
+          //   })
+          //
+          //   usedForDimensionsSelect.source = source;
+          //
+          //   $tableRows.eq(i).find('a').eq(6).editable('destroy');
+          //   $tableRows.eq(i).find('a').eq(6).editable(usedForDimensionsSelect);
+          //   $tableRows.eq(i).find('a').eq(6).editable('option', 'defaultValue', '');
+          //
+          // }
 
           // set usedForDimensionsSelect.source
           // $tableRows.eq(i).find('a').eq(6) = usedForDimensions
@@ -1975,7 +2003,7 @@ function buildRelationTable($el, cols, data, qs){
         switch(field){
 
           case "usedForDimensions":
-            if(dimensionGlobal.length < 1){
+            if($('#dimSelect option').length == 1){
               showalert("buildRelationTable()", 'No dimension created yet. Create one clicking <i class="glyphicon glyphicon-zoom-in"></i> in Query Subject tab.', "alert-warning", "bottom");
               return;
             }
@@ -2401,6 +2429,7 @@ function buildTable($el, cols, data) {
 
         onEditableSave: function (field, row, oldValue, editable) {
           //Fired when an editable cell is saved.
+          var currentLanguage = $('#langSelect').find("option:selected").val();
           if(field.match("label")){
             row.labels[currentLanguage] = row.label;
             $.each($datasTable.bootstrapTable('getData'), function(i, qs){
@@ -2670,6 +2699,7 @@ function GetNewField($el) {
             console.log(data);
             data.field_name = fieldName.toUpperCase();
             data.custom = true;
+            var currentLanguage = $('#langSelect').find("option:selected").val();
             console.log(currentLanguage);
             data.labels[currentLanguage] = '';
             data.descriptions[currentLanguage] = '';
@@ -3364,13 +3394,34 @@ function initGlobals(){
     })
   });
 
-  folderGlobal = getArrayFromSet(folderSet);
-  dimensionGlobal = getArrayFromSet(dimensionSet);
-  langGlobal = Object.keys(qss[0].labels);
+  var folders = getArrayFromSet(folderSet);
+  var dimensions = getArrayFromSet(dimensionSet);
+  var langs = Object.keys(qss[0].labels);
 
-  console.log(folderGlobal);
-  console.log(dimensionGlobal);
-  console.log(langGlobal);
+  $("#langSelect").empty();
+  $.each(langs, function(i, lang){
+    var dc = '<span class="lang-lg lang-lbl-full" lang="' + lang + '"></span>' ;
+    var option = '<option class="fontsize" value="' + lang + '" data-content=\'' + dc + '\'></option>';
+    $("#langSelect").append(option);
+  })
+
+  console.log(folders);
+
+  $("#foldSelect").empty();
+  $.each(folders, function(i, folder){
+    var option = '<option class="fontsize" value="' + folder + '">' + folder + '</option>"';
+    $("#foldSelect").append(option);
+  })
+  $("#foldSelect").selectpicker('refresh');
+
+  console.log(dimensions);
+
+  $("#dimSelect").empty();
+  $.each(dimensions, function(i, dimension){
+    var option = '<option class="fontsize" value="' + dimension + '">' + dimension + '</option>"';
+    $("#dimSelect").append(option);
+  })
+  $("#dimSelect").selectpicker('refresh');
 
   console.log(qss);
 
@@ -3398,6 +3449,12 @@ function OpenModel(id){
       initGlobals();
       $finTab.tab('show');
       $qsTab.tab('show');
+      var langs = Object.keys(data[0].labels);
+      console.log(langs[0]);
+      $("#langSelect").selectpicker('val', langs[0]);
+      $("#langSelect").selectpicker('refresh');
+      SetLanguage(langs[0]);
+
 		},
 		error: function(data) {
 			showalert("OpenModel()", "Opening model failed.", "alert-danger", "bottom");
@@ -3757,8 +3814,10 @@ function GetLabels(){
 
     success: function(labels) {
       console.log(labels);
+      var currentLanguage = $('#langSelect').find("option:selected").val();
       $.each($datasTable.bootstrapTable('getData'), function(i, qs){
         if(labels[qs.table_name]){
+          console.log(currentLanguage);
           qs.labels[currentLanguage] = labels[qs.table_name].table_remarks;
           qs.descriptions[currentLanguage] = labels[qs.table_name].table_description;
           qs.label = qs.labels[currentLanguage];
@@ -3875,14 +3934,73 @@ $("#removeLangMenu").click(function(){
     },
     callback: function(result){
       if(result){
+        removeLabels(lang);
 				$("#langSelect").find("option:selected").remove();
 				var emptyOption = '<option class="fontsize" value="" data-subtext="" data-content=""></option>';
 				$("#langSelect").selectpicker("val", currentProject.languages[0]);
 				$("#langSelect").selectpicker("refresh");
+        SetLanguage(currentProject.languages[0]);
       }
     }
   });
 })
+
+function removeLabels(lang){
+  console.log(lang);
+  var qss = $datasTable.bootstrapTable('getData');
+  $.each(qss, function(i, qs){
+    delete qs.labels[lang];
+    delete qs.descriptions[lang];
+    $.each(qs.fields, function(j, field){
+        delete field.labels[lang];
+        delete field.descriptions[lang];
+    })
+  })
+  console.log(qss);
+}
+
+function removeFolder(fold){
+  console.log(fold);
+  var qss = $datasTable.bootstrapTable('getData');
+  $.each(qss, function(i, qs){
+    if(qs.folder == fold){
+      qs.folder = "";
+    }
+  })
+  if(activeTab == "Query Subject"){
+    $refTab.tab('show');
+    $qsTab.tab('show');
+  }
+  console.log(qss);
+}
+
+function removeDimension(dim){
+  console.log(dim);
+  var qss = $datasTable.bootstrapTable('getData');
+  $.each(qss, function(i, qs){
+    $.each(qs.fields, function(j, field){
+      $.each(field.dimensions, function(k, dimension){
+        if(dimension.dimension == dim){
+          field.dimensions.splice(k, 1);
+        }
+      })
+    })
+    $.each(qs.relations, function(k, relation){
+      if(relation.usedForDimensions == dim){
+        relation.usedForDimensions = "";
+      }
+    })
+  })
+  if(activeTab == "Query Subject"){
+    $refTab.tab('show');
+    $qsTab.tab('show');
+  }
+  if(activeTab == "Reference"){
+    $qsTab.tab('show');
+    $refTab.tab('show');
+  }
+  console.log(qss);
+}
 
 function initLangList(){
 	$.each(countryCodes, function(i, code){
@@ -3903,20 +4021,38 @@ $("#addLang").click(function(){
 			$("#langSelect").append(option);
 			$("#langSelect").selectpicker("val", lang);
 			$("#langSelect").selectpicker("refresh");
+      var currentLanguage = $('#langSelect').find("option:selected").val();
+      SetLanguage(currentLanguage);
 		}
 		$('#langModal').modal('toggle');
 	}
 })
 
+var prevVal;
+$("#langSelect").on('shown.bs.select', function(e) {
+        prevVal = $(this).val();
+});
+
 $("#langSelect").on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+
+  console.log(e);
+
+  console.log(clickedIndex);
+  console.log(isSelected);
 
   console.log(previousValue);
   console.log($("#langSelect").find("option:selected").val());
 
   console.log("changed");
 
+  var curLang = $("#langSelect").find("option:selected").val();
+
+  var prevFlag = '<span class="lang-sm lang-lbl-full" lang="' + prevVal + '"></span>';
+
+  var curFlag = '<span class="lang-sm lang-lbl-full" lang="' + curLang + '"></span>';
+
   bootbox.confirm({
-    message: "Do you really want to change current language ?",
+    message: "Do you really want to switch from " + prevFlag + " to " + curFlag + " ?",
     buttons: {
         confirm: {
             label: 'Yes',
@@ -3929,11 +4065,11 @@ $("#langSelect").on('changed.bs.select', function (e, clickedIndex, isSelected, 
     },
     callback: function (result) {
       if(!result){
-        $("#langSelect").selectpicker('val', currentLanguage);
+        $("#langSelect").selectpicker('val', prevVal);
         $("#langSelect").selectpicker('refresh');
         return;
       }
-      currentLanguage = $('#langSelect').find("option:selected").val();
+      var currentLanguage = $('#langSelect').find("option:selected").val();
       SetLanguage(currentLanguage);
     }
 
@@ -4161,6 +4297,7 @@ $("#removeFold").click(function(){
     },
     callback: function(result){
       if(result){
+        removeFolder(fold);
 				$("#foldSelect").find("option:selected").remove();
 				var emptyOption = '<option class="fontsize" value="" data-subtext="" data-content=""></option>';
 				$("#foldSelect").selectpicker("val", emptyOption);
@@ -4195,6 +4332,7 @@ $("#removeDim").click(function(){
     },
     callback: function(result){
       if(result){
+        removeDimension(dim);
 				$("#dimSelect").find("option:selected").remove();
 				var emptyOption = '<option class="fontsize" value="" data-subtext="" data-content=""></option>';
 				$("#dimSelect").selectpicker("val", emptyOption);

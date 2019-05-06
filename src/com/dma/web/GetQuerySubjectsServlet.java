@@ -5,7 +5,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -217,6 +219,55 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 
         if(rst != null){rst.close();}
         
+        
+		Map<String, Object> recCount = new HashMap<String, Object>();
+		
+        rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
+		
+	    while (rst.next()) {
+
+	    	String table_name = (rst.getString("TABLE_NAME"));
+	    	System.out.println(table_name);
+
+		    ResultSet rst0 = metaData.getColumns(con.getCatalog(), schema, table_name, "%");
+	    	StringBuffer sb = new StringBuffer("select ");
+		    while(rst0.next()){
+		    	String column_name =  rst0.getString("COLUMN_NAME");
+		    	System.out.println("-- " + column_name);
+		    	sb.append("count(" + column_name + ") as " + column_name + ", ");
+		    	
+		    }
+		    if(rst0 != null){rst0.close();}
+		    
+		    String head = sb.toString();
+		    head = head.substring(0, head.lastIndexOf(","));
+		    
+		    String sql = head + " from " + table_name;
+		    PreparedStatement stmt0 = con.prepareStatement(sql);
+			rst0 = stmt0.executeQuery();
+			ResultSetMetaData rsmd = rst0.getMetaData();
+			int colCount = rsmd.getColumnCount();
+
+			List<String> column_names = new ArrayList<String>();
+			
+			for(int colid = 1; colid <= colCount; colid++){
+				column_names.add(rsmd.getColumnLabel(colid));
+			}
+			
+			while(rst0.next()){
+				Map<String, Object> rec = new HashMap<String, Object>();
+				for(int colid = 1; colid <= colCount; colid++){
+					rec.put(column_names.get(colid -1), rst0.getObject(colid));
+				}
+				recCount.put(table_name, rec);
+			}
+			rst0.close();
+			stmt0.close();		
+			
+		
+	    }
+	    if(rst != null){rst.close();}
+
 		List<Field> result = new ArrayList<Field>();
 		
         rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
@@ -266,6 +317,17 @@ public class GetQuerySubjectsServlet extends HttpServlet {
     			field.setLabel("");
     			field.setDescription("");
     		}
+
+    	    if(recCount.containsKey(table)) {
+    	    	Map<String, Integer> obj = (Map<String, Integer>) recCount.get(table);
+    	    	if(obj.containsKey(field_name)) {
+    	    		System.out.println(obj.get("MAJPROJ"));
+    	    		field.setRecCount(obj.get(field_name));
+    	    		if(field.getRecCount() == 0) {
+    	    			field.setHidden(true);
+    	    		}
+    	    	}
+    	    }
     		
         	result.add(field);
         }

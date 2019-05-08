@@ -185,7 +185,7 @@ var customFieldType = {
 fieldCols.push({field:"label", title: "label", editable: {type: "text", mode: "inline"}, sortable: true});
 fieldCols.push({field:"description", title: "Description", sortable: false, editable: {type: "textarea", mode: "inline", rows: 4}});
 fieldCols.push({field:"expression", title: "Expression", sortable: false, editable: {type: "textarea", mode: "inline", rows: 4}});
-// fieldCols.push({field:"traduction", title: "traduction", formatter: "boolFormatter", align: "center", sortable: false});
+fieldCols.push({field:"traduction", title: "traduction", formatter: "boolFormatter", align: "center", sortable: false});
 fieldCols.push({field:"hidden", title: "Hidden", formatter: "hiddenFormatter", align: "center", sortable: false});
 // fieldCols.push({field:"field_type", title: "field_type", editable: false, sortable: true});
 // fieldCols.push({field:"field_size", title: "field_size", editable: false, sortable: true});
@@ -426,16 +426,17 @@ $secTab.on('shown.bs.tab', function(e) {
 });
 
 $traTab.on('shown.bs.tab', function(e) {
-  // buildTable($datasTable, qsCols, datas, true, relationCols, "relations");
+  buildTable($datasTable, qsCols, datas, true, relationCols, "relations");
   // $datasTable.bootstrapTable("filterBy", {type: ['Final', 'Ref', 'Tra']});
-  // $datasTable.bootstrapTable('showColumn', 'operate');
-  // $datasTable.bootstrapTable('hideColumn', 'visible');
-  // $datasTable.bootstrapTable('hideColumn', 'filter');
-  // $datasTable.bootstrapTable('showColumn', 'label');
-  // $datasTable.bootstrapTable('showColumn', 'addPKRelation');
-  // $datasTable.bootstrapTable('showColumn', 'addRelation');
-  // $datasTable.bootstrapTable('showColumn', 'recurseCount');
-  // $datasTable.bootstrapTable('showColumn', 'nommageRep');
+  $datasTable.bootstrapTable("filterBy", {});
+  $datasTable.bootstrapTable('showColumn', 'operate');
+  $datasTable.bootstrapTable('hideColumn', 'visible');
+  $datasTable.bootstrapTable('hideColumn', 'filter');
+  $datasTable.bootstrapTable('showColumn', 'label');
+  $datasTable.bootstrapTable('showColumn', 'addPKRelation');
+  $datasTable.bootstrapTable('showColumn', 'addRelation');
+  $datasTable.bootstrapTable('showColumn', 'recurseCount');
+  $datasTable.bootstrapTable('showColumn', 'nommageRep');
 });
 
 
@@ -1762,6 +1763,11 @@ function buildFieldTable($el, cols, data, qs){
 
                 break;
 
+                case "traduction":
+                  var newValue = value == false ? true : false;
+                  updateCell($el, row.index, field, newValue);
+                  break;
+
               case "hidden":
                 var newValue = value == false ? true : false;
                 updateCell($el, row.index, field, newValue);
@@ -1956,38 +1962,44 @@ function buildRelationTable($el, cols, data, qs){
 
           // Disable RepTableName if !ref or !sec
           // $tableRows.eq(i).find('a').eq(3) = RepTableName
-          if(activeTab.match("Reference|Security")){
-            if(!row.ref || !row.sec){
+          if(activeTab.match("Reference|Security|Translation")){
+            if(!row.ref || !row.sec || !row.tra){
               $tableRows.eq(i).find('a').eq(3).editable('disable');
               // To disable all editables
               // $tableRows.eq(i).find('a').editable('disable');
             }
           }
 
-          // disable table_alias if fin, ref or sec checked
+          // disable table_alias if fin, ref, sec or tra checked
           // $tableRows.eq(i).find('a').eq(0) = table_alias
-          if(activeTab.match("Final|Reference|Security")){
-            if(row.fin || row.ref || row.sec){
+          if(activeTab.match("Final|Reference|Security|Translation")){
+            if(row.fin || row.ref || row.sec || row.tra){
               $tableRows.eq(i).find('a').eq(0).editable('disable');
               // To disable all editables
               // $tableRows.eq(i).find('a').editable('disable');
             }
           }
 
-          if(activeTab.match("Reference|Security")){
+          if(activeTab.match("Reference|Security|Translation")){
             if(row.fin){
               $tableRows.eq(i).find('a').eq(2).editable('disable');
             }
           }
 
-          if(activeTab.match("Final|Reference")){
+          if(activeTab.match("Final|Reference|Translation")){
             if(row.sec){
               $tableRows.eq(i).find('a').eq(2).editable('disable');
             }
           }
 
-          if(activeTab.match("Final|Security")){
+          if(activeTab.match("Final|Security|Translation")){
             if(row.ref){
+              $tableRows.eq(i).find('a').eq(2).editable('disable');
+            }
+          }
+
+          if(activeTab.match("Final|Reference|Security")){
+            if(row.tra){
               $tableRows.eq(i).find('a').eq(2).editable('disable');
             }
           }
@@ -2029,6 +2041,12 @@ function buildRelationTable($el, cols, data, qs){
             if(!row.sec && activeTab.match("Security")){
               allowNommageRep = false;
               showalert("buildRelationTable()", "Sec for " + row.pktable_alias + " has to be checked first.", "alert-warning", "bottom");
+              return;
+            }
+
+            if(!row.tra && activeTab.match("Translation")){
+              allowNommageRep = false;
+              showalert("buildRelationTable()", "Tra for " + row.pktable_alias + " has to be checked first.", "alert-warning", "bottom");
               return;
             }
 
@@ -2100,17 +2118,22 @@ function buildRelationTable($el, cols, data, qs){
           case "fin":
           case "ref":
           case "sec":
+          case "tra":
 
-            if(row.ref && activeTab.match("Final|Security")){
+            if(row.ref && activeTab.match("Final|Security|Translation")){
               showalert("buildSubTable()", row._id + " is already checked as REF.", "alert-warning", "bottom");
               return;
             }
-            if(row.fin && activeTab.match("Reference|Security")){
+            if(row.fin && activeTab.match("Reference|Security|Translation")){
               showalert("buildSubTable()", row._id + " is already checked as FINAL.", "alert-warning", "bottom");
               return;
             }
-            if(row.sec && activeTab.match("Reference|Final")){
+            if(row.sec && activeTab.match("Reference|Final|Translation")){
               showalert("buildSubTable()", row._id + " is already checked as SEC.", "alert-warning", "bottom");
+              return;
+            }
+            if(row.tra && activeTab.match("Reference|Final|Security")){
+              showalert("buildSubTable()", row._id + " is already checked as TRA.", "alert-warning", "bottom");
               return;
             }
             if(row.pktable_alias == ""){
@@ -2141,6 +2164,11 @@ function buildRelationTable($el, cols, data, qs){
                   row.sec = false;
                 }
 
+                if(activeTab == "Translation"){
+                  row.relationship = row.relationship.split("[TRA]." + pkAlias).join(pkAlias);
+                  row.sec = false;
+                }
+
                 var linked = false;
                 $.each(qs.relations, function(i, obj){
                   if(obj.fin || obj.ref || obj.sec){
@@ -2161,8 +2189,11 @@ function buildRelationTable($el, cols, data, qs){
               if(!row.ref && activeTab == "Reference"){
                 row.relationship = row.relationship.replace(re, " [REF].[" + row.pktable_alias + "]");
               }
-              if(!row.ref && activeTab == "Security"){
+              if(!row.sec && activeTab == "Security"){
                 row.relationship = row.relationship.replace(re, " [SEC].[" + row.pktable_alias + "]");
+              }
+              if(!row.tra && activeTab == "Translation"){
+                row.relationship = row.relationship.replace(re, " [TRA].[" + row.pktable_alias + "]");
               }
               updateCell($el, row.index, field, newValue);
               ChangeIcon(row, qs, "Identifier");
@@ -2175,12 +2206,15 @@ function buildRelationTable($el, cols, data, qs){
               if(row.sec && activeTab == "Security"){
                 GetQuerySubjects(row.pktable_name, row.pktable_alias, "Sec", row._id, qs.index);
               }
+              if(row.tra && activeTab == "Translation"){
+                GetQuerySubjects(row.pktable_name, row.pktable_alias, "Tra", row._id, qs.index);
+              }
               updateCell($datasTable, qs.index, "linker", true);
 
             }
             var linked = false;
             $.each(qs.relations, function(i, obj){
-              if(obj.fin || obj.ref || obj.sec){
+              if(obj.fin || obj.ref || obj.sec || obj.tra){
                 linked = true;
               }
             });
@@ -2266,6 +2300,14 @@ $("#removeKeysModal").on('hidden.bs.modal', function (e) {
       qs2rm.row.relationship = qs2rm.row.relationship.split(pkAlias).join("[REF]." + pkAlias);
      updateCell($activeSubDatasTable, qs2rm.row.index, "ref", true);
     }
+    if(activeTab == "Security"){
+      qs2rm.row.relationship = qs2rm.row.relationship.split(pkAlias).join("[SEC]." + pkAlias);
+     updateCell($activeSubDatasTable, qs2rm.row.index, "sec", true);
+    }
+    if(activeTab == "Translation"){
+      qs2rm.row.relationship = qs2rm.row.relationship.split(pkAlias).join("[TRA]." + pkAlias);
+     updateCell($activeSubDatasTable, qs2rm.row.index, "tra", true);
+    }
   }
 })
 
@@ -2284,7 +2326,7 @@ function PrepareRemoveKeys(o, qs){
                         if(e.linker_ids.indexOf(o._id) > -1){
                                 if(e.linker_ids.length == 1){
                                   $.each(e.relations, function(k, v){
-                                    if(v.fin || v.ref || v.sec){
+                                    if(v.fin || v.ref || v.sec || v.tra){
                                       return recurse(v);
                                     }
                                   });
@@ -2347,6 +2389,10 @@ function RemoveKeys(row, qs){
           qs2rm.row.relationship = qs2rm.row.relationship.split("[SEC]." + pkAlias).join(pkAlias);
           qs2rm.row.sec = false;
         }
+        if(activeTab == "Translation"){
+          qs2rm.row.relationship = qs2rm.row.relationship.split("[TRA]." + pkAlias).join(pkAlias);
+          qs2rm.row.sec = false;
+        }
 
         $datasTable.bootstrapTable('remove', {
           field: '_id',
@@ -2355,7 +2401,7 @@ function RemoveKeys(row, qs){
 
         var linked = false;
         $.each(qs.relations, function(i, obj){
-          if(obj.fin || obj.ref || obj.sec){
+          if(obj.fin || obj.ref || obj.sec || obj.tra){
             linked = true;
           }
         });
@@ -2378,10 +2424,18 @@ function RemoveKeysAccepted(){
       // qs2rm.row.relationship = qs2rm.row.relationship.split("[REF]." + pkAlias).join(pkAlias);
      updateCell($activeSubDatasTable, qs2rm.row.index, "ref", false);
     }
+    if(activeTab == "Security"){
+      // qs2rm.row.relationship = qs2rm.row.relationship.split("[REF]." + pkAlias).join(pkAlias);
+     updateCell($activeSubDatasTable, qs2rm.row.index, "sec", false);
+    }
+    if(activeTab == "Translation"){
+      // qs2rm.row.relationship = qs2rm.row.relationship.split("[REF]." + pkAlias).join(pkAlias);
+     updateCell($activeSubDatasTable, qs2rm.row.index, "tra", false);
+    }
 
     var linked = false;
     $.each(qs2rm.qs.relations, function(i, obj){
-      if(obj.fin || obj.ref){
+      if(obj.fin || obj.ref || obj.sec || obj.tra){
         linked = true;
       }
     });

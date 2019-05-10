@@ -1,7 +1,6 @@
 package com.dma.web;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,10 +11,8 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -185,9 +182,23 @@ public class GetMaxDatabaseMetaDatasServlet extends HttpServlet {
 			    	table.put("table_schema", table_schema);
 			    	table.put("table_type", table_type);
 			    	table.put("table_remarks", table_remarks);
-			    	if(table_remarks == null) {table.put("table_remarks", "");}
+
+			    	if(table_remarks == null) {
+			    		table.put("table_remarks", "");
+				    	table.put("table_description", "");
+			    	}
+			    	else {
+			    		if(table_remarks.length() <= 50) {
+				    		table.put("table_remarks", table_remarks);
+					    	table.put("table_description", "");
+			    		}
+			    		else {
+				    		table.put("table_remarks", table_remarks.substring(1, 50));
+					    	table.put("table_description", table_remarks);
+			    		}
+			    	}
+			    	
 			    	table.put("table_recCount", recCount);
-			    	table.put("table_description", "");
 		    		table.put("table_primaryKeyFieldsCount", pks.size());
 		    		table.put("table_importedKeysCount", FKSet.size());
 		    		table.put("table_importedKeysSeqCount", FKSeqCount);
@@ -204,10 +215,22 @@ public class GetMaxDatabaseMetaDatasServlet extends HttpServlet {
 					    Map<String, Object> field = new HashMap<>();
 				    	field.put("column_name", rst1.getString("COLUMN_NAME"));
 				    	field.put("column_type", rst1.getString("TYPE_NAME"));
-				    	field.put("column_remarks", rst1.getString("REMARKS"));
-				    	if(rst1.getString("REMARKS") == null) {field.put("column_remarks", "");}
+				    	String column_remarks = rst1.getString("REMARKS");
+				    	if(column_remarks == null) {
+				    		field.put("column_remarks", "");
+					    	field.put("column_description", "");
+				    	}
+				    	else {
+					    	if(column_remarks.length() <= 50) {
+					    		field.put("column_remarks", column_remarks);
+						    	field.put("column_description", "");
+					    	}
+					    	else {
+					    		field.put("column_remarks", column_remarks.substring(1, 50));
+						    	field.put("column_description", column_remarks);
+					    	}
+				    	}
 			        	field.put("column_size", rst1.getInt("COLUMN_SIZE"));
-				    	field.put("column_description", "");
 			        	if(pks.contains(rst1.getString("COLUMN_NAME"))){
 			    			field.put("column_isPrimaryKey", true);
 			    		}

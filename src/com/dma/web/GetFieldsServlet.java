@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +34,7 @@ public class GetFieldsServlet extends HttpServlet {
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
+	@SuppressWarnings("unchecked")
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		Connection con = null;
@@ -43,6 +42,7 @@ public class GetFieldsServlet extends HttpServlet {
 		List<Field> result = new ArrayList<Field>();
 		String schema = "";
 		Map<String, Object> dbmd = null;
+		String language = "";
 
 		try {
 			
@@ -50,6 +50,9 @@ public class GetFieldsServlet extends HttpServlet {
 			con = (Connection) request.getSession().getAttribute("con");
 			schema = (String) request.getSession().getAttribute("schema");
 			dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
+			Project project = (Project) request.getSession().getAttribute("currentProject");
+			language = project.languages.get(0);
+			
 			
 		    DatabaseMetaData metaData = con.getMetaData();
 		    
@@ -84,12 +87,27 @@ public class GetFieldsServlet extends HttpServlet {
 	        	String field_name = rst.getString("COLUMN_NAME");
 	        	String field_type = rst.getString("TYPE_NAME");
 	        	String field_remarks = rst.getString("REMARKS");
+	        	String field_desc = "";
 	        	
-	        	System.out.println(field_name + "," + field_type);
+	    		if(field_remarks == null) {
+	    			field_remarks = "";
+	    		}
+	    		else {
+	    	    	if(field_remarks.length() > 50) {
+	    		    	field_desc = field_remarks;
+	    	    		field_remarks = field_remarks.substring(1, 50);
+	    	    	}
+	    		}
+	        	
 	        	Field field = new Field();
 	        	field.setField_name(field_name);
 	        	field.setField_type(field_type);
 	        	field.setLabel(field_remarks);
+	        	field.setDescription(field_desc);
+        		if(!language.isEmpty()) {
+        			field.getLabels().put(language, field_remarks);
+        			field.getDescriptions().put(language, field_desc);
+        		}
 	        	field.set_id(field_name + field_type);
 	        	if(pks.contains(rst.getString("COLUMN_NAME"))){
 	    			field.setPk(true);
@@ -99,9 +117,18 @@ public class GetFieldsServlet extends HttpServlet {
 	        	}
 	        	if(columns != null){
 	    			Map<String, Object> column = (Map<String, Object>) columns.get(field_name); 
-	    			field.setLabel((String) column.get("column_remarks"));
-	    			field.setDescription((String) column.get("column_description"));
+	    			if(column != null){
+	    				String label = (String) column.get("column_remarks");
+		    			field.setLabel(label);
+		    			String desc = (String) column.get("column_description");
+		    			field.setDescription(desc);
+		           		if(!language.isEmpty()) {
+		        			field.getLabels().put(language, label);
+		        			field.getDescriptions().put(language, desc);
+		        		}	    			
+	    			}
 	    		}
+	        	
 	        	result.add(field);
 	        }
 		    

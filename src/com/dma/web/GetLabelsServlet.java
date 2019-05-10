@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -226,19 +228,29 @@ public class GetLabelsServlet extends HttpServlet {
 					}
 					
 					result.put("columns", columns);
+					results.put("STATUS", "OK");
 					results.put(table, result);
 				}
 				
 			}
 			
+			
+		}
+		catch (Exception e){
+			results.put("STATUS", "KO");
+            results.put("EXCEPTION", e.getClass().getName());
+            results.put("MESSAGE", e.getMessage());
+            results.put("TROUBLESHOOTING", "Check SQL syntax.");
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            results.put("STACKTRACE", sw.toString());
+            e.printStackTrace(System.err);		}
+		
+		finally {
 			request.getSession().setAttribute("dbmd", results);
 		    response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
 			response.getWriter().write(Tools.toJSON(results));
-			
-		}
-		catch (Exception e){
-			e.printStackTrace(System.err);
 		}
 		
 	}

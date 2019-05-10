@@ -61,7 +61,7 @@ public class CognosSVC {
 	
 	public Document doc = null;
 
-	public boolean logon(String cognosLogin, String cognosPassword, String cognosNamespace) {
+	public boolean logon(String cognosLogin, String cognosPassword, String cognosNamespace) throws Exception {
 		try {
 			StringBuilder credentialXML = new StringBuilder();
 
@@ -87,8 +87,10 @@ public class CognosSVC {
 		} catch (RemoteException ex) {
 			lg(ex.getMessage());
 			ex.printStackTrace();
+			throw ex;
 		} catch (Exception ex) {
 			lg(ex.getMessage());
+			throw ex;
 		}
 		return true;
 
@@ -106,7 +108,7 @@ public class CognosSVC {
 
 	}
 	
-	public void openModel(String modelName, String cognosFolder) {
+	public void openModel(String modelName, String cognosFolder) throws Exception {
 		
 		modelPath = cognosFolder + "/" + modelName + "/" + modelName + ".cpf";
 		try {
@@ -119,10 +121,9 @@ public class CognosSVC {
 			XmlEncodedXML xex = new XmlEncodedXML(node.getParent().asXML());
 			String res = crnConnect.getMetadataService().updateMetadata(xex).toString();
 			System.out.println("openModel" + modelPath + " successful");
-		} catch (DocumentException ex) {
+		} catch (DocumentException | RemoteException ex) {
 			lg(ex.getMessage());
-		} catch (RemoteException ex) {
-			lg(ex.getMessage());
+			throw ex;
 		}
 
 	}
@@ -182,7 +183,7 @@ public class CognosSVC {
 		} 
 	}
 
-	public void executeAllActions() {
+	public void executeAllActions() throws DocumentException, RemoteException {
 		try {
 			File rootFile = new File(pathToXML + "/executeModel.xml");
 
@@ -221,6 +222,7 @@ public class CognosSVC {
 			closeModel();
 			logoff();   // ajout test Nico
 //			System.exit(0);
+			throw ex;
 		} catch (RemoteException ex) {
 			lg(ex.getMessage());
 			ex.printStackTrace();
@@ -228,6 +230,7 @@ public class CognosSVC {
 			closeModel();
 			logoff();  // ajout test Nico
 //			System.exit(0);
+			throw ex;
 		}
 	}
 	

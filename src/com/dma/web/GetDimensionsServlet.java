@@ -3,6 +3,9 @@ package com.dma.web;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +99,7 @@ public class GetDimensionsServlet extends HttpServlet {
 							
 							
 							recurse0(qsAlias, gDirName, qsFinalName, qSleftType, dimension, query_subjects, selectedQs);
-
+							
 							dimensions.put(dim, dimension);
 							
 						}
@@ -104,6 +107,45 @@ public class GetDimensionsServlet extends HttpServlet {
 					}				
 					
 					
+				}
+
+
+				Map<String, Object> dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
+		        Map<String, Object> table_labels = null;
+		        Map<String, Object> columns = null;
+
+				Connection con = (Connection) request.getSession().getAttribute("con");
+				DatabaseMetaData metaData = con.getMetaData();
+				String schema = (String) request.getSession().getAttribute("schema");
+				String[] types = {"TABLE"};
+
+				for(Entry<String, Dimension> dimension: dimensions.entrySet()) {
+				
+					List<Map<String, String>> orders = ((Dimension) dimension).getOrders();
+					for(Map<String, String> order: orders) {
+					
+						String table = order.get("qsFinalName");
+						ResultSet rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
+				        if(dbmd != null){
+							table_labels = (Map<String, Object>) dbmd.get(table);
+							columns = (Map<String, Object>) table_labels.get("columns");
+				        }
+						
+						while (rst.next()) {
+					    	String label = rst.getString("REMARKS");
+							if(label == null) {label = "";}
+							else {
+						    	if(label.length() > 50) {
+						    		label = label.substring(1, 50);
+						    	}
+							}
+					    }
+						
+						if(rst != null){rst.close();}
+						
+						
+						
+					}
 				}
 				
 				result.put("STATUS", "OK");
@@ -113,7 +155,7 @@ public class GetDimensionsServlet extends HttpServlet {
 			else {
 			
 				result.put("STATUS", "KO");
-				result.put("ANSWER", "Input parameters are not valid.");
+				result.put("ERROR", "Input parameters are not valid.");
 				throw new Exception();
 			}
 			

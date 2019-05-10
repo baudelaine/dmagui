@@ -68,18 +68,18 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		alias = request.getParameter("alias");
 		type = request.getParameter("type");
 		linker_id = request.getParameter("linker_id");
-		language = request.getParameter("language");
 		
 		System.out.println("table=" + table);
 		System.out.println("alias=" + alias);
 		System.out.println("type=" + type);
-		System.out.println("language=" + language);
 		List<Object> result = new ArrayList<Object>();
 
 		try{
 			
 			withRecCount = (Boolean) request.getServletContext().getAttribute("withRecCount");
 			System.out.println("withRecCount=" + withRecCount);
+			Project project = (Project) request.getSession().getAttribute("currentProject");
+			language = project.languages.get(0);
 			con = (Connection) request.getSession().getAttribute("con");
 			schema = (String) request.getSession().getAttribute("schema");
 			dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
@@ -123,6 +123,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		String[] types = {"TABLE"};
 		ResultSet rst = metaData.getTables(con.getCatalog(), schema, table, types);
 		String label = "";
+		String desc = "";
 		
 		while (rst.next()) {
 	    	label = rst.getString("REMARKS");
@@ -131,6 +132,12 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		if(rst != null){rst.close();}
 		
 		if(label == null) {label = "";}
+		else {
+	    	if(label.length() > 50) {
+		    	desc = label;
+	    		label = label.substring(1, 50);
+	    	}
+		}
     	
 		QuerySubject result = new QuerySubject();
 		
@@ -139,6 +146,11 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		result.setTable_name(table);
 		result.setType(type);
 		result.setLabel(label);
+		result.setDescription(desc);
+		if(!language.isEmpty()) {
+			result.getLabels().put(language, label);
+			result.getDescriptions().put(language, desc);
+		}
 		result.addLinker_id(linker_id);
 		
 		if(withRecCount){
@@ -178,19 +190,16 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> o = (Map<String, Object>) dbmd.get(table);
 			if(o != null){
-				result.setLabel((String) o.get("table_remarks"));
-				result.setDescription((String) o.get("table_description"));
+				label = (String) o.get("table_remarks"); 
+				result.setLabel(label);
+				desc = (String) o.get("table_description");
+				result.setDescription(desc);
+				if(!language.isEmpty()) {
+					result.getLabels().put(language, label);
+					result.getDescriptions().put(language, desc);
+				}
 			}
 		}
-		
-		if(!language.isEmpty()) {
-			result.getLabels().put(language, "");
-			result.getDescriptions().put(language, "");
-			result.setLabel("");
-			result.setDescription("");
-		}
-		
-		System.out.println("result" + result);
         
         return result;
         
@@ -288,7 +297,36 @@ public class GetQuerySubjectsServlet extends HttpServlet {
         	Field field = new Field();
         	field.setField_name(field_name);
         	field.setField_type(field_type);
+        	
         	field.setLabel(rst.getString("REMARKS"));
+        	
+	    	String column_remarks = rst.getString("REMARKS");
+	    	if(column_remarks == null) {
+	    		field.setLabel("");
+	    		field.setDescription("");
+	    		if(!language.isEmpty()) {
+        			field.getLabels().put(language, "");
+        			field.getDescriptions().put(language, "");
+	    		}
+	    	}
+	    	else {
+		    	if(column_remarks.length() <= 50) {
+		    		field.setLabel(column_remarks);
+		    		if(!language.isEmpty()) {
+	        			field.getLabels().put(language, column_remarks);
+	        			field.getDescriptions().put(language, "");
+		    		}
+		    	}
+		    	else {
+		    		field.setLabel(column_remarks.substring(1, 50));
+			    	field.setDescription(column_remarks);
+		    		if(!language.isEmpty()) {
+	        			field.getLabels().put(language, column_remarks.substring(1, 50));
+	        			field.getDescriptions().put(language, column_remarks);
+		    		}
+		    	}
+	    	}
+        	
         	field.setField_size(rst.getInt("COLUMN_SIZE"));
         	field.setNullable(rst.getString("IS_NULLABLE"));
         	field.set_id(field_name + field_type);
@@ -299,11 +337,18 @@ public class GetQuerySubjectsServlet extends HttpServlet {
         	if(indexes.contains(rst.getString("COLUMN_NAME"))){
     			field.setIndex(true);
     		}
-    		if(columns != null){
+
+        	if(columns != null){
     			Map<String, Object> column = (Map<String, Object>) columns.get(field_name);
     			if(column != null){
-	    			field.setLabel((String) column.get("column_remarks"));
-	    			field.setDescription((String) column.get("column_description"));
+    				String label = (String) column.get("column_remarks");
+	    			field.setLabel(label);
+	    			String desc = (String) column.get("column_description");
+	    			field.setDescription(desc);
+	           		if(!language.isEmpty()) {
+	        			field.getLabels().put(language, label);
+	        			field.getDescriptions().put(language, desc);
+	        		}	    			
     			}
     		}
         	
@@ -311,17 +356,10 @@ public class GetQuerySubjectsServlet extends HttpServlet {
     			field.setTimeDimension(true);
     		}
     		
-    		if(!language.isEmpty()) {
-    			field.getLabels().put(language, "");
-    			field.getDescriptions().put(language, "");
-    			field.setLabel("");
-    			field.setDescription("");
-    		}
 
     	    if(recCount.containsKey(table)) {
     	    	Map<String, Integer> obj = (Map<String, Integer>) recCount.get(table);
     	    	if(obj.containsKey(field_name)) {
-    	    		System.out.println(obj.get("MAJPROJ"));
     	    		field.setRecCount(obj.get(field_name));
     	    		if(field.getRecCount() == 0) {
     	    			field.setHidden(true);
@@ -402,7 +440,36 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	        	String[] types = {"TABLE"};
 	    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, pktable_name, types);
 	    		while (rst0.next()) {
-	    	    	relation.setLabel(rst0.getString("REMARKS"));
+	    			String label = rst0.getString("REMARKS");
+	    	    	relation.setLabel(label);
+	    	    	
+	    	    	if(label == null) {
+	    	    		relation.setLabel("");
+	    	    		relation.setDescription("");
+			    		if(!language.isEmpty()) {
+			    			relation.getLabels().put(language, "");
+			    			relation.getDescriptions().put(language, "");
+			    		}
+	    	    	}
+	    	    	else {
+	    		    	if(label.length() <= 50) {
+	    		    		relation.setLabel(label);
+		    	    		relation.setDescription("");
+				    		if(!language.isEmpty()) {
+				    			relation.getLabels().put(language, label);
+				    			relation.getDescriptions().put(language, "");
+				    		}
+	    		    	}
+	    		    	else {
+	    			    	relation.setDescription(label);
+	    		    		relation.setLabel(label.substring(1, 50));
+				    		if(!language.isEmpty()) {
+				    			relation.getLabels().put(language, label.substring(1, 50));
+				    			relation.getDescriptions().put(language, label);
+				    		}
+	    		    	}
+	    	    	}
+	    	    	
 	    	    }
 	    		if(rst0 != null){rst0.close();}
 	    		
@@ -412,8 +479,14 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	    			@SuppressWarnings("unchecked")
 	    			Map<String, Object> o = (Map<String, Object>) dbmd.get(pktable_name);
 	    			if(o != null){
-		    			relation.setLabel((String) o.get("table_remarks"));
-		    			relation.setDescription((String) o.get("table_description"));
+	    				String label = (String) o.get("table_remarks");
+		    			relation.setLabel(label);
+		    			String desc = (String) o.get("table_description");
+		    			relation.setDescription(desc);
+		           		if(!language.isEmpty()) {
+		           			relation.getLabels().put(language, label);
+		           			relation.getDescriptions().put(language, desc);
+		        		}	    			
 	    			}
 	    		}
 	        	
@@ -514,155 +587,6 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	    return new ArrayList<Relation>(map.values());
 		
 	}
-	
-	protected List<Relation> getPrimaryKeys() throws SQLException{
-		
-	    Map<String, Relation> map = new HashMap<String, Relation>();
-		
-		ResultSet rst = null;
-		DatabaseMetaData metaData = con.getMetaData();
-	    rst = metaData.getExportedKeys(con.getCatalog(), schema, table);
-	    
-	    
-	    while (rst.next()) {
-	    	
-	    	String key_name = rst.getString("FK_NAME");
-	    	String fk_name = rst.getString("FK_NAME");
-	    	String pk_name = rst.getString("PK_NAME");
-	    	String key_seq = rst.getString("KEY_SEQ");
-	    	String fkcolumn_name = rst.getString("FKCOLUMN_NAME");
-	    	String pkcolumn_name = rst.getString("PKCOLUMN_NAME");
-	        String fktable_name = rst.getString("FKTABLE_NAME");
-	        String pktable_name = rst.getString("PKTABLE_NAME");
-	        String _id = key_name + "P";
-	        
-	        System.out.println("_id=" + _id);
-
-	        if(!map.containsKey(_id)){
-	        	
-	        	System.out.println("+++ add relation +++");
-	        	
-	        	Relation relation = new Relation();
-	        	
-	        	relation.set_id(_id);
-	        	relation.setKey_name(key_name);
-	        	relation.setFk_name(fk_name);
-	        	relation.setPk_name(pk_name);
-	        	relation.setTable_name(pktable_name);
-	        	relation.setTable_alias(alias);
-	        	relation.setPktable_name(fktable_name);
-	        	relation.setPktable_alias(fktable_name);
-	        	relation.setRelashionship("[" + type.toUpperCase() + "].[" + alias + "].[" + pkcolumn_name + "] = [" + fktable_name + "].[" + fkcolumn_name + "]");
-	        	relation.setKey_type("P");
-	        	relation.setType(type.toUpperCase());
-	        	relation.set_id("PK_" + relation.getPktable_alias() + "_" + alias + "_" + type.toUpperCase());
-	        	
-	        	String[] types = {"TABLE"};
-	    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, pktable_name, types);
-	    		while (rst0.next()) {
-	    	    	relation.setLabel(rst0.getString("REMARKS"));
-	    	    }
-	    		if(rst0 != null){rst0.close();}
-	        	
-	    		if(dbmd != null){
-	    			@SuppressWarnings("unchecked")
-	    			Map<String, Object> o = (Map<String, Object>) dbmd.get(pktable_name);
-	    			if(o != null){
-		    			relation.setLabel((String) o.get("table_remarks"));
-		    			relation.setDescription((String) o.get("table_description"));
-	    			}
-	    		}
-	        	
-	        	Seq seq = new Seq();
-	        	seq.setColumn_name(pkcolumn_name);
-	        	seq.setPkcolumn_name(fkcolumn_name);
-	        	seq.setKey_seq(Short.parseShort(key_seq));
-	        	relation.addSeq(seq);
-	        	
-	        	map.put(_id, relation);
-
-	        }
-	        else{
-	        	
-	        	Relation relation = map.get(_id);
-	        	if(!relation.getSeqs().isEmpty()){
-		        	System.out.println("+++ update relation +++");
-	        		Seq seq = new Seq();
-		        	seq.setColumn_name(pkcolumn_name);
-		        	seq.setPkcolumn_name(fkcolumn_name);
-		        	seq.setKey_seq(Short.parseShort(key_seq));
-		        	
-		        	relation.addSeq(seq);
-		        	
-		        	StringBuffer sb = new StringBuffer((String) relation.getRelationship());
-		        	sb.append(" AND [" + type.toUpperCase() + "].[" + alias + "].[" + pkcolumn_name + "] = [" + fktable_name + "].[" + fkcolumn_name + "]");
-		        	relation.setRelashionship(sb.toString());
-	        	}
-	        	
-	        }
-        	
-	    }
-	    
-	    if(withRecCount){
-	    	for(Entry<String, Relation> relation: map.entrySet()){
-	    		Relation rel = relation.getValue();
-	    		
-	    		Set<String> tableSet = new HashSet<String>();
-	    		for(Seq seq: rel.getSeqs()){
-	    			if(!schema.isEmpty()){
-		    			tableSet.add(schema + "." + seq.pktable_name);
-		    			tableSet.add(schema + "." + seq.table_name);
-	    			}
-	    			else{
-		    			tableSet.add(schema + seq.pktable_name);
-		    			tableSet.add(schema + seq.table_name);
-	    			}
-	    		}
-	    		
-	    		System.out.println("tableSet=" + tableSet);
-	    		
-	    		StringBuffer sb = new StringBuffer();;
-	    		
-	    		for(String table: tableSet){
-	    			sb.append(", " + table);
-	    		}
-	    		String tables = sb.toString().substring(1);
-	    		
-	            long recCount = 0;
-	    		Statement stmt = null;
-	    		ResultSet rs = null;
-	            try{
-		    		String query = "SELECT COUNT(*) FROM " + tables + " WHERE " + rel.where;
-		    		System.out.println(query);
-		    		stmt = con.createStatement();
-		            rs = stmt.executeQuery(query);
-		            while (rs.next()) {
-		            	recCount = rs.getLong(1);
-		            }
-		            rel.setRecCount(recCount);
-		    		long result = (Math.round(((double)recCount / qs_recCount) * 100));
-		            rel.setRecCountPercent((int) result);
-	            }
-	            catch(SQLException e){
-	            	System.out.println("CATCHING SQLEXEPTION...");
-	            	System.out.println(e.getSQLState());
-	            	System.out.println(e.getMessage());
-	            	
-	            }
-	            finally {
-		            if (stmt != null) { stmt.close();}
-		            if(rst != null){rst.close();}
-					
-				}
-	    		
-	    	}
-	    }
-	    
-	    
-	    return new ArrayList<Relation>(map.values());
-		
-	}
-	
 
 }
 

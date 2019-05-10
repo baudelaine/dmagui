@@ -1347,12 +1347,16 @@ function modAddRelation(){
     return;
   }
 
+  var parms = "table=" + pkTabMatches[0];
+
   $.ajax({
       type: 'POST',
       url: "GetNewRelation",
       dataType: 'json',
+      data: parms,
 
       success: function(data){
+        console.log(data);
           var relation = data;
 
           $.each(colMatches, function(i, obj){
@@ -2906,7 +2910,7 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
     return;
   }
 
-	var parms = "table=" + table_name + "&alias=" + table_alias + "&type=" + type + "&linker_id=" + linker_id + "&language=" + currentProject.languages[0];
+	var parms = "table=" + table_name + "&alias=" + table_alias + "&type=" + type + "&linker_id=" + linker_id;
 
 	console.log("calling GetQuerySubjects() with: " + parms);
 
@@ -3338,7 +3342,12 @@ function Publish(){
     		success: function(data) {
     			// $('#DatasTable').bootstrapTable('load', data);
           console.log(data);
-          showalert("Publish()", data.message, "alert-success", "bottom");
+          if(data.STATUS == "OK"){
+            showalert("Publish()", data.message, "alert-success", "bottom");
+          }
+          else{
+    			showalert(data.ERROR + "<br>", data.MESSAGE + ": " + data.AXISFAULT + "<br>" + data.TROUBLESHOOTING, "alert-danger");
+          }
     		},
     		error: function(data) {
     			showalert("Publish()", "Publish failed.", "alert-danger", "bottom");
@@ -3803,7 +3812,12 @@ function ShowAlert(message, alertType, $el) {
        .addClass('alert ' + alertType + ' alert-dismissible');
     }
 
-    $el.append($newDiv);
+    if($el){
+      $el.append($newDiv);
+    }
+    else{
+      $('#Alert').append($newDiv);
+    }
 
     setTimeout(function() {
        $('#alertmsg').remove();
@@ -3868,41 +3882,69 @@ function GetLabels(){
 
     success: function(labels) {
       console.log(labels);
-      var currentLanguage = $('#langSelect').find("option:selected").val();
-      $.each($datasTable.bootstrapTable('getData'), function(i, qs){
-        if(labels[qs.table_name]){
-          console.log(currentLanguage);
-          qs.labels[currentLanguage] = labels[qs.table_name].table_remarks;
-          qs.descriptions[currentLanguage] = labels[qs.table_name].table_description;
-          qs.label = qs.labels[currentLanguage];
-          qs.description = qs.descriptions[currentLanguage];
-          $.each(qs.fields, function(j, field){
-            if(labels[qs.table_name].columns[field.field_name]){
-              field.labels[currentLanguage] = labels[qs.table_name].columns[field.field_name].column_remarks;
-              field.descriptions[currentLanguage] = labels[qs.table_name].columns[field.field_name].column_description;
-              field.label = field.labels[currentLanguage];
-              field.description = field.descriptions[currentLanguage];
+      if(labels.STATUS == "OK"){
+        var currentLanguage = $('#langSelect').find("option:selected").val();
+        $.each($datasTable.bootstrapTable('getData'), function(i, qs){
+          if(labels[qs.table_name]){
+            if(!qs.labels[currentLanguage] || qs.labels[currentLanguage] == ""){
+              qs.labels[currentLanguage] = labels[qs.table_name].table_remarks;
             }
-          })
-          $.each(qs.relations, function(j, relation){
-            if(labels[relation.pktable_name]){
-              relation.labels[currentLanguage] = labels[relation.pktable_name].table_remarks;
-              relation.descriptions[currentLanguage] = labels[relation.pktable_name].table_description;
-              relation.label = relation.labels[currentLanguage];
-              relation.description = relation.descriptions[currentLanguage];
+            if(!qs.descriptions[currentLanguage] || qs.descriptions[currentLanguage] == ""){
+              qs.descriptions[currentLanguage] = labels[qs.table_name].table_description;
             }
-          })
-        }
-      })
-      $refTab.tab('show');
-      $qsTab.tab('show');
+            if(!qs.label || qs.label == ""){
+              qs.label = qs.labels[currentLanguage];
+            }
+            if(!qs.description || qs.description == ""){
+              qs.description = qs.descriptions[currentLanguage];
+            }
+            $.each(qs.fields, function(j, field){
+              if(labels[qs.table_name].columns[field.field_name]){
+                if(!field.labels[currentLanguage] || field.labels[currentLanguage] == ""){
+                  field.labels[currentLanguage] = labels[qs.table_name].columns[field.field_name].column_remarks;
+                }
+                if(!field.descriptions[currentLanguage] || field.descriptions[currentLanguage] == ""){
+                  field.descriptions[currentLanguage] = labels[qs.table_name].columns[field.field_name].column_description;
+                }
+                if(!field.label || field.label == ""){
+                  field.label = field.labels[currentLanguage];
+                }
+                if(!field.description || field.description == ""){
+                  field.description = field.descriptions[currentLanguage];
+                }
+              }
+            })
+            $.each(qs.relations, function(j, relation){
+              if(labels[relation.pktable_name]){
+                if(!relation.labels[currentLanguage] || relation.labels[currentLanguage] == ""){
+                  relation.labels[currentLanguage] = labels[relation.pktable_name].table_remarks;
+                }
+                if(!relation.descriptions[currentLanguage] || relation.descriptions[currentLanguage] == ""){
+                  relation.descriptions[currentLanguage] = labels[relation.pktable_name].table_description;
+                }
+                if(!relation.label || relation.label == ""){
+                  relation.label = relation.labels[currentLanguage];
+                }
+                if(!relation.description || relation.description == ""){
+                  relation.description = relation.descriptions[currentLanguage];
+                }
+              }
+            })
+          }
+        })
+        $('#queryModal').modal('toggle');
+        $refTab.tab('show');
+        $qsTab.tab('show');
+      }
+      else{
+        ShowAlert("ERROR: " + labels.MESSAGE + "<br>TROUBLESHOOTING: " + labels.TROUBLESHOOTING, "alert-danger", $("#queryModalAlert"));
+      }
     },
     error: function(data) {
       console.log(data);
     }
   });
 
-  $('#queryModal').modal('toggle');
 
 }
 

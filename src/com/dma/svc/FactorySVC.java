@@ -136,7 +136,7 @@ public class FactorySVC {
 		
 	}
 	
-	public void DBImport(String Namespace, String dataSourceName, String catalogName, String schemaName, String engineName) {
+	public void DBImport(String Namespace, String dataSourceName, String catalogName, String schemaName, String engineName) throws DocumentException {
 		try {
 			File xmlFile = null;
 			if (engineName.equals("ORA")) {
@@ -151,8 +151,10 @@ public class FactorySVC {
 				xmlFile = new File(csvc.getPathToXML() + "/DBImport_DB2.xml");
 			} else  if (engineName.equals("IFX")) {
 				xmlFile = new File(csvc.getPathToXML() + "/DBImport_IFX.xml");
+			} else  if (engineName.equals("TD")) {
+				xmlFile = new File(csvc.getPathToXML() + "/DBImport_TD.xml");
 			}
-
+			
 			SAXReader reader = new SAXReader();
 			Document script = reader.read(xmlFile);
 
@@ -193,6 +195,9 @@ public class FactorySVC {
 				Element elemSchema = (Element) doc.selectSingleNode("//item/item/item");
 				elemCatalog.addAttribute("Name", catalogName);
 				elemSchema.addAttribute("Name", schemaName);
+			} else  if (engineName.equals("TD")) {
+				Element elemSchema = (Element) doc.selectSingleNode("//item/item");
+				elemSchema.addAttribute("Name", schemaName);
 			}
 			Element root_cdata = doc.getRootElement();
 	
@@ -205,6 +210,7 @@ public class FactorySVC {
 			csvc.executeModel(script);
 		} catch (DocumentException ex) {
 			lg(ex.getMessage());
+			throw ex;
 		}
 	}
 
@@ -289,7 +295,7 @@ public class FactorySVC {
 		}
 	}
 	
-	public void createNamespace(String NameSpace, String Parent) {
+	public void createNamespace(String NameSpace, String Parent) throws DocumentException {
 		try {
 			File xmlFile = new File(csvc.getPathToXML() + "/createNamespace.xml");
 			SAXReader reader = new SAXReader();
@@ -305,6 +311,7 @@ public class FactorySVC {
 
 		} catch (DocumentException ex) {
 			lg(ex.getMessage());
+			throw ex;
 		}
 	}
 	

@@ -335,7 +335,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
     			field.setIcon("Identifier");
     		}
         	if(indexes.contains(rst.getString("COLUMN_NAME"))){
-    			field.setIndex(true);
+    			field.setIndexed(true);
     		}
 
         	if(columns != null){

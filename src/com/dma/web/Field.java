@@ -12,7 +12,7 @@ public class Field {
 	String field_name = "";
 	String field_type = "";
 	boolean pk = false;
-	boolean index = false;
+	boolean indexed = false;
 	String label = "";
 	int field_size = 0;
 	String nullable = "NO";
@@ -102,11 +102,11 @@ public class Field {
 	public void setPk(boolean pk) {
 		this.pk = pk;
 	}
-	public boolean isIndex() {
-		return index;
+	public boolean isIndexed() {
+		return indexed;
 	}
-	public void setIndex(boolean index) {
-		this.index = index;
+	public void setIndexed(boolean indexed) {
+		this.indexed = indexed;
 	}
 	public String getLabel() {
 		return label;

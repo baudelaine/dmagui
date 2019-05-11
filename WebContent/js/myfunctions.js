@@ -905,7 +905,21 @@ function updateDimension(dimension){
   var bks = Gdimensions[dimension].bks;
   var alias = $('#drillFieldName').text().split('.')[0];
   $.each(orders, function(i, order){
-    var option = '<option class="fontsize" value="' + order.qsFinalName + ' -- ' + order.order + '" data-subtext="' + order.qsFinalName + '">' + order.order + '</option>';
+
+    var icon = "";
+    if(order.isPK){
+      icon =  " - " + "<i class='glyphicon glyphicon-star'></i>";
+    }
+    if(order.isIdx && !order.isPK){
+      icon = " - " + "<i class='glyphicon glyphicon-star-empty'></i>";
+    }
+    var label = "";
+    if(order.label || order.label != ""){
+      label = " - " + order.label;
+    }
+    var subText = icon + label + " - " + order.qsFinalName;
+
+    var option = '<option class="fontsize" value="' + order.qsFinalName + ' -- ' + order.order + '" data-subtext="' + subText + '">' + order.order + '</option>';
     $('#selectOrder').append(option);
   })
   $('#selectOrder').append(emptyOption);
@@ -913,7 +927,21 @@ function updateDimension(dimension){
   $('#selectOrder').selectpicker('refresh');
 
   $.each(bks, function(i, bk){
-    var option = '<option class="fontsize" value="' + bk.qsFinalName + ' -- ' + bk.bk + '" data-subtext="' + bk.qsFinalName + '">' + bk.bk + '</option>';
+
+    var icon = "";
+    if(bk.isPK){
+      icon =  " - " + "<i class='glyphicon glyphicon-star'></i>";
+    }
+    if(bk.isIdx && !bk.isPK){
+      icon = " - " + "<i class='glyphicon glyphicon-star-empty'></i>";
+    }
+    var label = "";
+    if(bk.label || bk.label != ""){
+      label = " - " + bk.label;
+    }
+    var subText = icon + label + " - " + bk.qsFinalName;
+
+    var option = '<option class="fontsize" value="' + bk.qsFinalName + ' -- ' + bk.bk + '" data-subtext="' + subText + '">' + bk.bk + '</option>';
     $('#selectBK').append(option);
   })
   // if($("#selectBK option[value='']").length > 0){
@@ -3139,6 +3167,9 @@ function ChooseField(table, id){
   table.empty();
 
   var datas = $datasTable.bootstrapTable('getData');
+
+  console.log(datas);
+
   $.each(datas, function(i, obj){
     if(obj._id == id){
       $.each(obj.fields, function(j, field){
@@ -3146,7 +3177,7 @@ function ChooseField(table, id){
         if(field.pk){
           icon = "<i class='glyphicon glyphicon-star'></i>";
         }
-        if(field.index && !field.pk){
+        if(field.indexed && !field.pk){
           icon = "<i class='glyphicon glyphicon-star-empty'></i>";
         }
         var label = field.label;
@@ -3169,12 +3200,13 @@ function ChooseField(table, id){
         data: "table=" + id,
 
         success: function(data) {
+          console.log(data);
             $.each(data, function(index, detail){
               var icon = "";
               if(detail.pk){
                 icon = "<i class='glyphicon glyphicon-star'></i>";
               }
-              if(detail.index && !detail.pk){
+              if(detail.indexed && !detail.pk){
                 icon = "<i class='glyphicon glyphicon-star-empty'></i>";
               }
 

@@ -7,8 +7,8 @@ import java.util.Map;
 public class Dimension {
 
 	String name = "";
-	List<Map<String, String>> orders = new ArrayList<Map<String, String>>();
-	List<Map<String, String>> bks = new ArrayList<Map<String, String>>();
+	List<Map<String, Object>> orders = new ArrayList<Map<String, Object>>();
+	List<Map<String, Object>> bks = new ArrayList<Map<String, Object>>();
 
 	public String getName() {
 		return name;
@@ -16,16 +16,16 @@ public class Dimension {
 	public void setName(String name) {
 		this.name = name;
 	}
-	public List<Map<String, String>> getOrders() {
+	public List<Map<String, Object>> getOrders() {
 		return orders;
 	}
-	public void setOrders(List<Map<String, String>> orders) {
+	public void setOrders(List<Map<String, Object>> orders) {
 		this.orders = orders;
 	}
-	public List<Map<String, String>> getBks() {
+	public List<Map<String, Object>> getBks() {
 		return bks;
 	}
-	public void setBks(List<Map<String, String>> bks) {
+	public void setBks(List<Map<String, Object>> bks) {
 		this.bks = bks;
 	}
 	

@@ -113,7 +113,7 @@ public class GetFieldsServlet extends HttpServlet {
 	    			field.setPk(true);
 	    		}
 	        	if(indexes.contains(rst.getString("COLUMN_NAME"))){
-	        		field.setIndex(true);
+	        		field.setIndexed(true);
 	        	}
 	        	if(columns != null){
 	    			Map<String, Object> column = (Map<String, Object>) columns.get(field_name); 

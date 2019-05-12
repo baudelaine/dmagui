@@ -53,14 +53,14 @@ public class Test3 {
 					
 					System.out.println("qsAlias=" + qsAlias);
 					
-			    	List<Map<String, String>> orders = dimension.getOrders();
-			    	List<Map<String, String>> bks = dimension.getBks();							
+			    	List<Map<String, Object>> orders = dimension.getOrders();
+			    	List<Map<String, Object>> bks = dimension.getBks();							
 					
 					for(Field field: query_subjects.get(qsFinalName + qSleftType).getFields()){
 						
 						for(Map<String, String> map: field.getDimensions()) {
 							if(map.get("dimension").contentEquals(dimension.getName())) {
-						    	Map<String, String> order = new HashMap<String, String>();
+						    	Map<String, Object> order = new HashMap<String, Object>();
 						    	order.put("qsFinalName", qsFinalName);
 						    	order.put("order", field.getField_name());
 						    	orders.add(order);
@@ -103,8 +103,8 @@ public class Test3 {
 		String gDirNameCurrent = "";
 		QuerySubject query_subject;
 		query_subject = query_subjects.get(qsAlias + qSleftType);
-    	List<Map<String, String>> orders = dimension.getOrders();
-    	List<Map<String, String>> bks = dimension.getBks();
+    	List<Map<String, Object>> orders = dimension.getOrders();
+    	List<Map<String, Object>> bks = dimension.getBks();
 			
 		for(Relation rel: query_subject.getRelations()){
 			if(rel.isRef()) { 
@@ -125,13 +125,13 @@ public class Test3 {
 					    if (field.getDimension().equals(dimension.getName())) {
 					    	// afficher dans la colonne order [DATA].[qsFinalName].[gDirNameCurrent + "." + field.getName()]
 					    	// afficher dans la liste order gDirNameCurrent + "." + field.getName() -- qsFinalName //grisé
-					    	Map<String, String> order = new HashMap<String, String>();
+					    	Map<String, Object> order = new HashMap<String, Object>();
 					    	order.put("qsFinalName", qsFinalName);
 					    	order.put("order", gDirNameCurrent.substring(1) + "." + field.getField_name());
 					    	orders.add(order);
 					    }
 					    if((qsAlias + "Ref").contentEquals(selectedQs)) {
-						    Map<String, String> bk = new HashMap<String, String>();
+						    Map<String, Object> bk = new HashMap<String, Object>();
 					    	bk.put("qsFinalName", qsFinalName);
 					    	bk.put("bk", gDirNameCurrent.substring(1) + "." + field.getField_name());
 					    	bks.add(bk);

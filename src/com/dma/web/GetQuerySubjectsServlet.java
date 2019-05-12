@@ -1,6 +1,7 @@
 package com.dma.web;
 
 import java.io.IOException;
+import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -10,10 +11,12 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -566,8 +569,18 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		            	recCount = rs.getLong(1);
 		            }
 		            rel.setRecCount(recCount);
-		    		long result = (Math.round(((double)recCount / qs_recCount) * 100));
-		            rel.setRecCountPercent((int) result);
+//		    		long result = (Math.round(((double)recCount / qs_recCount) * 100));
+		    		
+		    		double d0 = Double.parseDouble(String.valueOf(recCount));
+		    		double d1 = Double.parseDouble(String.valueOf(qs_recCount));
+		    		
+		    		double num = (d0/d1) * 100;
+		    		NumberFormat nf = NumberFormat.getInstance(Locale.ENGLISH);
+		    		nf.setMaximumFractionDigits(3);
+//		    		nf.setMinimumFractionDigits(5);	    
+		    		nf.setRoundingMode(RoundingMode.UP);
+		    	    num = Double.parseDouble(nf.format(num));
+		            rel.setRecCountPercent(num);
 	            }
 	            catch(SQLException e){
 	            	System.out.println("CATCHING SQLEXEPTION...");

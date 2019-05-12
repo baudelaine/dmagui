@@ -33,7 +33,7 @@
 				</div>
 
 				<form class="navbar-form navbar-left">
-					<h2><strong>Data Modeling Accelarator</strong></h2>
+					<h3><strong>Data Modeling Accelarator</strong></h3>
 
 				</form>
 
@@ -186,7 +186,13 @@
 
 					</div> <!-- /.modal-body -->
 		      <div class="modal-footer">
-						<button type="button" class="btn btn-default" onclick="modBuildRelation()" data-toggle="tooltip" data-placement="top" title="Add relation."><span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></button>
+						<span class="form-control-static pull-left">
+							<span class="label label-primary" id="recCount"></span>
+							<span class="label " id="recCountPercent"></span>
+						</span>
+						<button type="button" class="btn btn-default" onclick="modComputerelation()" data-toggle="tooltip" data-placement="top" title="Compute relation."><span class="glyphicon glyphicon-cog" aria-hidden="true"></button>
+						<button type="button" class="btn btn-default" onclick="modEraseRelation()" data-toggle="tooltip" data-placement="top" title="Erase relation."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
+						<button type="button" id="butBuildRelation" class="btn btn-default" onclick="modBuildRelation()" data-toggle="tooltip" data-placement="top" title="Add relation."><span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></button>
 		        <button type="button" class="btn btn-primary" onclick="modAddRelation()"><span class="glyphicon glyphicon-ok" aria-hidden="true"></button>
 						<button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove" aria-hidden="true"></button>
 		      </div><!-- /.modal-footer -->

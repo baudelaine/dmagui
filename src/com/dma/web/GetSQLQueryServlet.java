@@ -3,6 +3,8 @@ package com.dma.web;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -112,14 +114,23 @@ public class GetSQLQueryServlet extends HttpServlet {
 			stmt.close();					
 
 			results.put("result", recs);
-			
-		    response.setContentType("application/json");
-			response.setCharacterEncoding("UTF-8");
-			response.getWriter().write(Tools.toJSON(results));
+			results.put("STATUS", "OK");
 			
 		}
 		catch (Exception e){
-			e.printStackTrace(System.err);
+			results.put("STATUS", "KO");
+            results.put("EXCEPTION", e.getClass().getName());
+            results.put("MESSAGE", e.getMessage());
+            results.put("TROUBLESHOOTING", "Check SQL syntax.");
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            results.put("STACKTRACE", sw.toString());
+            e.printStackTrace(System.err);		}
+		
+		finally {
+		    response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
+			response.getWriter().write(Tools.toJSON(results));
 		}
 		
 	}

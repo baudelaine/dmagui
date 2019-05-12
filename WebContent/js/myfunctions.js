@@ -1318,6 +1318,141 @@ function indexFormatter(value, row, index) {
   return index;
 }
 
+function modComputerelation(){
+
+  var alias = $('#modQuerySubject').text().split(" - ")[0];
+  var type = $('#modQuerySubject').text().split(" - ")[1].toUpperCase();
+  var table = $('#modQuerySubject').text().split(" - ")[2];
+  var relations = $('#modRelationship').val();
+
+  var exp = "\\[" + type + "\\]\.\\[" + alias + "\\]\.\\[([A-Z0-9_]*?)\\][^\\[]*?\\[([A-Z0-9_]*?)\\]\.\\[([A-Z0-9_]*?)\\]";
+  // var exp = "\\s{0,}=\\s{0,}\\[(.*?)\\]\.\\[(.*?)\\]";
+
+  var regexp = new RegExp(exp, "gi");
+
+  var match;
+  var colMatches = [];
+  var pkTabMatches = [];
+  var pkColMatches = [];
+
+  while(match = regexp.exec(relations)){
+    colMatches.push(match[1]);
+    pkTabMatches.push(match[2]);
+    pkColMatches.push(match[3]);
+  };
+
+  console.log(colMatches);
+  console.log(pkTabMatches);
+  console.log(pkColMatches);
+
+  if(colMatches.length == 0){
+    ShowAlert("No valid relation found in Relations textarea.<br>Relations does not match " + exp + " pattern.", "alert-warning", $("#newRowModalAlert"));
+    return;
+  }
+
+  var whereClause;
+  exp = "\\[" + type + "\\]\.\\[" + alias + "\\]\.";
+  regexp = new RegExp(exp, "gi");
+  whereClause = relations.replace(regexp, "[" + table + "].");
+  whereClause = whereClause.replace(/[\[\]]/g, "");
+  console.log(whereClause);
+
+
+  var qs_recCount;
+
+  var data = $datasTable.bootstrapTable("getData");
+
+  var qs = $('#modQuerySubject').text().split(" - ")[0] + $('#modQuerySubject').text().split(" - ")[1];
+
+  $.each(data, function(i, obj){
+    //console.log(obj.name);
+    if(obj._id.match(qs)){
+      qs_recCount = obj.recCount;
+    }
+  });
+
+  console.log(qs_recCount);
+
+  regexp = new RegExp("[^\\.^=^ ]*\\.[^\\.^=^ ]*", "gi");
+  var cols = whereClause.match(regexp);
+  console.log(cols);
+
+  var tables = [];
+  $.each(cols, function(i, col){
+    var table = col.split(".")[0];
+    tables.push(table);
+  })
+
+  console.log(tables);
+
+  var set = new Set();
+  $.each(tables, function(i, table){
+    set.add(table);
+  })
+
+  console.log(set);
+
+  var tableClause = Array.from(set).join(', ');
+
+  console.log(tableClause);
+
+  var query = "SELECT COUNT(*) as COUNT, (cast(round((count(*)/" + qs_recCount + ".0)*100, 3) as numeric(31,3))) as PERCENT FROM " + tableClause + " WHERE " + whereClause;
+
+  console.log(query);
+  var parms = {query: query};
+
+  $.ajax({
+    type: 'POST',
+    url: "GetSQLQuery",
+    dataType: 'json',
+    data: JSON.stringify(parms),
+
+    success: function(data) {
+      if(data.STATUS == "OK"){
+        console.log(data);
+        $("#recCount").text(data.result[0].COUNT);
+        var percent = data.result[0].PERCENT;
+        if(percent == 100){
+          $("#recCountPercent").removeClass("label-warning").removeClass("label-danger").addClass("label-success").text(data.result[0].PERCENT);
+        }
+        if(percent == 0){
+          $("#recCountPercent").removeClass("label-success").removeClass("label-warning").addClass("label-danger").text(data.result[0].PERCENT);
+        }
+        if(percent != 0 && percent != 100){
+          $("#recCountPercent").removeClass("label-success").removeClass("label-danger").addClass("label-warning").text(data.result[0].PERCENT);
+        }
+      }
+      else{
+        console.log(data);
+        ShowAlert("ERROR: " + data.MESSAGE + "<br>" + data.EXCEPTION + "<br>TROUBLESHOOTING: " + data.TROUBLESHOOTING, "alert-danger", $("#newRowModalAlert"));
+      }
+    },
+    error: function(data) {
+      console.log(data);
+    }
+  });
+
+
+}
+
+$('#modRelationship').on('input selectionchange propertychange', function() {
+  emptyRecCount();
+});
+
+$("#butBuildRelation").click(function(){
+  emptyRecCount();
+})
+
+function modEraseRelation(){
+  $('#modRelationship').val("");
+  emptyRecCount();
+}
+
+function emptyRecCount(){
+  $("#recCount").text("");
+  $("#recCountPercent").text("");
+}
+
 function modBuildRelation(){
 
   if(!validNewRelation()){
@@ -1414,7 +1549,8 @@ function modAddRelation(){
           relation.key_name = key_type + 'K_' + alias + '_' + pkTabMatches[0];
           relation._id = relation.key_name + '_' + type;
           relation.above = relation.seqs[0].column_name;
-
+          relation.recCount = $("#recCount").text();
+          relation.recCountPercent = $("#recCountPercent").text();
 
           modWriteRelation(relation);
       },
@@ -2606,6 +2742,7 @@ function buildTable($el, cols, data) {
             $el.bootstrapTable('expandRow', row.index);
 
             if($activeSubDatasTable != undefined){
+              emptyRecCount();
               $newRowModal.modal('toggle');
               if(row.label){
                 var qs = row.table_alias + ' - ' + row.type + ' - ' + row.table_name + ' - ' + row.label;

@@ -228,7 +228,6 @@ public class GetLabelsServlet extends HttpServlet {
 					}
 					
 					result.put("columns", columns);
-					results.put("STATUS", "OK");
 					results.put(table, result);
 				}
 				

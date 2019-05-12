@@ -49,7 +49,7 @@ $(document)
 .ready(function() {
   buildTable($('#searchTable'), searchCols);
   checkDBMD();
-  ChooseTable($('#searchSelect'));
+  // ChooseTable($('#searchSelect'));
   ChooseColumn($('#searchColumnSelect'));
   // GetDBMD($('#searchTable'));
 })
@@ -714,6 +714,7 @@ function ChooseTable(table, sort) {
 
     table.empty();
 
+
     if($('#searchTable').bootstrapTable('getData').length > 0) {
       console.log("dbmd loaded from cache...");
       console.log(dbmd);
@@ -776,6 +777,7 @@ function ChooseTable(table, sort) {
       dataType: 'json',
       async: true,
       success: function(tables) {
+        console.log(tables);
         $.each(tables, function(i, obj){
           var option = '<option class="fontsize" value="' + obj.name + '">' + obj.name + '</option>';
           table.append(option);

@@ -22,10 +22,14 @@
 		<div id="divLoading"></div>
 		<div id="Alert"></div>
 
-		<div class="toolbar form-inline" id="watchToolbar">
-			<h3><span id="query" class="label label-primary"></span></h3>
-			<h4><span id="schema" class="label label-default"></span></h4>
-		</div>
+			<h4><span id="schema" class="label label-primary"></span></h4>
+			<textarea id="query" class="form-control" placeholder="" rows="4"></textarea>
+			<!-- <h3><span id="query" class="label label-primary"></span></h3> -->
+			<div class="toolbar form-inline" id="watchToolbar">
+				<button type="button" class="btn btn-default" onclick="computeQuery()" data-toggle="tooltip" data-placement="top" title="Compute query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></button>
+				<button type="button" class="btn btn-default" onclick="eraseQuery()" data-toggle="tooltip" data-placement="top" title="Erase query."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
+
+			</div>
 	<table class="table table-striped fontsize" id="table"></table>
 
 	</div> <!-- container -->

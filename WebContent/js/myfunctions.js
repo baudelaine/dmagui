@@ -683,6 +683,114 @@ window.aboveEvents = {
 
 };
 
+tableLabelQuery.addEventListener(
+  'click', function(event){
+    var query = $("#tableLabel").val();
+    var type = 'table';
+    var tables = new Set();
+
+    if($datasTable.bootstrapTable("getData").length > 0){
+      var qss = $datasTable.bootstrapTable("getData");
+      $.each(qss, function(i, qs){
+        tables.add(qs.table_name);
+      })
+    }
+    tables = Array.from(tables);
+
+    BuildTestQuery(query, type, tables);
+    event.preventDefault();
+  },
+false);
+
+tableDescriptionQuery.addEventListener(
+  'click', function(event){
+  var query = $("#tableDescription").val();
+  var type = 'table';
+  var tables = new Set();
+
+  if($datasTable.bootstrapTable("getData").length > 0){
+    var qss = $datasTable.bootstrapTable("getData");
+    $.each(qss, function(i, qs){
+      tables.add(qs.table_name);
+    })
+  }
+  tables = Array.from(tables);
+
+  BuildTestQuery(query, type, tables);
+  event.preventDefault();
+  },
+false);
+
+columnLabelQuery.addEventListener(
+  'click', function(event){
+    var query = $("#columnLabel").val();
+    var type = 'column';
+    var tables = new Set();
+
+    if($datasTable.bootstrapTable("getData").length > 0){
+      var qss = $datasTable.bootstrapTable("getData");
+      $.each(qss, function(i, qs){
+        tables.add(qs.table_name);
+      })
+    }
+    tables = Array.from(tables);
+
+    BuildTestQuery(query, type, tables);
+    event.preventDefault();
+  },
+false);
+
+columnDescriptionQuery.addEventListener(
+  'click', function(event){
+    var query = $("#columnDescription").val();
+    var type = 'column';
+    var tables = new Set();
+
+    if($datasTable.bootstrapTable("getData").length > 0){
+      var qss = $datasTable.bootstrapTable("getData");
+      $.each(qss, function(i, qs){
+        tables.add(qs.table_name);
+      })
+    }
+    tables = Array.from(tables);
+
+    BuildTestQuery(query, type, tables);
+    event.preventDefault();
+  },
+false);
+
+function BuildTestQuery(query, type, tables){
+
+  var parms = {query: query, type: type, tables: tables};
+
+  console.log(parms);
+
+  $.ajax({
+		type: 'POST',
+		url: "BuildTestQuery",
+		dataType: 'json',
+    data: JSON.stringify(parms),
+
+		success: function(query) {
+      console.log(query);
+      WatchContent(query.query);
+		},
+		error: function(data) {
+			showalert("BuildTestQuery()", "Getting test query failed.", "alert-danger", "bottom");
+		}
+	});
+
+}
+
+function WatchContent(query){
+  // var query = "select * from " + table;
+  console.log(query);
+  var parms = {query: query};
+  localStorage.setItem('SQLQuery', JSON.stringify(parms));
+  window.open("watchContent.html");
+}
+
+
 function buildComboList($el) {
 
   var content = "<input type='text' class='bss-input' onKeyDown='event.stopPropagation();' onKeyPress='addSelectInpKeyPress(this,event)' onClick='event.stopPropagation()' placeholder='Add item'> <span class='glyphicon glyphicon-plus addnewicon' onClick='addSelectItem(this,event,1);'></span>";
@@ -3821,14 +3929,6 @@ function GetTableData(){
 
 }
 
-function RemoveAll(){
-  $datasTable.bootstrapTable("removeAll");
-}
-
-function ExpandAll(){
-  $datasTable.bootstrapTable('expandAllRows');
-}
-
 function GetDBMDFromCache(){
 
     $.when(
@@ -4051,7 +4151,10 @@ function GetLabels(){
 
     success: function(labels) {
       console.log(labels);
-      if(labels.STATUS == "OK"){
+      if(labels.STATUS == "KO"){
+        ShowAlert("ERROR: " + labels.MESSAGE + "<br>TROUBLESHOOTING: " + labels.TROUBLESHOOTING, "alert-danger", $("#queryModalAlert"));
+      }
+      else{
         var currentLanguage = $('#langSelect').find("option:selected").val();
         $.each($datasTable.bootstrapTable('getData'), function(i, qs){
           if(labels[qs.table_name]){
@@ -4104,9 +4207,6 @@ function GetLabels(){
         $('#queryModal').modal('toggle');
         $refTab.tab('show');
         $qsTab.tab('show');
-      }
-      else{
-        ShowAlert("ERROR: " + labels.MESSAGE + "<br>TROUBLESHOOTING: " + labels.TROUBLESHOOTING, "alert-danger", $("#queryModalAlert"));
       }
     },
     error: function(data) {
@@ -4172,6 +4272,39 @@ $("#addLangMenu").click(function(){
 	$("#langList").selectpicker("refresh");
 })
 
+$("#removeLabels").click(function(){
+
+  var lang = $("#langSelect").find("option:selected").val();
+
+	var flag = '<span class="lang-sm lang-lbl-full" lang="' + lang + '"></span>';
+
+  bootbox.confirm({
+    title: "Removing labels.",
+    message: flag + " labels will be dropped.",
+    buttons: {
+      cancel: {
+          label: 'Cancel',
+          className: 'btn btn-default'
+      },
+      confirm: {
+          label: 'Confirm',
+          className: 'btn btn-primary'
+      }
+    },
+    callback: function(result){
+      if(result){
+        removeLabels(lang);
+				// $("#langSelect").find("option:selected").remove();
+				// var emptyOption = '<option class="fontsize" value="" data-subtext="" data-content=""></option>';
+				// $("#langSelect").selectpicker("val", currentProject.languages[0]);
+				// $("#langSelect").selectpicker("refresh");
+        // SetLanguage(currentProject.languages[0]);
+      }
+    }
+  });
+
+})
+
 $("#removeLangMenu").click(function(){
 
 
@@ -4216,12 +4349,18 @@ function removeLabels(lang){
   $.each(qss, function(i, qs){
     delete qs.labels[lang];
     delete qs.descriptions[lang];
+    qs.label = "";
+    qs.description = "";
     $.each(qs.fields, function(j, field){
         delete field.labels[lang];
         delete field.descriptions[lang];
+        field.label = "";
+        field.description = "";
     })
   })
   console.log(qss);
+  $refTab.tab('show');
+  $qsTab.tab('show');
 }
 
 function removeFolder(fold){
@@ -4368,6 +4507,41 @@ $("#addTableAlias").click(function(){
 
 $("#sortTables").click(function(){
   SortOnStats();
+})
+
+$("#expandQS").click(function(){
+  $("#DatasTable").bootstrapTable('expandAllRows');
+})
+
+$("#collapseQS").click(function(){
+  $("#DatasTable").bootstrapTable('collapseAllRows');
+})
+
+$("#removeQS").click(function(){
+  if($("#DatasTable").bootstrapTable("getData").length == 0){
+    return;
+  }
+
+  bootbox.confirm({
+    title: "Removing Query Subjects.",
+    message: "All Query Subjects will be dropped.",
+    buttons: {
+      cancel: {
+          label: 'Cancel',
+          className: 'btn btn-default'
+      },
+      confirm: {
+          label: 'Confirm',
+          className: 'btn btn-danger'
+      }
+    },
+    callback: function(result){
+      if(result){
+        $datasTable.bootstrapTable("removeAll");
+      }
+    }
+  });
+
 })
 
 $('#foldSelect').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {

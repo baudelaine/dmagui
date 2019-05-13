@@ -188,7 +188,7 @@ function openDynamicModal(){
 
 function CheckIfTableSelected(){
   if($('#searchSelect').val().length == 0){
-    ShowAlert("CheckIfTableSelected()", "No table selected in 'Choose table(s)...'.", "alert-warning", "bottom");
+    showalert("CheckIfTableSelected()", "No table selected in 'Choose table(s)...'.", "alert-warning", "bottom");
     return false;
     // $('#searchSelect').selectpicker('selectAll');
   }
@@ -216,7 +216,7 @@ function BuildTestQuery(query, type, tables){
       WatchContent(query.query);
 		},
 		error: function(data) {
-			ShowAlert("BuildTestQuery()", "Getting test query failed.", "alert-danger", "bottom");
+			showalert("BuildTestQuery()", "Getting test query failed.", "alert-danger", "bottom");
 		}
 	});
 
@@ -288,11 +288,11 @@ function GetQueriesList(){
       });
       console.log("queriesList");
       console.log(queriesList);
-			// ShowAlert("GetQueriesList()", "Queries list get successfull.", "alert-success", "bottom");
+			// showalert("GetQueriesList()", "Queries list get successfull.", "alert-success", "bottom");
 
 		},
 		error: function(data) {
-			ShowAlert("GetQueriesList()", "Getting queries list failed.", "alert-danger", "bottom");
+			showalert("GetQueriesList()", "Getting queries list failed.", "alert-danger", "bottom");
 		}
 	});
 
@@ -320,7 +320,7 @@ function SaveQueries(){
   console.log(vide);
 
   if(vide){
-    ShowAlert("SaveQueries()", "Nothing to save.", "alert-warning", "bottom");
+    showalert("SaveQueries()", "Nothing to save.", "alert-warning", "bottom");
     return;
   }
 
@@ -350,10 +350,10 @@ function SaveQueries(){
      		data: JSON.stringify(parms),
 
      		success: function(data) {
-     			ShowAlert("SaveQueries()", "Queries saved successfully.", "alert-success", "bottom");
+     			showalert("SaveQueries()", "Queries saved successfully.", "alert-success", "bottom");
      		},
      		error: function(data) {
-     			ShowAlert("SaveQueries()", "Saving Queries failed.", "alert-danger", "bottom");
+     			showalert("SaveQueries()", "Saving Queries failed.", "alert-danger", "bottom");
      		}
      	});
     }
@@ -407,34 +407,38 @@ function GetLabels(){
 
     success: function(labels) {
       console.log(labels);
-      dbmd = labels;
+      if(labels.STATUS == "KO"){
+        ShowAlert("ERROR: " + labels.MESSAGE + "<br>TROUBLESHOOTING: " + labels.TROUBLESHOOTING, "alert-danger", $("#queryModalAlert"));
+      }
+      else{
+        dbmd = labels;
 
-      // var tables = Object.keys(labels);
-      // var dbmd = JSON.parse(localStorage.getItem('dbmd'));
-      //
-      // $.each(tables, function(i, table){
-      //   if(dbmd[table]){
-      //     dbmd[table].table_remarks = labels[table].table_remarks;
-      //     dbmd[table].table_description = labels[table].table_description;
-      //     $.each(labels[table].columns, function(j, column){
-      //       if(dbmd[table].columns[j]){
-      //         dbmd[table].columns[j].column_remarks = column.column_remarks;
-      //         dbmd[table].columns[j].column_description = column.column_description;
-      //       }
-      //     })
-      //   }
-      // })
-      //
-      loadDBMD(dbmd);
-      // console.log(dbmd);
+        // var tables = Object.keys(labels);
+        // var dbmd = JSON.parse(localStorage.getItem('dbmd'));
+        //
+        // $.each(tables, function(i, table){
+        //   if(dbmd[table]){
+        //     dbmd[table].table_remarks = labels[table].table_remarks;
+        //     dbmd[table].table_description = labels[table].table_description;
+        //     $.each(labels[table].columns, function(j, column){
+        //       if(dbmd[table].columns[j]){
+        //         dbmd[table].columns[j].column_remarks = column.column_remarks;
+        //         dbmd[table].columns[j].column_description = column.column_description;
+        //       }
+        //     })
+        //   }
+        // })
+        //
+        loadDBMD(dbmd);
+        // console.log(dbmd);
+        $('#queryModal').modal('toggle');
+      }
 
     },
     error: function(data) {
       console.log(data);
     }
   });
-
-  $('#queryModal').modal('toggle');
 
 }
 
@@ -578,8 +582,6 @@ function loadDBMD(dbmd){
     })
   });
 
-  console.log(dbmd);
-  console.log(datas);
   $('#searchTable').bootstrapTable("load", datas);
   ChooseTable($('#searchSelect'), '2');
 
@@ -593,11 +595,11 @@ function SaveDBMD(){
       dataType: 'json',
 
       success: function(data) {
-        ShowAlert("SaveDBMD()", "Database metadata saved successfully.", "alert-success", "bottom");
+        showalert("SaveDBMD()", "Database metadata saved successfully.", "alert-success", "bottom");
       },
       error: function(data) {
-        // ShowAlert("SaveDBMD()", "Saving database metadata failed.", "alert-danger", "bottom");
-        ShowAlert("SaveDBMD()", "Database metadata saved successfully.", "alert-success", "bottom");
+        // showalert("SaveDBMD()", "Saving database metadata failed.", "alert-danger", "bottom");
+        showalert("SaveDBMD()", "Database metadata saved successfully.", "alert-success", "bottom");
       }
     });
 
@@ -789,7 +791,57 @@ function ChooseTable(table, sort) {
 
 }
 
-function ShowAlert(title, message, alertType, area) {
+function ShowAlert(message, alertType, $el) {
+
+    $('#alertmsg').remove();
+
+    var timeout = 3000;
+
+    if(alertType.match('alert-warning')){
+      timeout = 10000;
+    }
+    if(alertType.match('alert-danger')){
+      timeout = 15000;
+    }
+
+    var $newDiv;
+
+    if(alertType.match('alert-success|alert-info')){
+      $newDiv = $('<div/>')
+       .attr( 'id', 'alertmsg' )
+       .html(
+          '<p>' +
+          message +
+          '</p>'
+        )
+       .addClass('alert ' + alertType);
+    }
+    else{
+      $newDiv = $('<div/>')
+       .attr( 'id', 'alertmsg' )
+       .html(
+          '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>' +
+          '<p>' +
+          '<strong>' + message + '</strong>' +
+          '</p>'
+        )
+       .addClass('alert ' + alertType + ' alert-dismissible');
+    }
+
+    if($el){
+      $el.append($newDiv);
+    }
+    else{
+      $('#Alert').append($newDiv);
+    }
+
+    setTimeout(function() {
+       $('#alertmsg').remove();
+    }, timeout);
+
+}
+
+function showalert(title, message, alertType, area) {
 
     $('#alertmsg').remove();
 

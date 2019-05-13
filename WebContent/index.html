@@ -55,7 +55,7 @@
 						<button type="button" onclick="GetModelList()" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Open model from server."><span class="glyphicon glyphicon-open-file" aria-hidden="true"></span></button>
 
 						<button type="button" onclick="TestDBConnection()" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Test connection to server database."><span class="glyphicon glyphicon-signal aria-hidden="true"></span></button>
-						<button type="button" onclick="RemoveAll()" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Remove all."><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>
+						<!-- <button type="button" onclick="RemoveAll()" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Remove all."><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button> -->
 						<button type="button" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Release server session" onClick="Logout()"><span class="glyphicon glyphicon-off aria-hidden="true"></span></button>
 					</div>
 				</form>
@@ -387,7 +387,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
 								<div class="collapse" id="tableLabelEG">
 								  <div class="well well-sm">
-								    <strong>SELECT</strong> systable.tableid <strong>AS Table_Name,</strong> singular <strong>AS Table_Label FROM</strong> systable join sdc on sdc.tableid = systable.tableid where systable.tableid <strong>IN (?)</strong>
+										<strong>SELECT</strong> table <strong>AS Table_Name,</strong> label <strong>AS Table_Label FROM</strong> tablelabels where table <strong>IN (?)</strong> and lang = 'fr'
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
@@ -411,7 +411,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableDescriptionEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
 								<div class="collapse" id="tableDescriptionEG">
 								  <div class="well well-sm">
-								    <strong>SELECT</strong> systable.tableid <strong>AS Table_Name,</strong> tabledoc <strong>AS Table_Description FROM</strong> systable join sdc on sdc.tableid = systable.tableid where systable.tableid <strong>IN (?)</strong>
+										<strong>SELECT</strong> table <strong>AS Table_Name,</strong> description <strong>AS Table_Description FROM</strong> tablelabels where table <strong>IN (?)</strong> and lang = 'fr'
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
@@ -436,7 +436,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnLabelEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
 								<div class="collapse" id="columnLabelEG">
 								  <div class="well well-sm">
-										<strong>SELECT</strong> tableid <strong>AS Table_Name,</strong> columnid <strong>AS Column_Name,</strong> columnlabel <strong>AS Column_Label FROM</strong> syscolumn where tableid <strong>= ?</strong> and columnid <strong>IN (?)</strong>
+										<strong>SELECT</strong> table <strong>AS Table_Name,</strong> column <strong>AS Column_Name,</strong> label <strong>AS Column_Label FROM</strong> columnlabels where table <strong>= ?</strong> and column <strong>IN (?)</strong> and lang = 'fr'
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
@@ -461,7 +461,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnDescriptionEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
 								<div class="collapse" id="columnDescriptionEG">
 								  <div class="well well-sm">
-										<strong>SELECT</strong> tableid <strong>AS Table_Name,</strong> columnid <strong>AS Column_Name,</strong> columndoc <strong>AS Column_Description FROM</strong> syscolumn where tableid <strong>= ?</strong> and columnid <strong>IN (?)</strong>
+										<strong>SELECT</strong> table <strong>AS Table_Name,</strong> column <strong>AS Column_Name,</strong> description <strong>AS Column_Description FROM</strong> columlabels where table <strong>= ?</strong> and column <strong>IN (?)</strong> and lang = 'fr'
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
@@ -537,7 +537,7 @@
 
 				<div class="input-group">
 					<div class="input-group-btn">
-						<select class="selectpicker" data-style="btn-default" id="tables" data-live-search="true" title="Choose a table..."></select>
+						<select class="selectpicker" data-style="btn-default" id="tables" data-live-search="true" title="Query Subjects..."></select>
 						<button type="button" id="magnet" onclick="GetQuerySubjects()"class="btn btn-default dropdown-toggle" data-toggle="tooltip" data-placement="top" title="Get Query Subject."><span class="glyphicon glyphicon-magnet" aria-hidden="true"></span></button>
 						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 							<span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
@@ -546,6 +546,10 @@
 						<ul class="dropdown-menu" id="tablesMenu">
 							<li><a href="#" id="addTableAlias">Alias</a></li>
 							<li><a href="#" id="sortTables">Sort</a></li>
+							<li role="separator" class="divider"></li>
+							<li><a href="#" id="expandQS">Expand All</a></li>
+							<li><a href="#" id="collapseQS">Collapse All</a></li>
+							<li><a href="#" id="removeQS">Remove All</a></li>
 						</ul>
 					</div>
 				</div>
@@ -559,8 +563,10 @@
 						<ul class="dropdown-menu" id="langMenu">
 							<li><a href="#" id="addLangMenu">Add</a></li>
 							<li><a href="#" id="removeLangMenu">Remove</a></li>
+							<li role="separator" class="divider"></li>
 							<li><a href="#" id="SQLLabels">SQL Labels</a></li>
 							<li class="disabled"><a href="#" id="CSVLabels">CSV Labels</a></li>
+							<li><a href="#" id="removeLabels">Remove Labels</a></li>
 						</ul>
 					</div>
 				</div>

@@ -73,6 +73,7 @@
 						<h4 class="modal-title" id="queryModalLabel">SQL queries for labels and descriptions</h4>
 					</div>
 					<div class="modal-body">
+						<div id="queryModalAlert"></div>
 						<form>
 		          <div class="form-group">
 		            <label for="tableLabel" class="col-form-label">Table Label</label>
@@ -91,7 +92,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
 								<div class="collapse" id="tableLabelEG">
 								  <div class="well well-sm">
-								    <strong>SELECT</strong> systable.tableid <strong>AS Table_Name,</strong> singular <strong>AS Table_Label FROM</strong> systable join sdc on sdc.tableid = systable.tableid where systable.tableid <strong>IN (?)</strong>
+								    <strong>SELECT</strong> table <strong>AS Table_Name,</strong> label <strong>AS Table_Label FROM</strong> tablelabels where table <strong>IN (?)</strong> and lang = 'fr'
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
@@ -115,7 +116,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableDescriptionEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
 								<div class="collapse" id="tableDescriptionEG">
 								  <div class="well well-sm">
-								    <strong>SELECT</strong> systable.tableid <strong>AS Table_Name,</strong> tabledoc <strong>AS Table_Description FROM</strong> systable join sdc on sdc.tableid = systable.tableid where systable.tableid <strong>IN (?)</strong>
+								    <strong>SELECT</strong> table <strong>AS Table_Name,</strong> description <strong>AS Table_Description FROM</strong> tablelabels where table <strong>IN (?)</strong> and lang = 'fr'
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
@@ -140,7 +141,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnLabelEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
 								<div class="collapse" id="columnLabelEG">
 								  <div class="well well-sm">
-										<strong>SELECT</strong> tableid <strong>AS Table_Name,</strong> columnid <strong>AS Column_Name,</strong> columnlabel <strong>AS Column_Label FROM</strong> syscolumn where tableid <strong>= ?</strong> and columnid <strong>IN (?)</strong>
+										<strong>SELECT</strong> table <strong>AS Table_Name,</strong> column <strong>AS Column_Name,</strong> label <strong>AS Column_Label FROM</strong> columnlabels where table <strong>= ?</strong> and column <strong>IN (?)</strong> and lang = 'fr'
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
@@ -165,7 +166,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnDescriptionEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
 								<div class="collapse" id="columnDescriptionEG">
 								  <div class="well well-sm">
-										<strong>SELECT</strong> tableid <strong>AS Table_Name,</strong> columnid <strong>AS Column_Name,</strong> columndoc <strong>AS Column_Description FROM</strong> syscolumn where tableid <strong>= ?</strong> and columnid <strong>IN (?)</strong>
+										<strong>SELECT</strong> table <strong>AS Table_Name,</strong> column <strong>AS Column_Name,</strong> description <strong>AS Column_Description FROM</strong> columlabels where table <strong>= ?</strong> and column <strong>IN (?)</strong> and lang = 'fr'
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>

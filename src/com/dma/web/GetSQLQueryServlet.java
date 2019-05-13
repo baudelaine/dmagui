@@ -76,13 +76,18 @@ public class GetSQLQueryServlet extends HttpServlet {
 			}
 			
 			String query = (String) parms.get("query");
+			
+			if(!query.toUpperCase().startsWith("SELECT ")) {
+	            throw new Exception("Only SELECT queries are allowed.");
+			}
+			
 			results.put("query", query);
 			results.put("schema", schema);
 			
 			System.out.println("query=" + query);
 			
 			stmt = con.prepareStatement(query);
-			stmt.setMaxRows(20);
+			stmt.setMaxRows(100);
 			rst = stmt.executeQuery();
 			ResultSetMetaData rsmd = rst.getMetaData();
 			int colCount = rsmd.getColumnCount();

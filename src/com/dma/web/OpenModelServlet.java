@@ -35,6 +35,8 @@ public class OpenModelServlet extends HttpServlet {
 
 		String model = request.getParameter("model");
 		
+		System.out.println("**********modelName=" + model);
+		
 		Path path = Paths.get(request.getSession().getAttribute("projectPath") + "/models/" + model);
 		
 		BufferedReader br = new BufferedReader(new FileReader(path.toFile()));

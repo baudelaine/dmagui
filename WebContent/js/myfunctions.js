@@ -3638,6 +3638,13 @@ function Publish(){
 
 }
 
+
+function removeSpecialChars(name){
+  var re = new RegExp("[#@&~€$£ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÇçÌÍÎÏìíîïÙÚÛÜùúûüÿÑñŒœ¨%µ\{\}\\[\\]\^\*/<>\?\!;§]", "gi");
+  return name.replace(re, "");
+
+}
+
 function SaveModel(){
 
   $datasTable.bootstrapTable("filterBy", {});
@@ -3664,7 +3671,7 @@ function SaveModel(){
       return;
     }
 
-    var parms = {modelName: modelName, data: JSON.stringify(data)};
+    var parms = {modelName: removeSpecialChars(modelName), data: JSON.stringify(data)};
     console.log(parms);
 
    	$.ajax({
@@ -3674,7 +3681,13 @@ function SaveModel(){
    		data: JSON.stringify(parms),
 
    		success: function(data) {
-   			showalert("SaveModel()", "Model saved successfully.", "alert-success", "bottom");
+        console.log(data);
+        if(data.STATUS == "OK"){
+   			    showalert("SaveModel()", "Model saved successfully as " + data.FILENAME + ".", "alert-success", "bottom");
+        }
+        else{
+          showalert("Saving model " + modelName + " failed.", data.MESSAGE + "<br>" + data.TROUBLESHOOTING, "alert-danger", "bottom");
+        }
    		},
    		error: function(data) {
    			showalert("SaveModel()", "Saving model failed.", "alert-danger", "bottom");

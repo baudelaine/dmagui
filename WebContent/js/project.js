@@ -23,6 +23,7 @@ $('#newProjectModal').on('shown.bs.modal', function(){
 });
 
 $('button#create').click(function(){
+
   if($("#prjResource").val() == "" | $("#prjName").val() == "" | $("#prjLanguage").find("option:selected").val() == ""){
     ShowAlert("Neither Name, Resource nor Language should be left empty.", "alert-warning");
     return;
@@ -165,6 +166,7 @@ function NewProject() {
   prj.resource = datas.RESOURCES[$("#prjResource").val()];
   prj.languages = [];
   prj.languages.push($("#prjLanguage").find("option:selected").val());
+  prj.relationCount = $('#relationCount').prop('checked');
 
   $.ajax({
     type: 'POST',

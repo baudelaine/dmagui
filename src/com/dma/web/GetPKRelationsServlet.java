@@ -1,6 +1,7 @@
 package com.dma.web;
 
 import java.io.IOException;
+import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -8,10 +9,12 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -48,6 +51,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 		String alias = request.getParameter("alias");
 		String type = request.getParameter("type");
 		boolean withRecCount = false;
+		boolean relationCount = false;
 
 		List<Object> result = new ArrayList<Object>();
 		Map<String, Object> dbmd = null;
@@ -67,6 +71,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 			schema = (String) request.getSession().getAttribute("schema");
 			Project project = (Project) request.getSession().getAttribute("currentProject");
 			language = project.languages.get(0);
+			relationCount = project.isRelationCount();
 			
 			dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
 			withRecCount = (Boolean) request.getServletContext().getAttribute("withRecCount");
@@ -258,62 +263,72 @@ public class GetPKRelationsServlet extends HttpServlet {
 					
 				}
 		    	
-	            System.out.println("tableRecCount=" + tableRecCount);
-		    	
-		    	for(Entry<String, Relation> relation: map.entrySet()){
-		    		Relation rel = relation.getValue();
-		    		
-		    		Set<String> tableSet = new HashSet<String>();
-		    		for(Seq seq: rel.getSeqs()){
-		    			if(!schema.isEmpty()){
-			    			tableSet.add(schema + "." + seq.pktable_name);
-			    			tableSet.add(schema + "." + seq.table_name);
-		    			}
-		    			else{
-			    			tableSet.add(schema + seq.pktable_name);
-			    			tableSet.add(schema + seq.table_name);
-		    			}
-		    		}
-		    		
-		    		System.out.println("tableSet=" + tableSet);
-		    		
-		    		StringBuffer sb = new StringBuffer();;
-		    		
-		    		for(String tbl: tableSet){
-		    			sb.append(", " + tbl);
-		    		}
-		    		String tables = sb.toString().substring(1);
-		    		
-		            long recCount = 0;
-		    		stmt = null;
-		    		rs = null;
-		            try{
-			    		String query = "SELECT COUNT(*) FROM " + tables + " WHERE " + rel.where;
-			    		System.out.println(query);
-			    		stmt = con.createStatement();
-			            rs = stmt.executeQuery(query);
-			            while (rs.next()) {
-			            	recCount = rs.getLong(1);
+	            if(relationCount) {
+			    	for(Entry<String, Relation> relation: map.entrySet()){
+			    		Relation rel = relation.getValue();
+			    		
+			    		Set<String> tableSet = new HashSet<String>();
+			    		for(Seq seq: rel.getSeqs()){
+			    			if(!schema.isEmpty()){
+				    			tableSet.add(schema + "." + seq.pktable_name);
+				    			tableSet.add(schema + "." + seq.table_name);
+			    			}
+			    			else{
+				    			tableSet.add(schema + seq.pktable_name);
+				    			tableSet.add(schema + seq.table_name);
+			    			}
+			    		}
+			    		
+			    		System.out.println("tableSet=" + tableSet);
+			    		
+			    		StringBuffer sb = new StringBuffer();;
+			    		
+			    		for(String tbl: tableSet){
+			    			sb.append(", " + tbl);
+			    		}
+			    		String tables = sb.toString().substring(1);
+			    		
+			            long recCount = 0;
+			    		stmt = null;
+			    		rs = null;
+			            try{
+				    		String query = "SELECT COUNT(*) FROM " + tables + " WHERE " + rel.where;
+				    		System.out.println(query);
+				    		stmt = con.createStatement();
+				            rs = stmt.executeQuery(query);
+				            while (rs.next()) {
+				            	recCount = rs.getLong(1);
+				            }
+				            rel.setRecCount(recCount);
+				    		float percent = (Math.round(((float)recCount / tableRecCount) * 100));
+				            rel.setRecCountPercent((int) percent);
+				            
+				    		double d0 = Double.parseDouble(String.valueOf(recCount));
+				    		double d1 = Double.parseDouble(String.valueOf(tableRecCount));
+				    		
+				    		double num = (d0/d1) * 100;
+				    		NumberFormat nf = NumberFormat.getInstance(Locale.ENGLISH);
+				    		nf.setMaximumFractionDigits(3);
+//				    		nf.setMinimumFractionDigits(5);	    
+				    		nf.setRoundingMode(RoundingMode.UP);
+				    	    num = Double.parseDouble(nf.format(num));
+				            rel.setRecCountPercent(num);
+				            
 			            }
-			            rel.setRecCount(recCount);
-			    		float percent = (Math.round(((float)recCount / tableRecCount) * 100));
-			            rel.setRecCountPercent((int) percent);
-			            System.out.println("recCount=" + recCount);
-			            System.out.println("percent=" + percent);
-		            }
-		            catch(SQLException e){
-		            	System.out.println("CATCHING SQLEXEPTION...");
-		            	System.out.println(e.getSQLState());
-		            	System.out.println(e.getMessage());
-		            	
-		            }
-		            finally {
-			            if (stmt != null) { stmt.close();}
-			            if(rst != null){rst.close();}
-						
-					}
-		    		
-		    	}
+			            catch(SQLException e){
+			            	System.out.println("CATCHING SQLEXEPTION...");
+			            	System.out.println(e.getSQLState());
+			            	System.out.println(e.getMessage());
+			            	
+			            }
+			            finally {
+				            if (stmt != null) { stmt.close();}
+				            if(rst != null){rst.close();}
+							
+						}
+			    		
+			    	}
+	            }
 		    }		    
 		    
 		    result = new ArrayList<Object>(map.values());

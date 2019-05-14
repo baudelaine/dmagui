@@ -1,6 +1,7 @@
 package com.dma.web;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -99,6 +100,10 @@ public class SessionAttributeListener implements HttpSessionAttributeListener {
 	    				query = (String) ic.lookup("TestIFXConnection");
 	    				break;
 	    				
+	    			case "TD":
+	    				query = (String) ic.lookup("TestTDConnection");
+	    				break;	    				
+	    				
 	    		}
 	    		s.setAttribute("query", query);
         	}
@@ -110,7 +115,16 @@ public class SessionAttributeListener implements HttpSessionAttributeListener {
     		Connection con = null;
     		try{
 				DataSource ds = (DataSource) ic.lookup(jndiName);
-				con = ds.getConnection();
+				
+				if(dbEngine.equalsIgnoreCase("TD")){
+					System.out.println("Loading TERADATA driver with DriverManager.");
+					con = DriverManager.getConnection("jdbc:teradata://172.16.186.245", "dbc", "dbc");
+	        		con.createStatement().execute("DATABASE " + schema);
+				}
+				else{
+					con = ds.getConnection();
+				}
+				
 				s.setAttribute("con", con);
         		s.setAttribute("jndiName", jndiName);
         		con.createStatement().execute("SET SCHEMA " + schema);

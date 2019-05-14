@@ -47,6 +47,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	String linker_id = "";
 	String language = "";
 	boolean withRecCount = false;
+	boolean relationCount = false;
 	long qs_recCount = 0L;
 	Map<String, Object> dbmd = null;
 	Map<String, String> tableAliases = null;
@@ -80,9 +81,9 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		try{
 			
 			withRecCount = (Boolean) request.getServletContext().getAttribute("withRecCount");
-			System.out.println("withRecCount=" + withRecCount);
 			Project project = (Project) request.getSession().getAttribute("currentProject");
 			language = project.languages.get(0);
+			relationCount = project.isRelationCount();
 			con = (Connection) request.getSession().getAttribute("con");
 			schema = (String) request.getSession().getAttribute("schema");
 			dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
@@ -532,7 +533,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	        	
 	    }
 	    
-	    if(withRecCount){
+	    if(relationCount){
 	    	for(Entry<String, Relation> relation: map.entrySet()){
 	    		Relation rel = relation.getValue();
 	    		

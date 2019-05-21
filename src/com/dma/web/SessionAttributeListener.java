@@ -149,13 +149,12 @@ public class SessionAttributeListener implements HttpSessionAttributeListener {
 	    				break;
 	
 	    			case "PGSQL":
+	            		con.createStatement().execute("set search_path to " + schema);
 	    				break;
 	
 	    			case "IFX":
 	    				break;
 	    				
-	    			case "TD":
-	    				break;	    	        		
         		}
         		
 				s.setAttribute("con", con);
@@ -173,7 +172,7 @@ public class SessionAttributeListener implements HttpSessionAttributeListener {
 			switch(dbEngine.toUpperCase()){
 			
 				case "DB2":
-					aliasesQuery = "SELECT base_tabname, tabname FROM syscat.tables WHERE type = 'A' AND owner = 'DB2INST1'";
+					aliasesQuery = "SELECT base_tabname, tabname FROM syscat.tables WHERE type = 'A' AND owner = '" + schema.toUpperCase() + "'";
 					break;
 				
 				case "ORA":

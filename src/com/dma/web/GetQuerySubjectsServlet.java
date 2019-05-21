@@ -1,6 +1,7 @@
 package com.dma.web;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -240,13 +241,11 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	    while (rst.next()) {
 
 	    	String table_name = (rst.getString("TABLE_NAME"));
-	    	System.out.println(table_name);
 
 		    ResultSet rst0 = metaData.getColumns(con.getCatalog(), schema, table_name, "%");
 	    	StringBuffer sb = new StringBuffer("select ");
 		    while(rst0.next()){
 		    	String column_name =  rst0.getString("COLUMN_NAME");
-		    	System.out.println("-- " + column_name);
 		    	sb.append("count(" + column_name + ") as " + column_name + ", ");
 		    	
 		    }
@@ -362,11 +361,25 @@ public class GetQuerySubjectsServlet extends HttpServlet {
     		
 
     	    if(recCount.containsKey(table)) {
-    	    	Map<String, Integer> obj = (Map<String, Integer>) recCount.get(table);
+    	    	Map<String, Object> obj = (Map<String, Object>) recCount.get(table);
     	    	if(obj.containsKey(field_name)) {
-    	    		field.setRecCount(obj.get(field_name));
-    	    		if(field.getRecCount() == 0) {
-    	    			field.setHidden(true);
+    	    		Object o = obj.get(field_name);
+    	    		field.setRecCount(o);
+    	    		
+    	    		if(o != null) {
+    	    		
+    	    			if(o instanceof Integer) {
+    	    	    		if((int) o == 0) {
+    	    	    			field.setHidden(true);
+    	    	    		}
+    	    			}
+    	    			if(o instanceof BigDecimal) {
+    	    				BigDecimal zero = new BigDecimal(0);
+    	    				if(((BigDecimal) o).compareTo(zero) == 0) {
+    	    	    			field.setHidden(true);
+    	    				}
+    	    			}
+    	    			
     	    		}
     	    	}
     	    }

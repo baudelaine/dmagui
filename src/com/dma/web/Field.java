@@ -33,8 +33,7 @@ public class Field {
 	String BK = "";
 	String hierarchyName = "";
 	boolean timeDimension = false;
-	int recCount = 0;
-	
+	Object recCount = 0;
 	
 	public String getBK() {
 		return BK;
@@ -192,11 +191,11 @@ public class Field {
 	public void setCustom(boolean custom) {
 		this.custom = custom;
 	}
-	public int getRecCount() {
+	public Object getRecCount() {
 		return recCount;
 	}
-	public void setRecCount(int recCount) {
+	public void setRecCount(Object recCount) {
 		this.recCount = recCount;
 	}
-
+	
 }

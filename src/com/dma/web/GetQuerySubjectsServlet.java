@@ -256,26 +256,37 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		    
 		    String sql = head + " from " + table_name;
 		    PreparedStatement stmt0 = con.prepareStatement(sql);
-			rst0 = stmt0.executeQuery();
-			ResultSetMetaData rsmd = rst0.getMetaData();
-			int colCount = rsmd.getColumnCount();
-
-			List<String> column_names = new ArrayList<String>();
-			
-			for(int colid = 1; colid <= colCount; colid++){
-				column_names.add(rsmd.getColumnLabel(colid));
-			}
-			
-			while(rst0.next()){
-				Map<String, Object> rec = new HashMap<String, Object>();
+		    
+		    try {
+		    
+				rst0 = stmt0.executeQuery();
+				ResultSetMetaData rsmd = rst0.getMetaData();
+				int colCount = rsmd.getColumnCount();
+	
+				List<String> column_names = new ArrayList<String>();
+				
 				for(int colid = 1; colid <= colCount; colid++){
-					rec.put(column_names.get(colid -1), rst0.getObject(colid));
+					column_names.add(rsmd.getColumnLabel(colid));
 				}
-				recCount.put(table_name, rec);
-			}
-			rst0.close();
-			stmt0.close();		
-			
+				
+				while(rst0.next()){
+					Map<String, Object> rec = new HashMap<String, Object>();
+					for(int colid = 1; colid <= colCount; colid++){
+						rec.put(column_names.get(colid -1), rst0.getObject(colid));
+					}
+					recCount.put(table_name, rec);
+				}
+		    }
+            catch(SQLException e){
+            	System.out.println("CATCHING SQLEXEPTION...");
+            	System.out.println(e.getSQLState());
+            	System.out.println(e.getMessage());
+            	
+            }
+            finally {
+				rst0.close();
+				stmt0.close();
+            }
 		
 	    }
 	    if(rst != null){rst.close();}

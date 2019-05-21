@@ -278,7 +278,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 				}
 		    }
             catch(SQLException e){
-            	System.out.println("CATCHING SQLEXEPTION...");
+            	System.out.println("CATCHING SQLEXCEPTION...");
             	System.out.println(e.getSQLState());
             	System.out.println(e.getMessage());
             	

@@ -49,6 +49,7 @@ public class GetSQLQueryServlet extends HttpServlet {
 		Connection con = null;
 		Map<String, Object> results = new HashMap<String, Object>();
 		String schema = null;
+		@SuppressWarnings("unused")
 		String dbEngine = null;
 		PreparedStatement stmt = null;
 		ResultSet rst = null;
@@ -65,15 +66,15 @@ public class GetSQLQueryServlet extends HttpServlet {
 			con = (Connection) request.getSession().getAttribute("con");
 			schema = (String) request.getSession().getAttribute("schema");
 			dbEngine = (String) request.getSession().getAttribute("dbEngine");
-			if((dbEngine).equalsIgnoreCase("ORA")){
-				con.createStatement().execute("alter session set current_schema=" + schema);
-				con.createStatement().execute("ALTER SESSION SET NLS_SORT=BINARY_CI");
-				con.createStatement().execute("ALTER SESSION SET NLS_COMP=LINGUISTIC");
-			}
-
-			if((dbEngine).equalsIgnoreCase("DB2") || (dbEngine).equalsIgnoreCase("DB2400")){
-				con.createStatement().execute("set schema " + schema);
-			}
+//			if((dbEngine).equalsIgnoreCase("ORA")){
+//				con.createStatement().execute("alter session set current_schema=" + schema);
+//				con.createStatement().execute("ALTER SESSION SET NLS_SORT=BINARY_CI");
+//				con.createStatement().execute("ALTER SESSION SET NLS_COMP=LINGUISTIC");
+//			}
+//
+//			if((dbEngine).equalsIgnoreCase("DB2") || (dbEngine).equalsIgnoreCase("DB2400")){
+//				con.createStatement().execute("set schema " + schema);
+//			}
 			
 			String query = (String) parms.get("query");
 			

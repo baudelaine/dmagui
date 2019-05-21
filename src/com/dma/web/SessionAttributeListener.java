@@ -125,9 +125,41 @@ public class SessionAttributeListener implements HttpSessionAttributeListener {
 					con = ds.getConnection();
 				}
 				
+        		
+        		switch(dbEngine.toUpperCase()){
+	    		
+	    			case "ORA":
+	    				con.createStatement().execute("ALTER SESSION SET CURRENT_SCHEMA=" + schema);
+	    				con.createStatement().execute("ALTER SESSION SET NLS_SORT=BINARY_CI");
+	    				con.createStatement().execute("ALTER SESSION SET NLS_COMP=LINGUISTIC");
+	    				break;
+	    				
+	    			case "DB2":
+	            		con.createStatement().execute("SET SCHEMA " + schema);
+	    				break;
+	
+	    			case "DB2400":
+	            		con.createStatement().execute("SET SCHEMA " + schema);
+	    				break;
+	
+	    			case "SQLSRV":
+	    				break;
+	
+	    			case "MYSQL":
+	    				break;
+	
+	    			case "PGSQL":
+	    				break;
+	
+	    			case "IFX":
+	    				break;
+	    				
+	    			case "TD":
+	    				break;	    	        		
+        		}
+        		
 				s.setAttribute("con", con);
         		s.setAttribute("jndiName", jndiName);
-        		con.createStatement().execute("SET SCHEMA " + schema);
     			System.out.println("SessionId " + s.getId() + " is now connected to " + jndiName + " using shema " + schema);
         		
     		}

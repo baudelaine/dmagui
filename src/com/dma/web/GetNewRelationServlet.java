@@ -82,9 +82,9 @@ public class GetNewRelationServlet extends HttpServlet {
     		    	}
     		    	else {
     		    		result.setDescription(label);
-    		    		result.setLabel(label.substring(1, 50));
+    		    		result.setLabel(label.substring(0, 50));
     					if(!language.isEmpty()) {
-    						result.getLabels().put(language, label.substring(1, 50));
+    						result.getLabels().put(language, label.substring(0, 50));
     						result.getDescriptions().put(language, label);
     					}
     		    	}

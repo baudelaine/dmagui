@@ -1082,7 +1082,7 @@ function getDimensions(dimensionSet, selectedQs){
 
   $.ajax({
     type: 'POST',
-    url: "GetDimensions",
+    url: "GetDimensionsOptim",
     dataType: 'json',
     data: JSON.stringify(parms),
     success: function(data) {

@@ -166,9 +166,9 @@ public class GetPKRelationsServlet extends HttpServlet {
 		    		    	}
 		    		    	else {
 		    			    	relation.setDescription(label);
-		    		    		relation.setLabel(label.substring(1, 50));
+		    		    		relation.setLabel(label.substring(0, 50));
 				        		if(!language.isEmpty()) {
-				        			relation.getLabels().put(language, label.substring(1, 50));
+				        			relation.getLabels().put(language, label.substring(0, 50));
 				        			relation.getDescriptions().put(language, label);
 				        		}
 		    		    	}

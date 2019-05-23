@@ -3,14 +3,9 @@ package com.dma.web;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 
 import javax.servlet.ServletException;
@@ -26,14 +21,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 /**
  * Servlet implementation class GetImportedKeysServlet
  */
-@WebServlet("/GetDimensions")
-public class GetDimensionsServlet extends HttpServlet {
+@WebServlet("/GetDimensionsOptim")
+public class GetDimensionsOptimServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public GetDimensionsServlet() {
+    public GetDimensionsOptimServlet() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -120,177 +115,99 @@ public class GetDimensionsServlet extends HttpServlet {
 
 
 				Map<String, Object> dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
-		        Map<String, Object> table_labels = null;
-		        Map<String, Object> columns = null;
-
-				Connection con = (Connection) request.getSession().getAttribute("con");
-				DatabaseMetaData metaData = con.getMetaData();
-				String schema = (String) request.getSession().getAttribute("schema");
-
-				for(Entry<String, Dimension> dimension: dimensions.entrySet()) {
 				
-					List<Map<String, Object>> orders = dimension.getValue().getOrders();
-					for(Map<String, Object> order: orders) {
+		        if(dbmd != null){
+
+					Map<String, Object> table_labels = null;
+			        Map<String, Object> columns = null;
+	
+					for(Entry<String, Dimension> dimension: dimensions.entrySet()) {
 					
-						String table = (String) order.get("table");
+						List<Map<String, Object>> orders = dimension.getValue().getOrders();
+						for(Map<String, Object> order: orders) {
 						
-						ResultSet rst = metaData.getPrimaryKeys(con.getCatalog(), schema, table);
-					    Set<String> pks = new HashSet<String>();
-					    
-					    while (rst.next()) {
-					    	pks.add(rst.getString("COLUMN_NAME"));
-					    }
-
-				        if(rst != null){rst.close();}
-				        
-				        rst = metaData.getIndexInfo(con.getCatalog(), schema, table, false, true);
-					    Set<String> indexes = new HashSet<String>();
-					    
-					    while (rst.next()) {
-					    	indexes.add(rst.getString("COLUMN_NAME"));
-					    }
-
-				        if(rst != null){rst.close();}
-						
-						
-				        if(dbmd != null){
+							String table = (String) order.get("table");
+							
 							table_labels = (Map<String, Object>) dbmd.get(table);
 							columns = (Map<String, Object>) table_labels.get("columns");
-				        }
-				        
-				        
-						rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
-						
-						while (rst.next()) {
-							String colName = rst.getString("COLUMN_NAME");
-							String fieldName = (String) order.get("order");
-							int i = StringUtils.split(fieldName, ".").length;
-							if(i > 0) {
-								fieldName = StringUtils.split(fieldName, ".")[i -1];
-							}
-							System.out.println(colName + " -> " + fieldName);
-							if(colName.equalsIgnoreCase(fieldName)) {
-						    	String label = rst.getString("REMARKS");
-								if(label == null) {
-					    			order.put("label", "");
+					        
+							for (Entry<String, Object> column: columns.entrySet()) {
+								String colName = column.getKey();
+								String fieldName = (String) order.get("order");
+								int i = StringUtils.split(fieldName, ".").length;
+								if(i > 0) {
+									fieldName = StringUtils.split(fieldName, ".")[i -1];
 								}
-								else {
-							    	if(label.length() > 50) {
-						    			order.put("label", label.substring(0, 50));
-							    	}
-							    	else {
-						    			order.put("label", label);
-							    	}
+								System.out.println(colName + " -> " + fieldName);
+								if(colName.equalsIgnoreCase(fieldName)) {
+							    	Map<String, Object> colObj = (Map<String, Object>) column.getValue();
+							    	String label = (String) colObj.get("column_remarks");
+									if(label == null) {
+						    			order.put("label", "");
+									}
+									else {
+								    	if(label.length() > 50) {
+							    			order.put("label", label.substring(0, 50));
+								    	}
+								    	else {
+							    			order.put("label", label);
+								    	}
+									}
+									boolean isPK = (boolean) colObj.get("column_isPrimaryKey");
+					    			order.put("isPK", isPK);
+									boolean isIdx = (boolean) colObj.get("column_isIndexed");
+					    			order.put("isIdx", isIdx);
 								}
-					        	if(pks.contains(rst.getString("COLUMN_NAME"))){
-					    			order.put("isPK", true);
-					    		}
-					        	else {
-					    			order.put("isPK", false);
-					        	}
-					        	if(indexes.contains(rst.getString("COLUMN_NAME"))){
-					    			order.put("isIdx", true);
-					    		}
-					        	else {
-					    			order.put("isIdx", false);
-					        	}
-					        	if(columns != null){
-					    			Map<String, Object> column = (Map<String, Object>) columns.get(rst.getString("COLUMN_NAME"));
-					    			if(column != null){
-					    				label = (String) column.get("column_remarks");
-						    			order.put("label", label);
-					    			}
-					    		}
-							}
+								
+						    }
 							
-					    }
+						}
 						
-						if(rst != null){rst.close();}
+						List<Map<String, Object>> bks = dimension.getValue().getBks();
+						for(Map<String, Object> bk: bks) {
 						
-					}
-					
-					List<Map<String, Object>> bks = dimension.getValue().getBks();
-					for(Map<String, Object> bk: bks) {
-					
-						String table = (String) bk.get("table");
-						
-						ResultSet rst = metaData.getPrimaryKeys(con.getCatalog(), schema, table);
-					    Set<String> pks = new HashSet<String>();
-					    
-					    while (rst.next()) {
-					    	pks.add(rst.getString("COLUMN_NAME"));
-					    }
-
-				        if(rst != null){rst.close();}
-				        
-				        rst = metaData.getIndexInfo(con.getCatalog(), schema, table, false, true);
-					    Set<String> indexes = new HashSet<String>();
-					    
-					    while (rst.next()) {
-					    	indexes.add(rst.getString("COLUMN_NAME"));
-					    }
-
-				        if(rst != null){rst.close();}
-						
-						
-				        if(dbmd != null){
+							String table = (String) bk.get("table");
+							
 							table_labels = (Map<String, Object>) dbmd.get(table);
 							columns = (Map<String, Object>) table_labels.get("columns");
-				        }
-				        
-				        
-						rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
-						
-						while (rst.next()) {
-							String colName = rst.getString("COLUMN_NAME");
-							String fieldName = (String) bk.get("bk");
-							int i = StringUtils.split(fieldName, ".").length;
-							if(i > 0) {
-								fieldName = StringUtils.split(fieldName, ".")[i -1];
-							}
-							System.out.println(colName + " -> " + fieldName);
-							if(colName.equalsIgnoreCase(fieldName)) {
-						    	String label = rst.getString("REMARKS");
-								if(label == null) {
-									bk.put("label", "");
+					        
+							for (Entry<String, Object> column: columns.entrySet()) {
+								String colName = column.getKey();
+								String fieldName = (String) bk.get("bk");
+								int i = StringUtils.split(fieldName, ".").length;
+								if(i > 0) {
+									fieldName = StringUtils.split(fieldName, ".")[i -1];
 								}
-								else {
-							    	if(label.length() > 50) {
-							    		bk.put("label", label.substring(0, 50));
-							    	}
-							    	else {
-							    		bk.put("label", label);
-							    	}
+								System.out.println(colName + " -> " + fieldName);
+								if(colName.equalsIgnoreCase(fieldName)) {
+									Map<String, Object> colObj = (Map<String, Object>) column.getValue();
+									String label = (String) colObj.get("column_remarks");
+									if(label == null) {
+										bk.put("label", "");
+									}
+									else {
+								    	if(label.length() > 50) {
+								    		bk.put("label", label.substring(0, 50));
+								    	}
+								    	else {
+								    		bk.put("label", label);
+								    	}
+									}
+									
+									boolean isPK = (boolean) colObj.get("column_isPrimaryKey");
+					    			bk.put("isPK", isPK);
+									boolean isIdx = (boolean) colObj.get("column_isIndexed");
+					    			bk.put("isIdx", isIdx);
+									
 								}
-					        	if(pks.contains(rst.getString("COLUMN_NAME"))){
-					        		bk.put("isPK", true);
-					    		}
-					        	else {
-					        		bk.put("isPK", false);
-					        	}
-					        	if(indexes.contains(rst.getString("COLUMN_NAME"))){
-					        		bk.put("isIdx", true);
-					    		}
-					        	else {
-					        		bk.put("isIdx", false);
-					        	}
-					        	if(columns != null){
-					    			Map<String, Object> column = (Map<String, Object>) columns.get(rst.getString("COLUMN_NAME"));
-					    			if(column != null){
-					    				label = (String) column.get("column_remarks");
-					    				bk.put("label", label);
-					    			}
-					    		}
-							}
+								
+						    }
 							
-					    }
+						}
 						
-						if(rst != null){rst.close();}
 						
 					}
-					
-					
-				}
+		        }
 				
 				result.put("STATUS", "OK");
 				result.put("DBMD", dbmd);

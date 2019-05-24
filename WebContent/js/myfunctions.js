@@ -549,7 +549,7 @@ $newRowModal.on('show.bs.modal', function (e) {
   if(activeTab == "Final"){
     $('#modKeyType').append('<option value="F">Foreign</option>');
   }
-  if(activeTab.match("Reference|Security")){
+  if(activeTab.match("Reference|Security|Translation")){
     $('#modKeyType').append('<option value="F">Foreign</option>');
     $('#modKeyType').append('<option value="P">Primary</option>');
   }

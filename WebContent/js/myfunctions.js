@@ -3620,10 +3620,10 @@ function Publish(){
     			// $('#DatasTable').bootstrapTable('load', data);
           console.log(data);
           if(data.STATUS == "OK"){
-            showalert("Publish()", data.message, "alert-success", "bottom");
+            showalert("Publish()", data.MESSAGE, "alert-success", "bottom");
           }
           else{
-    			showalert(data.ERROR + "<br>", data.MESSAGE + ": " + data.AXISFAULT + "<br>" + data.TROUBLESHOOTING, "alert-danger");
+    			showalert(data.ERROR, data.MESSAGE + ": " + data.AXISFAULT + "<br>" + data.TROUBLESHOOTING, "alert-danger");
           }
     		},
     		error: function(data) {
@@ -3656,10 +3656,10 @@ function SaveModel(){
     return;
   }
 
-  $.each(data, function(i, obj){
-    obj.label = "";
-    obj.description = "";
-  });
+  // $.each(data, function(i, obj){
+  //   obj.label = "";
+  //   obj.description = "";
+  // });
 
   bootbox.prompt({
     size: "small",

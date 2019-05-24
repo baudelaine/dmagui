@@ -3625,7 +3625,7 @@ function Publish(){
             showalert("Publish()", data.MESSAGE, "alert-success", "bottom");
           }
           else{
-    			  showalert(data.ERROR, data.MESSAGE + ": " + data.AXISFAULT + ". " + data.TROUBLESHOOTING, "alert-danger");
+    			  showalert(data.ERROR, data.MESSAGE + ": " + data.AXISFAULT + "<br>" + data.TROUBLESHOOTING, "alert-danger");
           }
     		},
     		error: function(data) {

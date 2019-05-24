@@ -2526,7 +2526,7 @@ function buildRelationTable($el, cols, data, qs){
     $el.bootstrapTable('showColumn', 'nommageRep');
     $el.bootstrapTable('hideColumn', 'usedForDimensions');
     $el.bootstrapTable('showColumn', 'rightJoin');
-    $el.bootstrapTable('hideColumn', 'above');
+    $el.bootstrapTable('showColumn', 'above');
   }
 
   if(activeTab == "Translation"){
@@ -2537,7 +2537,7 @@ function buildRelationTable($el, cols, data, qs){
     $el.bootstrapTable('showColumn', 'nommageRep');
     $el.bootstrapTable('hideColumn', 'usedForDimensions');
     $el.bootstrapTable('hideColumn', 'rightJoin');
-    $el.bootstrapTable('hideColumn', 'above');
+    $el.bootstrapTable('showColumn', 'above');
   }
 
   if(activeTab == "Final"){

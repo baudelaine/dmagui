@@ -3307,59 +3307,61 @@ function ChooseTable(table, sort) {
     async: true,
     success: function(data) {
       console.log(data);
-      if(Object.keys(data).length > 0){
-        dbmd = data;
-        var tables = Object.values(dbmd);
+      if(data){
+        if(Object.keys(data).length > 0){
+          dbmd = data;
+          var tables = Object.values(dbmd);
 
-        console.log(tables);
-        if(!sort){
-          sort = "3";
-          console.log('Default to sort ' + sort);
+          console.log(tables);
+          if(!sort){
+            sort = "3";
+            console.log('Default to sort ' + sort);
+          }
+
+          switch(sort){
+            case "0":
+              tables.sort(function(a, b){
+                return a.table_name.localeCompare(b.table_name);
+              });
+              break;
+            case "1":
+              tables.sort(function(a, b){return b.table_primaryKeyFieldsCount - a.table_primaryKeyFieldsCount});
+              break;
+            case "2":
+              tables.sort(function(a, b){return b.table_importedKeysCount - a.table_importedKeysCount});
+              break;
+            case "3":
+              tables.sort(function(a, b){return b.table_importedKeysSeqCount - a.table_importedKeysSeqCount});
+              break;
+            case "4":
+              tables.sort(function(a, b){return b.table_exportedKeysCount - a.table_exportedKeysCount});
+              break;
+            case "5":
+              tables.sort(function(a, b){return b.table_exportedKeysSeqCount - a.table_exportedKeysSeqCount});
+              break;
+            case "6":
+              tables.sort(function(a, b){return b.table_indexesCount - a.table_indexesCount});
+              break;
+            case "7":
+              tables.sort(function(a, b){return b.table_recCount - a.table_recCount});
+              break;
+            default:
+              tables.sort(function(a, b){return b.table_primaryKeyFieldsCount - a.table_primaryKeyFieldsCount});
+          }
+
+          $.each(tables, function(i, obj){
+            //console.log(obj.name);
+            // var dataContent = "<span class='label label-success'>" + obj.RecCount + "</span>";
+            var option = '<option class="fontsize" value="' + obj.table_name + '" data-subtext="' + obj.table_remarks +  ' ' + obj.table_stats + '">'
+             + obj.table_name + '</option>';
+            table.append(option);
+            // $('#modPKTables').append(option);
+            // table.append('<option class="fontsize" value=' + obj.name + '>' + obj.name + '</option>');
+          });
+          table.selectpicker('refresh');
+          // $('#modPKTables').selectpicker('refresh');
+          // localStorage.setItem('tables', JSON.stringify(tables));
         }
-
-        switch(sort){
-          case "0":
-            tables.sort(function(a, b){
-              return a.table_name.localeCompare(b.table_name);
-            });
-            break;
-          case "1":
-            tables.sort(function(a, b){return b.table_primaryKeyFieldsCount - a.table_primaryKeyFieldsCount});
-            break;
-          case "2":
-            tables.sort(function(a, b){return b.table_importedKeysCount - a.table_importedKeysCount});
-            break;
-          case "3":
-            tables.sort(function(a, b){return b.table_importedKeysSeqCount - a.table_importedKeysSeqCount});
-            break;
-          case "4":
-            tables.sort(function(a, b){return b.table_exportedKeysCount - a.table_exportedKeysCount});
-            break;
-          case "5":
-            tables.sort(function(a, b){return b.table_exportedKeysSeqCount - a.table_exportedKeysSeqCount});
-            break;
-          case "6":
-            tables.sort(function(a, b){return b.table_indexesCount - a.table_indexesCount});
-            break;
-          case "7":
-            tables.sort(function(a, b){return b.table_recCount - a.table_recCount});
-            break;
-          default:
-            tables.sort(function(a, b){return b.table_primaryKeyFieldsCount - a.table_primaryKeyFieldsCount});
-        }
-
-        $.each(tables, function(i, obj){
-          //console.log(obj.name);
-          // var dataContent = "<span class='label label-success'>" + obj.RecCount + "</span>";
-          var option = '<option class="fontsize" value="' + obj.table_name + '" data-subtext="' + obj.table_remarks +  ' ' + obj.table_stats + '">'
-           + obj.table_name + '</option>';
-          table.append(option);
-          // $('#modPKTables').append(option);
-          // table.append('<option class="fontsize" value=' + obj.name + '>' + obj.name + '</option>');
-        });
-        table.selectpicker('refresh');
-        // $('#modPKTables').selectpicker('refresh');
-        // localStorage.setItem('tables', JSON.stringify(tables));
       }
       else {
         console.log("GetTables");
@@ -3623,7 +3625,7 @@ function Publish(){
             showalert("Publish()", data.MESSAGE, "alert-success", "bottom");
           }
           else{
-    			showalert(data.ERROR, data.MESSAGE + ": " + data.AXISFAULT + "<br>" + data.TROUBLESHOOTING, "alert-danger");
+    			  showalert(data.ERROR, data.MESSAGE + ": " + data.AXISFAULT + ". " + data.TROUBLESHOOTING, "alert-danger");
           }
     		},
     		error: function(data) {

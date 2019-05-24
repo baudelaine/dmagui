@@ -2178,7 +2178,7 @@ function buildRelationTable($el, cols, data, qs){
 
           // If more than one seq change above from text to select editable
           // $tableRows.eq(i).find('a').eq(4) = above
-          if(activeTab.match("Reference") && row.seqs.length > 0){
+          if(activeTab.match("Reference|Security|Translation") && row.seqs.length > 0){
             $tableRows.eq(i).find('a').eq(4).editable('destroy');
             // $tableRows.eq(i).find('a').eq(0).editable('setValue', ['VARCHAR']);
             var defaultValue = '';

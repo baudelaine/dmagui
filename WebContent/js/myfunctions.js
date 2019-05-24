@@ -376,8 +376,8 @@ $finTab.on('shown.bs.tab', function(e) {
 
 $refTab.on('shown.bs.tab', function(e) {
   buildTable($datasTable, qsCols, datas, true, relationCols, "relations");
-  // $datasTable.bootstrapTable("filterBy", {type: ['Final', 'Ref']});
   $datasTable.bootstrapTable("filterBy", {});
+  // $datasTable.bootstrapTable("filterBy", {type: ['Final', 'Ref']});
   // $datasTable.bootstrapTable('hideColumn', 'checkbox');
   $datasTable.bootstrapTable('hideColumn', 'key_name');
   $datasTable.bootstrapTable('showColumn', 'operate');
@@ -402,8 +402,8 @@ $refTab.on('shown.bs.tab', function(e) {
 
 $secTab.on('shown.bs.tab', function(e) {
   buildTable($datasTable, qsCols, datas, true, relationCols, "relations");
-  // $datasTable.bootstrapTable("filterBy", {type: ['Final', 'Ref', 'Sec']});
   $datasTable.bootstrapTable("filterBy", {});
+  $datasTable.bootstrapTable("filterBy", {type: ['Final', 'Ref', 'Sec']});
   // $datasTable.bootstrapTable('hideColumn', 'checkbox');
   $datasTable.bootstrapTable('hideColumn', 'key_name');
   $datasTable.bootstrapTable('showColumn', 'operate');
@@ -427,8 +427,8 @@ $secTab.on('shown.bs.tab', function(e) {
 
 $traTab.on('shown.bs.tab', function(e) {
   buildTable($datasTable, qsCols, datas, true, relationCols, "relations");
-  // $datasTable.bootstrapTable("filterBy", {type: ['Final', 'Ref', 'Tra']});
   $datasTable.bootstrapTable("filterBy", {});
+  $datasTable.bootstrapTable("filterBy", {type: ['Final', 'Ref', 'Tra']});
   $datasTable.bootstrapTable('showColumn', 'operate');
   $datasTable.bootstrapTable('hideColumn', 'visible');
   $datasTable.bootstrapTable('hideColumn', 'filter');

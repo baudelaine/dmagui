@@ -3307,7 +3307,7 @@ function ChooseTable(table, sort) {
     async: true,
     success: function(data) {
       console.log(data);
-      if(data){
+      if(data && !jQuery.isEmptyObject(data)){
         if(Object.keys(data).length > 0){
           dbmd = data;
           var tables = Object.values(dbmd);

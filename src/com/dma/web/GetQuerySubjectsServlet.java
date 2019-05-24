@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -244,11 +245,19 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 
 		    ResultSet rst0 = metaData.getColumns(con.getCatalog(), schema, table_name, "%");
 	    	StringBuffer sb = new StringBuffer("select ");
+	    	Set<Integer> dataTypes = new HashSet<Integer>();
+	    	dataTypes.add(Types.BLOB);
+	    	dataTypes.add(Types.CLOB);
+	    	dataTypes.add(Types.NCLOB);
+	    	
 		    while(rst0.next()){
 		    	String column_name =  rst0.getString("COLUMN_NAME");
-		    	sb.append("count(" + column_name + ") as " + column_name + ", ");
-		    	
+		    	int data_type = rst0.getInt("DATA_TYPE");
+		    	if(!dataTypes.contains(data_type)) {
+		    		sb.append("count(" + column_name + ") as " + column_name + ", ");
+		    	}
 		    }
+		    
 		    if(rst0 != null){rst0.close();}
 		    
 		    String head = sb.toString();
@@ -332,10 +341,10 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		    		}
 		    	}
 		    	else {
-		    		field.setLabel(column_remarks.substring(1, 50));
+		    		field.setLabel(column_remarks.substring(0, 50));
 			    	field.setDescription(column_remarks);
 		    		if(!language.isEmpty()) {
-	        			field.getLabels().put(language, column_remarks.substring(1, 50));
+	        			field.getLabels().put(language, column_remarks.substring(0, 50));
 	        			field.getDescriptions().put(language, column_remarks);
 		    		}
 		    	}

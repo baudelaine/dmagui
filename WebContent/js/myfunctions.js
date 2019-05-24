@@ -4175,10 +4175,20 @@ function GetLabels(){
         $.each($datasTable.bootstrapTable('getData'), function(i, qs){
           if(labels[qs.table_name]){
             if(!qs.labels[currentLanguage] || qs.labels[currentLanguage] == ""){
-              qs.labels[currentLanguage] = labels[qs.table_name].table_remarks;
+              if(labels[qs.table_name].table_remarks){
+                qs.labels[currentLanguage] = labels[qs.table_name].table_remarks;
+              }
+              else{
+                qs.labels[currentLanguage] = "";
+              }
             }
             if(!qs.descriptions[currentLanguage] || qs.descriptions[currentLanguage] == ""){
-              qs.descriptions[currentLanguage] = labels[qs.table_name].table_description;
+              if(labels[qs.table_name].table_description){
+                qs.descriptions[currentLanguage] = labels[qs.table_name].table_description;
+              }
+              else{
+                qs.descriptions[currentLanguage] = "";
+              }
             }
             if(!qs.label || qs.label == ""){
               qs.label = qs.labels[currentLanguage];
@@ -4189,10 +4199,20 @@ function GetLabels(){
             $.each(qs.fields, function(j, field){
               if(labels[qs.table_name].columns[field.field_name]){
                 if(!field.labels[currentLanguage] || field.labels[currentLanguage] == ""){
-                  field.labels[currentLanguage] = labels[qs.table_name].columns[field.field_name].column_remarks;
+                  if(labels[qs.table_name].columns[field.field_name].column_remarks){
+                    field.labels[currentLanguage] = labels[qs.table_name].columns[field.field_name].column_remarks;
+                  }
+                  else{
+                    field.labels[currentLanguage] = "";
+                  }
                 }
                 if(!field.descriptions[currentLanguage] || field.descriptions[currentLanguage] == ""){
-                  field.descriptions[currentLanguage] = labels[qs.table_name].columns[field.field_name].column_description;
+                  if(labels[qs.table_name].columns[field.field_name].column_description){
+                    field.descriptions[currentLanguage] = labels[qs.table_name].columns[field.field_name].column_description;
+                  }
+                  else{
+                    field.descriptions[currentLanguage] = "";
+                  }
                 }
                 if(!field.label || field.label == ""){
                   field.label = field.labels[currentLanguage];
@@ -4205,10 +4225,20 @@ function GetLabels(){
             $.each(qs.relations, function(j, relation){
               if(labels[relation.pktable_name]){
                 if(!relation.labels[currentLanguage] || relation.labels[currentLanguage] == ""){
-                  relation.labels[currentLanguage] = labels[relation.pktable_name].table_remarks;
+                  if(labels[relation.pktable_name].table_remarks){
+                    relation.labels[currentLanguage] = labels[relation.pktable_name].table_remarks;
+                  }
+                  else{
+                    relation.labels[currentLanguage] = "";
+                  }
                 }
                 if(!relation.descriptions[currentLanguage] || relation.descriptions[currentLanguage] == ""){
-                  relation.descriptions[currentLanguage] = labels[relation.pktable_name].table_description;
+                  if(labels[relation.pktable_name].table_description){
+                    relation.descriptions[currentLanguage] = labels[relation.pktable_name].table_description;
+                  }
+                  else{
+                    relation.descriptions[currentLanguage] = "";
+                  }
                 }
                 if(!relation.label || relation.label == ""){
                   relation.label = relation.labels[currentLanguage];

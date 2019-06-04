@@ -22,7 +22,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
  * Servlet implementation class GetImportedKeysServlet
  */
 @WebServlet("/GetDimensionsOptim")
-public class GetDimensionsOptimServlet extends HttpServlet {
+public class GetDimensionsOptimServlet extends HttpServlet {	
+	
 	private static final long serialVersionUID = 1L;
 	
     /**
@@ -101,8 +102,14 @@ public class GetDimensionsOptimServlet extends HttpServlet {
 							    }
 							}
 							
+							Map<String, Integer> recurseCount = new HashMap<String, Integer>();
 							
-							recurse0(qsAlias, gDirName, qsFinalName, qSleftType, dimension, query_subjects, selectedQs);
+							
+							for(Entry<String, QuerySubject> qs: query_subjects.entrySet()){
+					        	recurseCount.put(qs.getValue().getTable_alias(), 0);
+					        }
+							
+							recurse0(qsAlias, gDirName, qsFinalName, qSleftType, dimension, query_subjects, selectedQs, recurseCount);
 							
 							dimensions.put(dim, dimension);
 							
@@ -240,11 +247,25 @@ public class GetDimensionsOptimServlet extends HttpServlet {
 
 	}
 	
-	protected void recurse0(String qsAlias, String gDirName, String qsFinalName, String qSleftType, Dimension dimension, Map<String, QuerySubject> query_subjects, String selectedQs) {
+	protected void recurse0(String qsAlias, String gDirName, String qsFinalName, String qSleftType, Dimension dimension, Map<String, QuerySubject> query_subjects, String selectedQs, Map<String, Integer> recurseCount) {
 		
+		Map<String, Integer> copyRecurseCount = new HashMap<String, Integer>();
+		copyRecurseCount.putAll(recurseCount);
 		
 		String gDirNameCurrent = "";
 		QuerySubject query_subject;
+		
+		if (!qSleftType.equals("Final")) {
+			
+			query_subject = query_subjects.get(qsAlias + qSleftType);
+			
+			int j = copyRecurseCount.get(qsAlias);
+			if(j == query_subject.getRecurseCount()){
+				return;
+			}
+			copyRecurseCount.put(qsAlias, j + 1);
+		}
+		
 		query_subject = query_subjects.get(qsAlias + qSleftType);
 
     	List<Map<String, Object>> orders = dimension.getOrders();
@@ -292,7 +313,7 @@ public class GetDimensionsOptimServlet extends HttpServlet {
 					    }
 					}
 					
-					recurse0(pkAlias, gDirNameCurrent, qsFinalName, "Ref" ,dimension, query_subjects, selectedQs);	
+					recurse0(pkAlias, gDirNameCurrent, qsFinalName, "Ref" ,dimension, query_subjects, selectedQs, copyRecurseCount);	
 				}
 			}
 		}

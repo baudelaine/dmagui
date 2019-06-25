@@ -267,6 +267,7 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 				fsvc.createNamespace("FINAL", "AUTOGENERATION");
 				fsvc.createNamespace("REF", "AUTOGENERATION");
 				fsvc.createNamespace("SEC", "AUTOGENERATION");
+				fsvc.createNamespace("TRA", "AUTOGENERATION");
 				fsvc.createNamespace("FILTER_FINAL", "AUTOGENERATION");
 				fsvc.createNamespace("FILTER_REF", "AUTOGENERATION");
 				fsvc.createNamespace("DATA", "Model");
@@ -312,11 +313,13 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 					
 					fsvc.createQuerySubject("PHYSICALUSED", "FINAL", "FINAL_" + query_subject.getValue().getTable_alias(), query_subject.getValue().getTable_alias());
 					//ajout filter
+					String filterNameSpaceSource = "[FINAL]";
 					if (!query_subject.getValue().getFilter().equals(""))
 					{
 						fsvc.createQuerySubject("FINAL", "FILTER_FINAL", query_subject.getValue().getTable_alias() , query_subject.getValue().getTable_alias());
 						fsvc.createQuerySubjectFilter("[FILTER_FINAL].[" + query_subject.getValue().getTable_alias() + "]" , query_subject.getValue().getFilter());
 						fsvc.createQuerySubject("FILTER_FINAL", "DATA", query_subject.getValue().getTable_alias() , query_subject.getValue().getTable_alias());
+						filterNameSpaceSource = "[FILTER_FINAL]";
 					} else {
 						fsvc.createQuerySubject("FINAL", "DATA", query_subject.getValue().getTable_alias() , query_subject.getValue().getTable_alias());
 					}
@@ -370,7 +373,7 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 			        	recurseCount.put(qs.getTable_alias(), 0);
 			        }
 					
-					f1(query_subject.getValue().getTable_alias(), query_subject.getValue().getTable_alias(), "", "[DATA].[" + query_subject.getValue().getTable_alias() + "]", query_subject.getValue().getTable_alias(), recurseCount, "Final");
+					f1(query_subject.getValue().getTable_alias(), query_subject.getValue().getTable_alias(), "", "[DATA].[" + query_subject.getValue().getTable_alias() + "]", query_subject.getValue().getTable_alias(), recurseCount, "Final", filterNameSpaceSource);
 					//end f1
 											
 					for(Relation rel: query_subject.getValue().getRelations()){
@@ -418,13 +421,26 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 							//end regular agg
 						}
 						//labels fields
+						/*					//labels fields if all language exist in map but not yet.... voir avec seb
 						for(Entry<String, String> langLabel: field.getLabels().entrySet()){
 							if (langLabel.getValue() == null || langLabel.getValue().equals("")) {
-							labelMap.get(langLabel.getKey()).put(query_subject.getValue().getTable_alias() + "." + field.getField_name(), field.getField_name());
+								labelMap.get(langLabel.getKey()).put(query_subject.getValue().getTable_alias() + "." + field.getField_name(), field.getField_name());
 							} else {
 								labelMap.get(langLabel.getKey()).put(query_subject.getValue().getTable_alias() + "." + field.getField_name(), langLabel.getValue());
 							}
 						}
+						//end labels fields
+	*/					
+						//test cas ou la langue n'existe pas dans le map
+						for(Entry<String, Map<String, String>> langLabel: labelMap.entrySet()){
+							String label = field.getLabels().get(langLabel.getKey());
+							if (label == null || label.equals("")) {
+								labelMap.get(langLabel.getKey()).put(query_subject.getValue().getTable_alias() + "." + field.getField_name(), field.getField_name());
+							} else {
+								labelMap.get(langLabel.getKey()).put(query_subject.getValue().getTable_alias() + "." + field.getField_name(), label);
+							}
+						}
+						//end test
 						//end labels fields
 						//add tooltip
 						/*
@@ -503,43 +519,62 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 	// end multidimensional
 
 			//add locales
+			int intLang = 1;
 			for(Entry<String, Map<String, String>> langueKey: labelMap.entrySet()){
 				fsvc.addLocale(langueKey.getKey().toLowerCase(), cognosDefaultLocale);
+				
+				//on ecrit les tooltip dans chaque langue pour les QS, QI, QI folder
+				for(Entry<String, String> screenTipMap: qsScreenTipMap.get(langueKey.getKey().toLowerCase()).entrySet()){
+					fsvc.createScreenTip("querySubject", screenTipMap.getKey() , screenTipMap.getValue(), intLang );
+				}
+				
+				for(Entry<String, String> screenTipMap: qiScreenTipMap.get(langueKey.getKey().toLowerCase()).entrySet()){
+					fsvc.createScreenTip("queryItem", screenTipMap.getKey() , screenTipMap.getValue(), intLang );
+				}
+			
+				for(Entry<String, String> screenTipMap: qifScreenTipMap.get(langueKey.getKey().toLowerCase()).entrySet()){
+					fsvc.createScreenTip("queryItemFolder", screenTipMap.getKey() , screenTipMap.getValue(), intLang );
+				}
+				intLang ++;
+				
 			}
 			//end add locales
 			
-			//on ecrit les tooltip dans chaque langue pour les QS, QI, QI folder
-			int langueInt = 1;
-			for(Entry<String, Map<String, String>> langMap: qsScreenTipMap.entrySet()){
-				for(Entry<String, String> screenTipMap: langMap.getValue().entrySet()){
-					fsvc.createScreenTip("querySubject", screenTipMap.getKey() , screenTipMap.getValue(), langueInt );
-					if (langueInt==1) {
-						fsvc.createScreenTip("querySubject", screenTipMap.getKey() , screenTipMap.getValue(), 0 );
-					}
-					langueInt++;
-				}
+			// add value to labelMap in order to translate Time Dimension Level
+			//English
+			if (labelMap.get("en")!=null) {
+				Map<String, String> m = labelMap.get("en");
+				m.put("YEAR", "Year");
+				m.put("QUARTER", "Quarter");
+				m.put("MONTH", "Month");
+				m.put("WEEK", "Week");
+				m.put("DAY", "Day");
+				m.put("DAY_OF_WEEK", "Day of week");
+				m.put("AM/PM","Am/pm");
+				m.put("HOUR","Hour");
+				m.put("MIN","Minute");
+				m.put("DATE", "Date");
 			}
-			langueInt = 1;
-			for(Entry<String, Map<String, String>> langMap: qiScreenTipMap.entrySet()){
-				for(Entry<String, String> screenTipMap: langMap.getValue().entrySet()){
-					fsvc.createScreenTip("queryItem", screenTipMap.getKey() , screenTipMap.getValue(), langueInt );
-					if (langueInt==1) {
-						fsvc.createScreenTip("queryItem", screenTipMap.getKey() , screenTipMap.getValue(), 0 );
-					}
-					langueInt++;
-				}
+			//french
+			if (labelMap.get("fr")!=null) {
+				Map<String, String> m = labelMap.get("fr");
+				m.put("YEAR", "Année");
+				m.put("QUARTER", "Trimestre");
+				m.put("MONTH", "Mois");
+				m.put("WEEK", "Semaine");
+				m.put("DAY", "Jour");
+				m.put("DAY_OF_WEEK", "Jour de la semaine");
+				m.put("AM/PM","Am/pm");
+				m.put("HOUR","Heure");
+				m.put("MIN","Minute");
+				m.put("DATE", "Date");
+				m.put("(By month)", "(Par mois)");
+				m.put("(By week)", "(Par semaine)");
+				m.put("(Rolling month)", "(Mois glissant)");
+				m.put("Fact", "Fait");
 			}
-			langueInt = 1;
-			for(Entry<String, Map<String, String>> langMap: qifScreenTipMap.entrySet()){
-				for(Entry<String, String> screenTipMap: langMap.getValue().entrySet()){
-					fsvc.createScreenTip("queryItemFolder", screenTipMap.getKey() , screenTipMap.getValue(), langueInt );
-					if (langueInt==1) {
-						fsvc.createScreenTip("queryItemFolder", screenTipMap.getKey() , screenTipMap.getValue(), 0 );
-					}
-					langueInt++;
-				}
-			}
-			
+			// end static value to Map
+						
 			// tests
 			try {
 				csvc.executeAllActions();
@@ -704,7 +739,7 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 		doGet(request, response);
 	}
 
-	protected void f1(String qsAlias, String qsAliasInc, String gDirName, String qsFinal, String qsFinalName, Map<String, Integer> recurseCount, String qSleftType) {
+	protected void f1(String qsAlias, String qsAliasInc, String gDirName, String qsFinal, String qsFinalName, Map<String, Integer> recurseCount, String qSleftType, String leftFilterNameSpace) {
 		
 		Map<String, Integer> copyRecurseCount = new HashMap<String, Integer>();
 		copyRecurseCount.putAll(recurseCount);
@@ -724,16 +759,19 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 		}
 
 		for(Relation rel: query_subject.getRelations()){
-			if(rel.isRef() || rel.isSec()){
+			if(rel.isRef() || rel.isSec() || rel.isTra()){
 				
 				String namespaceID = "";
 				String namespaceName = "";
 				if(rel.isRef()) {
 					namespaceID = "Ref";
 					namespaceName = "REF";
-				} else {
+				} else if (rel.isSec()) {
 					namespaceID = "Sec";
 					namespaceName = "SEC";
+				} else {
+					namespaceID = "Tra";
+					namespaceName = "TRA";
 				}
 								
 				String pkAlias = rel.getPktable_alias();
@@ -777,7 +815,7 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 					labelMap.put(qsFinalName + gDirNameCurrent, label);
 					*/
 				}
-				else{
+				else {
 					if (qSleftType.equals("Final")) {
 						gFieldName = rel.getAbove();
 						gDirNameCurrent = "." + rel.getAbove();
@@ -792,15 +830,17 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 				fsvc.renameQuerySubject("[PHYSICALUSED].[" + rel.getPktable_name() + "]",namespaceName + "_" + pkAlias + String.valueOf(i));
 				fsvc.createQuerySubject("PHYSICALUSED", namespaceName, namespaceName + "_" + pkAlias + String.valueOf(i), qsFinalName + gDirNameCurrent);
 				
-				//Only for Ref
-				if (namespaceID.equals("Ref")) {
+				
+				String filterNameSpaceSource = "[" + namespaceName+ "]";
+				//Only for Ref and tra (on ne crée pas de repertoire pour tra, on rentre dans ce if uniquement pour pouvoir changer l'expression du champ à traduire)
+				if (namespaceID.equals("Ref") || namespaceID.equals("Tra")) {
 				
 					//filtre
-					String filterNameSpaceSource = "[" + namespaceName+ "]";
+					
 				//	String filterReset = "";
 					if (!query_subjects.get(pkAlias + namespaceID).getFilter().equals(""))
 					{
-						//traitement language filter DDtool -> Separé par ; = diffrentes clauses pour ce QSRef
+						//traitement language filter DMA -> Separé par ; = diffrentes clauses pour ce QSRef
 						//séparé par :  Partie 0 du tableau = emplacement QS, Partie 1 = clause filtre
 						
 						fsvc.createQuerySubject(namespaceName, "FILTER_" + namespaceName, qsFinalName + gDirNameCurrent, qsFinalName + gDirNameCurrent);
@@ -832,87 +872,113 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 					}
 					String rep = qsFinal + ".[" + gDirName + "]";
 					
-					if (qSleftType.equals("Final")) {
-						fsvc.createSubFolder("[DATA].[" + qsFinalName + "]", gDirNameCurrent);
-					} else {
-						fsvc.createSubFolderInSubFolderIIC(rep, gDirNameCurrent);
-					}
-	
-					//add tooltip
-					/*
-					String desc = "";
-					if(query_subjects.get(pkAlias + namespaceID).getDescription() != null) {desc = ": " + query_subjects.get(pkAlias + namespaceID).getDescription();}
-					fsvc.createScreenTip("queryItemFolder", qsFinal + ".[" + gDirNameCurrent + "]", query_subjects.get(pkAlias + namespaceID).getTable_name() + desc);
-					*/
-					for(Entry<String, String> langDesc: query_subjects.get(pkAlias + namespaceID).getDescriptions().entrySet()){
-						if(langDesc.getValue() == null || langDesc.getValue().equals("")) {
-							qifScreenTipMap.get(langDesc.getKey()).put(qsFinal + ".[" + gDirNameCurrent + "]", query_subjects.get(pkAlias + namespaceID).getTable_name());
-							} else {
-								System.out.println("QSF langDesc : " + langDesc.getValue());
-								qifScreenTipMap.get(langDesc.getKey()).put(qsFinal + ".[" + gDirNameCurrent + "]", query_subjects.get(pkAlias + namespaceID).getTable_name() + ": " + langDesc.getValue());
-							}
-					}
-					
-					//end tooltip
-					
-					if(rel.getKey_type().equalsIgnoreCase("F")){
-						fsvc.ReorderSubFolderBefore(qsFinal + ".[" + gDirNameCurrent + "]", qsFinal + ".[" + gFieldNameReorder + "]");
+					if (!rel.isTra()){
+						if (qSleftType.equals("Final")) {
+							fsvc.createSubFolder("[DATA].[" + qsFinalName + "]", gDirNameCurrent);
+						} else {
+							fsvc.createSubFolderInSubFolderIIC(rep, gDirNameCurrent);
+						}
+						//add tooltip
+						/*
+						String desc = "";
+						if(query_subjects.get(pkAlias + namespaceID).getDescription() != null) {desc = ": " + query_subjects.get(pkAlias + namespaceID).getDescription();}
+						fsvc.createScreenTip("queryItemFolder", qsFinal + ".[" + gDirNameCurrent + "]", query_subjects.get(pkAlias + namespaceID).getTable_name() + desc);
+						*/
+						for(Entry<String, String> langDesc: query_subjects.get(pkAlias + namespaceID).getDescriptions().entrySet()){
+							if(langDesc.getValue() == null || langDesc.getValue().equals("")) {
+								qifScreenTipMap.get(langDesc.getKey()).put(qsFinal + ".[" + gDirNameCurrent + "]", query_subjects.get(pkAlias + namespaceID).getTable_name());
+								} else {
+									System.out.println("QSF langDesc : " + langDesc.getValue());
+									qifScreenTipMap.get(langDesc.getKey()).put(qsFinal + ".[" + gDirNameCurrent + "]", query_subjects.get(pkAlias + namespaceID).getTable_name() + ": " + langDesc.getValue());
+								}
+						}
+						
+						//end tooltip
+						
+						if(rel.getKey_type().equalsIgnoreCase("F")){
+							fsvc.ReorderSubFolderBefore(qsFinal + ".[" + gDirNameCurrent + "]", qsFinal + ".[" + gFieldNameReorder + "]");
+						}
 					}
 					
 					for(Field field: query_subjects.get(pkAlias + namespaceID).getFields()){
 						
-						if (field.isCustom()) {
+						if (rel.isRef()) {
+							if (field.isCustom()) {
 								
 								fsvc.createQueryItemInFolder(qsFinal, gDirNameCurrent, gFieldName + "." + field.getField_name(), field.getExpression());
 						
 							} else {
 							fsvc.createQueryItemInFolder(qsFinal, gDirNameCurrent, gFieldName + "." + field.getField_name(), filterNameSpaceSource + ".[" + qsFinalName + gDirNameCurrent +"].[" + field.getField_name() + "]");
-						
-						}
-						
-						//add label
-						for(Entry<String, String> langLabel: field.getLabels().entrySet()){
-							String label = "";
-							if(langLabel.getValue() == null || langLabel.getValue().equals("")){
-								label = field.getField_name();
-							} else {
-								label = langLabel.getValue();
 							}
-							labelMap.get(langLabel.getKey()).put(qsFinalName + "." + gFieldName + "." + field.getField_name(), label);
 						}
 						
-						// end label
+						// on change la valeur de l'expression du champ à traduire, on change donc à un niveau n-1, on change donc l'expression du champ gFieldNameReorder
 						
-						// add tooltip
-						/*
-						desc = "";
-						if(field.getDescription() != null) {desc = ": " + field.getDescription();}
-						fsvc.createScreenTip("queryItem", qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", query_subjects.get(pkAlias + namespaceID).getTable_name() + "." + field.getField_name() + desc);
-						*/
-						// map tooltip
-						for(Entry<String, String> langDesc: field.getDescriptions().entrySet()){
-							if(langDesc.getValue() == null || langDesc.getValue().equals("")) {
-								qiScreenTipMap.get(langDesc.getKey()).put(qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", query_subjects.get(pkAlias + namespaceID).getTable_name() + "." + field.getField_name());
+						if (field.isTraduction() && rel.isTra()) {
+							
+							System.out.println("qsFinal + \".[\" + gFieldNameReorder + \"]\" : " + qsFinal + ".[" + gFieldNameReorder + "]");
+							fsvc.modifyQueryItem(qsFinal + ".[" + gFieldNameReorder + "]", "if (" + filterNameSpaceSource + ".[" + qsFinalName + gDirNameCurrent +"].[" + field.getField_name() + "] is null) then (" 
+							+ leftFilterNameSpace + ".[" + qsFinalName + gDirName + "].[" + rel.getAbove() + "]) else (" 
+							+ filterNameSpaceSource + ".[" + qsFinalName + gDirNameCurrent +"].[" + field.getField_name() + "])", "expression");
+						}
+						//fin changement de valeur de l'expression
+						
+						//add label   //cette partie s'execute uniquement pour les ref car les tables de traductions n'apparaissent pas dans data
+						if (rel.isRef()) {
+/*							for(Entry<String, String> langLabel: field.getLabels().entrySet()){     // cas ou les maps comporte toutes les langue meme si la traduction n'est pas remplie
+								String label = "";
+								if(langLabel.getValue() == null || langLabel.getValue().equals("")){
+									label = field.getField_name();
 								} else {
-									System.out.println("QI langDesc : " + langDesc.getValue());
-									qiScreenTipMap.get(langDesc.getKey()).put(qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", query_subjects.get(pkAlias + namespaceID).getTable_name() + "." + field.getField_name() + ": " + langDesc.getValue());
+									label = langLabel.getValue();
 								}
-						}
-						// map tooltip
-						// end tooltip
-						//change property query item
-						fsvc.changeQueryItemProperty(qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", "usage", field.getIcon().toLowerCase());
-						if (!field.getDisplayType().toLowerCase().equals("value"))
-						{
-							fsvc.changeQueryItemProperty(qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", "displayType", field.getDisplayType().toLowerCase());
+								labelMap.get(langLabel.getKey()).put(qsFinalName + "." + gFieldName + "." + field.getField_name(), label);
+							}
+*/							// end label
 							
-						}
-						if (field.isHidden())
-						{
-							fsvc.changeQueryItemProperty(qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", "hidden", "true");
+							// test dans le cas de langues manquantes dans le map
+							for(Entry<String, Map<String, String>> langLabel: labelMap.entrySet()){
+								String label = field.getLabels().get(langLabel.getKey());
+								if(label == null || label.equals("")){
+									label = field.getField_name();
+								}
+								labelMap.get(langLabel.getKey()).put(qsFinalName + "." + gFieldName + "." + field.getField_name(), label);
+							}
+							// end test
 							
+							// end label
+							
+							// add tooltip
+							/*
+							desc = "";
+							if(field.getDescription() != null) {desc = ": " + field.getDescription();}
+							fsvc.createScreenTip("queryItem", qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", query_subjects.get(pkAlias + namespaceID).getTable_name() + "." + field.getField_name() + desc);
+							*/
+							// map tooltip
+							for(Entry<String, String> langDesc: field.getDescriptions().entrySet()){
+								if(langDesc.getValue() == null || langDesc.getValue().equals("")) {
+									qiScreenTipMap.get(langDesc.getKey()).put(qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", query_subjects.get(pkAlias + namespaceID).getTable_name() + "." + field.getField_name());
+									} else {
+										System.out.println("QI langDesc : " + langDesc.getValue());
+										qiScreenTipMap.get(langDesc.getKey()).put(qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", query_subjects.get(pkAlias + namespaceID).getTable_name() + "." + field.getField_name() + ": " + langDesc.getValue());
+									}
+							}
+							// map tooltip
+							// end tooltip
+							//change property query item
+							fsvc.changeQueryItemProperty(qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", "usage", field.getIcon().toLowerCase());
+							if (!field.getDisplayType().toLowerCase().equals("value"))
+							{
+								fsvc.changeQueryItemProperty(qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", "displayType", field.getDisplayType().toLowerCase());
+								
+							}
+							if (field.isHidden())
+							{
+								fsvc.changeQueryItemProperty(qsFinal + ".[" + gFieldName + "." + field.getField_name() + "]", "hidden", "true");
+								
+							}
+							//end change
 						}
-						//end change
 					}
 				}
 				//end only for Ref
@@ -966,7 +1032,7 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 				
 				//end create relation
 				
-				f1(pkAlias, qsFinalName + gDirNameCurrent, gDirNameCurrent, qsFinal, qsFinalName, copyRecurseCount, namespaceID);	
+				f1(pkAlias, qsFinalName + gDirNameCurrent, gDirNameCurrent, qsFinal, qsFinalName, copyRecurseCount, namespaceID, filterNameSpaceSource);	
 			}
 		}
 	}
@@ -1050,6 +1116,77 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 							System.out.println("Recup fields : " + dimensionAttributes.get("dimension") );
 							Map<String, String> hierarchies = new HashMap<String, String>();
 							dimensions.put("Time Dimension " + query_subject.getValue().getTable_alias() + "." + field.getField_name(), hierarchies);
+							
+							//Case in order to create time dimension with options: Quarter ? Weeks ? Rolling month ? Hour ? Minute ? Date ?
+							
+							String optionsStr = dimensionAttributes.get("dimension");
+							optionsStr = StringUtils.replace(optionsStr.substring(1), "]", "");
+
+							String optionsByMonth = "";
+							String optionsByWeek = "";
+							String optionsRollingMonth = "";
+							
+							if (optionsStr.contains("Quarter")) {
+								optionsByMonth = "YEAR,QUARTER,MONTH,DAY";
+								if (optionsStr.contains("Rollling month")) {
+									optionsRollingMonth = "YEAR,QUARTER,MONTH,DAY";
+								}
+							} else {
+								optionsByMonth = "YEAR,MONTH,DAY";
+								if (optionsStr.contains("Rollling month")) {
+									optionsRollingMonth = "YEAR,MONTH,DAY";
+								}
+							}
+							if (optionsStr.contains("Weeks")) {
+								optionsByWeek = "YEAR,WEEK,DAY_OF_WEEK";
+							}
+							if (optionsStr.contains("AM/PM")) {
+								optionsByMonth = optionsByMonth + ",AM/PM";
+								if (!optionsByWeek.equals("")) {
+									optionsByWeek = "YEAR,WEEK,DAY_OF_WEEK,AM/PM";
+								}
+								if (!optionsRollingMonth.equals("")) {
+									optionsRollingMonth = optionsRollingMonth + ",AM/PM";
+								}
+							}
+							if (optionsStr.contains("Date")) {
+								optionsByMonth = optionsByMonth + ",HOUR,MIN,DATE";
+								if (!optionsByWeek.equals("")) {
+									optionsByWeek = optionsByWeek + ",HOUR,MIN,DATE";
+								}
+								if (!optionsRollingMonth.equals("")) {
+									optionsRollingMonth = optionsRollingMonth + ",HOUR,MIN,DATE";
+								}
+								
+							} else if (optionsStr.contains("Minute")) {
+								optionsByMonth = optionsByMonth + ",HOUR,MIN";
+								if (!optionsByWeek.equals("")) {
+									optionsByWeek = optionsByWeek + ",HOUR,MIN";
+								}
+								if (!optionsRollingMonth.equals("")) {
+									optionsRollingMonth = optionsRollingMonth + ",HOUR,MIN";
+								}
+								
+							} else if (optionsStr.contains("Hour")) {
+								optionsByMonth = optionsByMonth + ",HOUR";
+								if (!optionsByWeek.equals("")) {
+									optionsByWeek = optionsByWeek + ",HOUR";
+								}
+								if (!optionsRollingMonth.equals("")) {
+									optionsRollingMonth = optionsRollingMonth + ",HOUR";
+								}
+							}
+							//End Case
+							// Add Hierarchy
+							hierarchies.put("By month", optionsByMonth);
+							if (!optionsByWeek.equals("")) {
+								hierarchies.put("By week", optionsByMonth);
+							}
+							if (!optionsRollingMonth.equals("")) {
+								hierarchies.put("Rolling month", optionsByMonth);
+							}
+							
+							// End add hierarchy
 						}
 					}
 				}
@@ -1288,7 +1425,7 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 				path = StringUtils.replace(path, ".", "].[");
 				path = "[DATA].[" + path + "]";
 				System.out.println("createTimeDimension : " + path + ", " + dimension.getKey() + ", " + qiName);
-				fsvc.createTimeDimension(path, dimension.getKey(), qiName, dbEngine);
+				fsvc.createTimeDimension(path, dimension.getKey(), qiName, dbEngine, dimension.getValue());
 			} else 
 			{
 				fsvc.createDimension("[DIMENSIONAL]", dimension.getKey());			
@@ -1439,8 +1576,12 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 					if (!isHigher) {
 						for (Entry<String, String> measure: measureDimension.getValue().entrySet()) {
 							fsvc.adjustScopeRelationship(measureDimension.getKey(), measure.getValue(), "[DIMENSIONAL].[" + dimension.getKey() + "]", "[DIMENSIONAL].[" + dimension.getKey() + "].[" + qiName + " (By month)].[" + qiName + " (By month)(All)]", "1");
-							fsvc.adjustScopeRelationship(measureDimension.getKey(), measure.getValue(), "[DIMENSIONAL].[" + dimension.getKey() + "]", "[DIMENSIONAL].[" + dimension.getKey() + "].[" + qiName + " (By week)].[" + qiName + " (By week)(All)]", "1");
-							fsvc.adjustScopeRelationship(measureDimension.getKey(), measure.getValue(), "[DIMENSIONAL].[" + dimension.getKey() + "]", "[DIMENSIONAL].[" + dimension.getKey() + "].[" + qiName + " (Rolling month)].[" + qiName + " (Rolling month)(All)]", "1");
+							if (dimension.getValue().get("By week")!=null) {
+								fsvc.adjustScopeRelationship(measureDimension.getKey(), measure.getValue(), "[DIMENSIONAL].[" + dimension.getKey() + "]", "[DIMENSIONAL].[" + dimension.getKey() + "].[" + qiName + " (By week)].[" + qiName + " (By week)(All)]", "1");
+							}
+							if (dimension.getValue().get("Rolling month")!=null) {
+								fsvc.adjustScopeRelationship(measureDimension.getKey(), measure.getValue(), "[DIMENSIONAL].[" + dimension.getKey() + "]", "[DIMENSIONAL].[" + dimension.getKey() + "].[" + qiName + " (Rolling month)].[" + qiName + " (Rolling month)(All)]", "1");
+							}
 						}
 					} else {
 						

@@ -79,6 +79,27 @@ public class FactorySVC {
 		}
 
 	}
+
+	public void setActiveLocale(String cognosDefaultLocale) {
+		try {
+			File xmlFile = new File(csvc.getPathToXML() + "/setActiveLocale.xml");
+
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(xmlFile);
+			Element root = document.getRootElement();
+
+			Node n1 = document.selectSingleNode("//action[@type='SetActiveLocale']/inputparams/param/value");
+
+			n1.setText(cognosDefaultLocale);
+			
+			System.out.println("setActiveLocale " + "ActiveLocale=" + cognosDefaultLocale);
+			csvc.executeModel(document);
+		} catch (DocumentException ex) {
+			lg(ex.getMessage());
+		}
+
+	}
+
 	
 	public void changePropertyFixIDDefaultLocale() {
 		try {
@@ -136,7 +157,7 @@ public class FactorySVC {
 		
 	}
 	
-	public void DBImport(String Namespace, String dataSourceName, String catalogName, String schemaName, String engineName) throws DocumentException {
+	public void DBImport(String Namespace, String dataSourceName, String catalogName, String schemaName, String engineName) {
 		try {
 			File xmlFile = null;
 			if (engineName.equals("ORA")) {
@@ -210,7 +231,6 @@ public class FactorySVC {
 			csvc.executeModel(script);
 		} catch (DocumentException ex) {
 			lg(ex.getMessage());
-			throw ex;
 		}
 	}
 
@@ -295,7 +315,7 @@ public class FactorySVC {
 		}
 	}
 	
-	public void createNamespace(String NameSpace, String Parent) throws DocumentException {
+	public void createNamespace(String NameSpace, String Parent) {
 		try {
 			File xmlFile = new File(csvc.getPathToXML() + "/createNamespace.xml");
 			SAXReader reader = new SAXReader();
@@ -311,7 +331,6 @@ public class FactorySVC {
 
 		} catch (DocumentException ex) {
 			lg(ex.getMessage());
-			throw ex;
 		}
 	}
 	
@@ -484,6 +503,29 @@ public class FactorySVC {
 			cdata.addCDATA(root_cdata.asXML());
 			
 			// System.out.println(document.asXML());
+			csvc.executeModel(document);
+		} catch (DocumentException ex) {
+			lg(ex.getMessage());
+		}
+	}
+	
+	public void modifyQueryItem(String qiPath, String exp, String obj) {
+		try {
+			File xmlFile = new File(csvc.getPathToXML() + "/modifyQueryItem.xml");
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(xmlFile);
+
+			// xml
+			Element mpath = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[1]/inputparams/param[1]/mappingpath");
+			Element path = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[1]/inputparams/param[1]/value");
+			Element eexp = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[1]/inputparams/param[2]/value");
+
+			mpath.setText("queryItem/" + obj);
+			path.setText("/O/expression[0]/O/" + qiPath);
+			eexp.setText(exp);
+
+		//	System.out.println(document.asXML());
+			System.out.println("modifyQueryItem(" + qiPath + ", " + exp + ", " + obj);
 			csvc.executeModel(document);
 		} catch (DocumentException ex) {
 			lg(ex.getMessage());
@@ -1370,13 +1412,16 @@ public class FactorySVC {
 			}
 		}
 	
-	public void createTimeDimension(String dateQueryItemPath, String dimensionName, String dateQueryItemName, String dbEngine) {
+	public void createTimeDimension(String dateQueryItemPath, String dimensionName, String dateQueryItemName, String dbEngine, Map<String, String> hierarchies) {
 		
 
 	// time dimension
 //			String dateQueryItemPath = "[FINAL].[SDIDATA].[CREATEDT]";
 //			String dateQueryItemName = "CREATEDT";
-//			String dimensionName = "SDIDATA.CREATEDT";	
+//			String dimensionName = "SDIDATA.CREATEDT";
+			String hierarchyByMonth = hierarchies.get("By month");
+			String hierarchyByWeek = hierarchies.get("By week");
+			String hierarchyRollingMonth = hierarchies.get("Rolling month");
 			
 			createDimension("[DIMENSIONAL]", dimensionName);
 
@@ -1390,8 +1435,9 @@ public class FactorySVC {
 			String exp = "_year(" + dateQueryItemPath + ")";
 			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
 			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(_year (" + dateQueryItemPath + "))";
+			if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+			//	exp = "to_char(_year (" + dateQueryItemPath + "))";
+				exp = "to_char(" + dateQueryItemPath + ",'yyyy')";
 			} else {
 				exp = "_year (" + dateQueryItemPath + ")";
 			}
@@ -1401,30 +1447,44 @@ public class FactorySVC {
 			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[YEAR].[YEAR]");
 			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[YEAR].[YEAR_KEY]");
 
-	//level quarter	
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[YEAR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "QUARTER");
-			exp = "if (_month (" + dateQueryItemPath + ") in_range {1:3}) then (1) else ( "
-			+ "if (_month (" + dateQueryItemPath + ") in_range {4:6}) then (2) else ( "
-			+ "if (_month (" + dateQueryItemPath + ") in_range {7:9}) then (3) else (4)))";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER]", dateQueryItemName, "QUARTER_KEY", exp);
+			if (!hierarchyByMonth.equals("") && hierarchyByMonth.contains("QUARTER")) {
+	//level quarter
+				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[YEAR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "QUARTER");
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "to_char(" + dateQueryItemPath + ",'Q')";
+				} else {
+					exp = "if (_month (" + dateQueryItemPath + ") in_range {1:3}) then (1) else ( "
+					+ "if (_month (" + dateQueryItemPath + ") in_range {4:6}) then (2) else ( "
+					+ "if (_month (" + dateQueryItemPath + ") in_range {7:9}) then (3) else (4)))";
+				}
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER]", dateQueryItemName, "QUARTER_KEY", exp);
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "to_char(" + dateQueryItemPath + ",'yyyy-Q')";
+				} else {
+					exp = "if (  (#sq($runLocale)#) = 'fr' ) then ('Trimestre') else ('Quarter') || ' ' || if (_month (" + dateQueryItemPath + ") in_range {1:3}) then (1) else ( "
+					+ "if (_month (" + dateQueryItemPath + ") in_range {4:6}) then (2) else ( "
+					+ "if (_month (" + dateQueryItemPath + ") in_range {7:9}) then (3) else (4)))";
+				}
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER]", "QUARTER", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER].[QUARTER]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER].[QUARTER]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER].[QUARTER_KEY]");
+			}
 			
-			exp = "if (  (#sq($runLocale)#) = 'fr' ) then ('Trimestre') else ('Quarter') || ' ' || if (_month (" + dateQueryItemPath + ") in_range {1:3}) then (1) else ( "
-			+ "if (_month (" + dateQueryItemPath + ") in_range {4:6}) then (2) else ( "
-			+ "if (_month (" + dateQueryItemPath + ") in_range {7:9}) then (3) else (4)))";
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER]", "QUARTER", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER].[QUARTER]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER].[QUARTER]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER].[QUARTER_KEY]");
-
 	// level month
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+			if (!hierarchyByMonth.equals("") && hierarchyByMonth.contains("QUARTER")) {
+				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+			} else {
+				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[YEAR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+			}
 			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "MONTH");
 			exp = "_month (" + dateQueryItemPath + ")";
 			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MONTH]", dateQueryItemName, "MONTH_KEY", exp);
 			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(" + dateQueryItemPath + ",'yyyy-MM')";
+			if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM')";
 			} else {
 				exp = "_year (  " + dateQueryItemPath + " ) || ' - ' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
 						+ "_month (" + dateQueryItemPath + ")";
@@ -1441,7 +1501,7 @@ public class FactorySVC {
 			exp = "_day (" + dateQueryItemPath + ")";
 			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DAY]", dateQueryItemName, "DAY_KEY", exp);
 			
-			if (dbEngine.equals("ORA")) {
+			if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd')";
 			} else {
 				exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
@@ -1454,341 +1514,492 @@ public class FactorySVC {
 			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DAY].[DAY_KEY]");
 							
 	// level AM/PM
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DAY]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "AM/PM");
-			exp = "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (1)  else (2)";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
-			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd') || "
-				+ "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (' AM')  else (' PM')";
-			} else {
-				exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _day (" + dateQueryItemPath + ") || ' ' || "
-				+ "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then ('AM')  else ('PM')";
+			if (!hierarchyByMonth.equals("") && hierarchyByMonth.contains("AM/PM")) {
+				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DAY]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "AM/PM");
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "to_char(" + dateQueryItemPath + ",'AM')";
+				} else {
+					exp = "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (1)  else (2)";
+				}
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+				/*
+					exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd') || "
+					+ "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (' AM')  else (' PM')";
+					*/
+					//test
+					exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd AM')";
+	
+				} else {
+					exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+					+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _day (" + dateQueryItemPath + ") || ' ' || "
+					+ "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then ('AM')  else ('PM')";
+				}
+				
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM]", "AM/PM", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM].[AM/PM]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM].[AM/PM]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM].[AM/PM_KEY]");
 			}
 			
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM]", "AM/PM", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM].[AM/PM]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM].[AM/PM]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM].[AM/PM_KEY]");
-
 	// level hour
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "HOUR");
-			exp = "_hour (  " + dateQueryItemPath + " )";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
-			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH')";
-			} else {
-				exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_day (" + dateQueryItemPath + ")  || ' ' || if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_hour (" + dateQueryItemPath + ")";
+			if (!hierarchyByMonth.equals("") && hierarchyByMonth.contains("HOUR")) {
+				if (!hierarchyByMonth.equals("") && hierarchyByMonth.contains("AM/PM")) {
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+				} else {
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DAY]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);	
+				}
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "HOUR");
+				exp = "_hour (  " + dateQueryItemPath + " )";
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH')";
+				} else {
+					exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+					+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+					+ "_day (" + dateQueryItemPath + ")  || ' ' || if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+					+ "_hour (" + dateQueryItemPath + ")";
+				}
+				
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR]", "HOUR", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR].[HOUR]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR].[HOUR]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR].[HOUR_KEY]");
+			}
+	// level min
+			if (!hierarchyByMonth.equals("") && hierarchyByMonth.contains("MIN")) {
+				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "MIN");
+				exp = "_minute (  " + dateQueryItemPath + " )";
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MIN]", dateQueryItemName, "MIN_KEY", exp);
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH:mi')";
+				} else {
+					exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+					+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+					+ "_day (" + dateQueryItemPath + ")  || ' ' || if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+					+ "_hour (" + dateQueryItemPath + ")";
+				}
+				
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MIN]", "MIN", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MIN].[MIN]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MIN].[MIN]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MIN].[MIN_KEY]");
 			}
 			
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR]", "HOUR", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR].[HOUR]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR].[HOUR]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR].[HOUR_KEY]");
-
 	// level date
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "DATE");
-			exp = dateQueryItemPath;
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
-			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH:mm:ss')";
-			} else {
-				exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_month (" + dateQueryItemPath + ") || '-' || "
-				+ "if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _day (" + dateQueryItemPath + ")  || ' ' || "
-				+ "if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _hour (" + dateQueryItemPath + ") || ':' || "
-				+ "if ( _minute (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _minute (" + dateQueryItemPath + ") || ':' || "
-				+ "if ( _second (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _second (" + dateQueryItemPath + ")";
+			if (!hierarchyByMonth.equals("") && hierarchyByMonth.contains("DATE")) {
+				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MIN]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "DATE");
+				exp = dateQueryItemPath;
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+				//	exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH:mi:ss')";
+					exp = dateQueryItemPath;
+				} else {
+					exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+					+ "_month (" + dateQueryItemPath + ") || '-' || "
+					+ "if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _day (" + dateQueryItemPath + ")  || ' ' || "
+					+ "if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _hour (" + dateQueryItemPath + ") || ':' || "
+					+ "if ( _minute (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _minute (" + dateQueryItemPath + ") || ':' || "
+					+ "if ( _second (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _second (" + dateQueryItemPath + ")";
+				}
+				
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE]", "DATE", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE].[DATE]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE].[DATE]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE].[DATE_KEY]");
 			}
-			
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE]", "DATE", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE].[DATE]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE].[DATE]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE].[DATE_KEY]");
 			
 	// hierarchy by week
-
-			addDimensionHierarchy("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemPath);
-			modifyHierarchyName("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemName,dateQueryItemName + " (By week)");
-			
-	// Year
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "YEAR");
-			exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
-			+ "then ( _year (" + dateQueryItemPath + ") + 1 ) "
-			+ "else (  _year (" + dateQueryItemPath + ") )";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
-			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
-						+ "then ( _year (" + dateQueryItemPath + ") + 1 ) "
-						+ "else (  _year (" + dateQueryItemPath + ") ))";
-			} else {
+			if (hierarchyByWeek != null && !hierarchyByWeek.equals("")) {
+				addDimensionHierarchy("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemPath);
+				modifyHierarchyName("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemName,dateQueryItemName + " (By week)");
+				
+		// Year
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "YEAR");
 				exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
 				+ "then ( _year (" + dateQueryItemPath + ") + 1 ) "
 				+ "else (  _year (" + dateQueryItemPath + ") )";
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "to_char(if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
+							+ "then ( _year (" + dateQueryItemPath + ") + 1 ) "
+							+ "else (  _year (" + dateQueryItemPath + ") ))";
+				} else {
+					exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
+					+ "then ( _year (" + dateQueryItemPath + ") + 1 ) "
+					+ "else (  _year (" + dateQueryItemPath + ") )";
+				}
+				
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR]", "YEAR", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR].[YEAR]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR].[YEAR]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR].[YEAR_KEY]");
+	
+		//level week	
+				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "WEEK");
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "to_char(" + dateQueryItemPath + ",'IW')";
+				} else {
+					exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
+					+ "then (  _year (" + dateQueryItemPath + ") + 1 ) "
+					+ "else (  _year (" + dateQueryItemPath + ") )  || '-' || _week_of_year (" + dateQueryItemPath + ")";
+				}
+				
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK]", dateQueryItemName, "WEEK_KEY", exp);
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
+							+ "then (  _year (" + dateQueryItemPath + ") + 1 ) "
+							+ "else (  _year (" + dateQueryItemPath + ") ) || ' - ' || "
+							+ "to_char(" + dateQueryItemPath + ",'IW')";
+				} else {
+					exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
+							+ "then (  _year (" + dateQueryItemPath + ") + 1 ) "
+							+ "else (  _year (" + dateQueryItemPath + ") ) || ' - ' || if ( _week_of_year(" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+							+ "_week_of_year(" + dateQueryItemPath + ")";
+				}
+				
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK]", "WEEK", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK].[WEEK]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK].[WEEK]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK].[WEEK_KEY]");
+	
+		//level day_of_week	
+				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "DAY_OF_WEEK");
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "to_char(" + dateQueryItemPath + ",'D')";
+				} else {
+					exp = "_day_of_week (" + dateQueryItemPath + ",1)";
+				}
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK]", dateQueryItemName, "DAY_OF_WEEK_KEY", exp);
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "to_char(  " + dateQueryItemPath + ",'yyyy/MM/dd - Day')";
+				} else {
+					exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+					+ "_month (" + dateQueryItemPath + ") || '-' || "
+					+ "if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _day (" + dateQueryItemPath + ") || ' ' || "
+					+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 1) "
+					+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Lun') else ('Mon')      ) else ( "
+					+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 2) "
+					+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Mar') else ('Tue')       ) else ( "
+					+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 3) "
+					+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Mer') else ('Wed')      ) else ( "
+					+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 4) "
+					+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Jeu') else ('Thu')        ) else ( "
+					+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 5) "
+					+ "then (  if (  (#sq($runLocale)#) = 'fr' ) then ('Ven') else ('Fri')         ) else ( "
+					+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 6) "
+					+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Sam') else ('Sat')        ) else ( "
+					+ "if (  (#sq($runLocale)#) = 'fr' ) then ('Dim') else ('Sun')        ) "
+					+ ")))))";
+				}
+				
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK]", "DAY_OF_WEEK", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK].[DAY_OF_WEEK]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK].[DAY_OF_WEEK]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK].[DAY_OF_WEEK_KEY]");
+	
+				if (hierarchyByWeek.contains("AM/PM")) {
+		// level AM/PM
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "AM/PM");
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = "to_char(" + dateQueryItemPath + ",'AM')";
+					} else {
+						exp = "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (1)  else (2)";
+					}
+					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
+					
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd AM')";
+					} else {
+						exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _day (" + dateQueryItemPath + ") || ' ' || "
+						+ "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then ('AM')  else ('PM')";
+					}
+					
+					createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM]", "AM/PM", exp);
+					createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM].[AM/PM]");
+					createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM].[AM/PM]");
+					createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM].[AM/PM_KEY]");
+				}
+					
+				if (hierarchyByWeek.contains("HOUR")) {
+		// level hour
+					if (hierarchyByWeek.contains("AM/PM")) {
+						addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					} else {
+						addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					}
+					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "HOUR");
+					exp = "_hour (  " + dateQueryItemPath + " )";
+					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
+					
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH')";
+					} else {
+						exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_day (" + dateQueryItemPath + ")  || ' ' || if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_hour (" + dateQueryItemPath + ")";
+					}
+					
+					createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR]", "HOUR", exp);
+					createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR].[HOUR]");
+					createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR].[HOUR]");
+					createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR].[HOUR_KEY]");
+				}
+				
+				if (hierarchyByWeek.contains("MIN")) {
+			// level min
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "MIN");
+					exp = "_minute(  " + dateQueryItemPath + " )";
+					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[MIN]", dateQueryItemName, "MIN_KEY", exp);
+					
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH:mi')";
+					} else {
+						exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_day (" + dateQueryItemPath + ")  || ' ' || if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_hour (" + dateQueryItemPath + ")";
+					}
+					
+					createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[MIN]", "MIN", exp);
+					createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[MIN].[MIN]");
+					createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[MIN].[MIN]");
+					createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[MIN].[MIN_KEY]");
+				}
+				
+				if (hierarchyByWeek.contains("DATE")) {
+		// level date
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[MIN]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "DATE");
+					exp = dateQueryItemPath;
+					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
+					
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = dateQueryItemPath;
+					} else {
+						exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_month (" + dateQueryItemPath + ") || '-' || "
+						+ "if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _day (" + dateQueryItemPath + ")  || ' ' || "
+						+ "if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _hour (" + dateQueryItemPath + ") || ':' || "
+						+ "if ( _minute (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _minute (" + dateQueryItemPath + ") || ':' || "
+						+ "if ( _second (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _second (" + dateQueryItemPath + ")";
+					}
+					
+					createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE]", "DATE", exp);
+					createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE].[DATE]");
+					createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE].[DATE]");
+					createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE].[DATE_KEY]");
+				}
 			}
-			
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR]", "YEAR", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR].[YEAR]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR].[YEAR]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR].[YEAR_KEY]");
 
-	//level week	
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "WEEK");
-			exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
-			+ "then (  _year (" + dateQueryItemPath + ") + 1 ) "
-			+ "else (  _year (" + dateQueryItemPath + ") )  || '-' || _week_of_year (" + dateQueryItemPath + ")";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK]", dateQueryItemName, "WEEK_KEY", exp);
+			if (hierarchyRollingMonth != null && !hierarchyRollingMonth.equals("")) {
+	// hierarchy (Rolling month)
+				addDimensionHierarchy("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemPath);
 			
-			if (dbEngine.equals("ORA")) {
-				exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
-						+ "then (  _year (" + dateQueryItemPath + ") + 1 ) "
-						+ "else (  _year (" + dateQueryItemPath + ") ) || ' - ' || "
-						+ "_week_of_year(" + dateQueryItemPath + ")";
-			} else {
-				exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
-						+ "then (  _year (" + dateQueryItemPath + ") + 1 ) "
-						+ "else (  _year (" + dateQueryItemPath + ") ) || ' - ' || if ( _week_of_year(" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-						+ "_week_of_year(" + dateQueryItemPath + ")";
+		// level year
+				modifyHierarchyName("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemName,dateQueryItemName + " (Rolling month)");
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "YEAR");
+				exp = "_year (" + dateQueryItemPath + ")  - _year( current_timestamp )";
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "'Y'  || (_year (" + dateQueryItemPath + ")  - _year( current_timestamp ))";
+				} else {
+					exp = "if (  (#sq($runLocale)#) = 'fr' ) then ('Année') else ('Year')  || (_year (" + dateQueryItemPath + ")  - _year( current_timestamp ))";
+				}
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR]", "YEAR", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR].[YEAR]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR].[YEAR]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR].[YEAR_KEY]");
+	
+				if (hierarchyRollingMonth.contains("QUARTER")) {
+		//level quarter	
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "QUARTER");
+					exp = "(_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 4 + "
+					+ "if (_month(" + dateQueryItemPath + ") in_range {1 : 3}) then (1) else ( "
+					+ "if (_month(" + dateQueryItemPath + ") in_range {4 : 6}) then (2) else ( "
+					+ "if (_month(" + dateQueryItemPath + ") in_range {7 : 9}) then (3) else (4))) - "
+					+ "if (_month( current_timestamp ) in_range {1 : 3}) then (1) else ( "
+					+ "if (_month( current_timestamp ) in_range {4 : 6}) then (2) else ( "
+					+ "if (_month( current_timestamp ) in_range {7 : 9}) then (3) else (4)))";
+					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER]", dateQueryItemName, "QUARTER_KEY", exp);
+					
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = "'Q' || "
+						+ "((_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 4 + "
+						+ "if (_month(" + dateQueryItemPath + ") in_range {1 : 3}) then (1) else ( "
+						+ "if (_month(" + dateQueryItemPath + ") in_range {4 : 6}) then (2) else ( "
+						+ "if (_month(" + dateQueryItemPath + ") in_range {7 : 9}) then (3) else (4))) - "
+						+ "if (_month( current_timestamp ) in_range {1 : 3}) then (1) else ( "
+						+ "if (_month( current_timestamp ) in_range {4 : 6}) then (2) else ( "
+						+ "if (_month( current_timestamp ) in_range {7 : 9}) then (3) else (4))))";
+					} else {
+						exp = "if (  (#sq($runLocale)#) = 'fr' ) then ('Trimestre') else ('Quarter') || "
+						+ "((_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 4 + "
+						+ "if (_month(" + dateQueryItemPath + ") in_range {1 : 3}) then (1) else ( "
+						+ "if (_month(" + dateQueryItemPath + ") in_range {4 : 6}) then (2) else ( "
+						+ "if (_month(" + dateQueryItemPath + ") in_range {7 : 9}) then (3) else (4))) - "
+						+ "if (_month( current_timestamp ) in_range {1 : 3}) then (1) else ( "
+						+ "if (_month( current_timestamp ) in_range {4 : 6}) then (2) else ( "
+						+ "if (_month( current_timestamp ) in_range {7 : 9}) then (3) else (4))))";
+					}
+					
+					createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER]", "QUARTER", exp);
+					createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER].[QUARTER]");
+					createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER].[QUARTER]");
+					createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER].[QUARTER_KEY]");
+				}
+				
+		// level month
+				if (hierarchyRollingMonth.contains("QUARTER")) {
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+				} else {
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+				}
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "MONTH");
+				exp = "(_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 12 + "
+				+ "_month (" + dateQueryItemPath + ") - _month( current_timestamp )";
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH]", dateQueryItemName, "MONTH_KEY", exp);
+				exp = "'M' || ((_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 12 + "
+				+ "_month (" + dateQueryItemPath + ")  - _month( current_timestamp ))";
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH]", "MONTH", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH].[MONTH]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH].[MONTH]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH].[MONTH_KEY]");
+				
+		// level day
+				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "DAY");
+				exp = "_days_between (" + dateQueryItemPath + ", current_timestamp)";
+				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY]", dateQueryItemName, "DAY_KEY", exp);
+				
+				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+					exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd')";
+				} else {
+					exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+					+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _day (" + dateQueryItemPath + ")";
+				}
+				
+				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY]", "DAY", exp);
+				createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY].[DAY]");
+				createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY].[DAY]");
+				createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY].[DAY_KEY]");
+				
+				if (hierarchyRollingMonth.contains("AM/PM")) {
+		// level AM/PM
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "AM/PM");
+					
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = "to_char(" + dateQueryItemPath + ",'AM')";
+					} else {
+						exp = "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (1)  else (2)";
+					}
+					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
+					
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd AM')";
+					} else {
+						exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _day (" + dateQueryItemPath + ") || ' ' || "
+						+ "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then ('AM')  else ('PM')";
+					}
+					createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM]", "AM/PM", exp);
+					createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM].[AM/PM]");
+					createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM].[AM/PM]");
+					createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM].[AM/PM_KEY]");
+				}
+				
+				if (hierarchyRollingMonth.contains("HOUR")) {
+		// level hour
+					if (hierarchyRollingMonth.contains("AM/PM")) {
+						addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					} else {
+						addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					}
+					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "HOUR");
+					exp = "_hour (  " + dateQueryItemPath + " )";
+					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
+					
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH')";
+					} else {
+						exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_day (" + dateQueryItemPath + ")  || ' ' || if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_hour (" + dateQueryItemPath + ")";
+					}
+					
+					createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR]", "HOUR", exp);
+					createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR].[HOUR]");
+					createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR].[HOUR]");
+					createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR].[HOUR_KEY]");
+				}
+				
+				if (hierarchyRollingMonth.contains("MIN")) {
+		// level min
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "MIN");
+					exp = "_minute(  " + dateQueryItemPath + " )";
+					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MIN]", dateQueryItemName, "MIN_KEY", exp);
+					
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH:mi')";
+					} else {
+						exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_day (" + dateQueryItemPath + ")  || ' ' || if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_hour (" + dateQueryItemPath + ")";
+					}
+					
+					createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MIN]", "MIN", exp);
+					createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MIN].[MIN]");
+					createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MIN].[MIN]");
+					createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MIN].[MIN_KEY]");
+				}
+				
+				if (hierarchyRollingMonth.contains("DATE")) {
+		// level date
+					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MIN]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
+					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "DATE");
+					exp = dateQueryItemPath;
+					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
+					
+					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
+						exp = dateQueryItemPath;
+					} else {
+						exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
+						+ "_month (" + dateQueryItemPath + ") || '-' || "
+						+ "if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _day (" + dateQueryItemPath + ")  || ' ' || "
+						+ "if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _hour (" + dateQueryItemPath + ") || ':' || "
+						+ "if ( _minute (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _minute (" + dateQueryItemPath + ") || ':' || "
+						+ "if ( _second (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _second (" + dateQueryItemPath + ")";
+					}
+					
+					createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE]", "DATE", exp);
+					createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE].[DATE]");
+					createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE].[DATE]");
+					createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE].[DATE_KEY]");
+				}
 			}
-			
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK]", "WEEK", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK].[WEEK]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK].[WEEK]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK].[WEEK_KEY]");
-
-	//level day_of_week	
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "DAY_OF_WEEK");
-			exp = "_day_of_week (" + dateQueryItemPath + ",1)";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK]", dateQueryItemName, "DAY_OF_WEEK_KEY", exp);
-			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(  " + dateQueryItemPath + ",'yyyy/MM/dd') || '-' || "
-						+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 1) "
-						+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Lun') else ('Mon')      ) else ( "
-						+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 2) "
-						+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Mar') else ('Tue')       ) else ( "
-						+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 3) "
-						+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Mer') else ('Wed')      ) else ( "
-						+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 4) "
-						+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Jeu') else ('Thu')        ) else ( "
-						+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 5) "
-						+ "then (  if (  (#sq($runLocale)#) = 'fr' ) then ('Ven') else ('Fri')         ) else ( "
-						+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 6) "
-						+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Sam') else ('Sat')        ) else ( "
-						+ "if (  (#sq($runLocale)#) = 'fr' ) then ('Dim') else ('Sun')        ) "
-						+ ")))))";
-			} else {
-				exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_month (" + dateQueryItemPath + ") || '-' || "
-				+ "if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _day (" + dateQueryItemPath + ") || ' ' || "
-				+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 1) "
-				+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Lun') else ('Mon')      ) else ( "
-				+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 2) "
-				+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Mar') else ('Tue')       ) else ( "
-				+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 3) "
-				+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Mer') else ('Wed')      ) else ( "
-				+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 4) "
-				+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Jeu') else ('Thu')        ) else ( "
-				+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 5) "
-				+ "then (  if (  (#sq($runLocale)#) = 'fr' ) then ('Ven') else ('Fri')         ) else ( "
-				+ "if (_day_of_week (" + dateQueryItemPath + ",1) = 6) "
-				+ "then ( if (  (#sq($runLocale)#) = 'fr' ) then ('Sam') else ('Sat')        ) else ( "
-				+ "if (  (#sq($runLocale)#) = 'fr' ) then ('Dim') else ('Sun')        ) "
-				+ ")))))";
-			}
-			
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK]", "DAY_OF_WEEK", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK].[DAY_OF_WEEK]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK].[DAY_OF_WEEK]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK].[DAY_OF_WEEK_KEY]");
-
-	// level AM/PM
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "AM/PM");
-			exp = "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (1)  else (2)";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
-			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd') || "
-				+ "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (' AM')  else (' PM')";
-			} else {
-				exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _day (" + dateQueryItemPath + ") || ' ' || "
-				+ "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then ('AM')  else ('PM')";
-			}
-			
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM]", "AM/PM", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM].[AM/PM]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM].[AM/PM]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM].[AM/PM_KEY]");
-
-	// level hour
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "HOUR");
-			exp = "_hour (  " + dateQueryItemPath + " )";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
-			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH')";
-			} else {
-				exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_day (" + dateQueryItemPath + ")  || ' ' || if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_hour (" + dateQueryItemPath + ")";
-			}
-			
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR]", "HOUR", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR].[HOUR]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR].[HOUR]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR].[HOUR_KEY]");
-
-	// level date
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "DATE");
-			exp = dateQueryItemPath;
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
-			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH:mm:ss')";
-			} else {
-				exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_month (" + dateQueryItemPath + ") || '-' || "
-				+ "if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _day (" + dateQueryItemPath + ")  || ' ' || "
-				+ "if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _hour (" + dateQueryItemPath + ") || ':' || "
-				+ "if ( _minute (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _minute (" + dateQueryItemPath + ") || ':' || "
-				+ "if ( _second (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _second (" + dateQueryItemPath + ")";
-			}
-			
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE]", "DATE", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE].[DATE]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE].[DATE]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE].[DATE_KEY]");
-			
-
-	// hierarchy (Rolling month)			
-			addDimensionHierarchy("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemPath);
-		
-	// level year
-			modifyHierarchyName("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemName,dateQueryItemName + " (Rolling month)");
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "YEAR");
-			exp = "_year (" + dateQueryItemPath + ")  - _year( current_timestamp )";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
-			exp = "if (  (#sq($runLocale)#) = 'fr' ) then ('Année') else ('Year')  || (_year (" + dateQueryItemPath + ")  - _year( current_timestamp ))";
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR]", "YEAR", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR].[YEAR]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR].[YEAR]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR].[YEAR_KEY]");
-
-	//level quarter	
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "QUARTER");
-			exp = "(_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 4 + "
-			+ "if (_month(" + dateQueryItemPath + ") in_range {1 : 3}) then (1) else ( "
-			+ "if (_month(" + dateQueryItemPath + ") in_range {4 : 6}) then (2) else ( "
-			+ "if (_month(" + dateQueryItemPath + ") in_range {7 : 9}) then (3) else (4))) - "
-			+ "if (_month( current_timestamp ) in_range {1 : 3}) then (1) else ( "
-			+ "if (_month( current_timestamp ) in_range {4 : 6}) then (2) else ( "
-			+ "if (_month( current_timestamp ) in_range {7 : 9}) then (3) else (4)))";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER]", dateQueryItemName, "QUARTER_KEY", exp);
-			exp = "if (  (#sq($runLocale)#) = 'fr' ) then ('Trimestre') else ('Quarter') || "
-			+ "((_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 4 + "
-			+ "if (_month(" + dateQueryItemPath + ") in_range {1 : 3}) then (1) else ( "
-			+ "if (_month(" + dateQueryItemPath + ") in_range {4 : 6}) then (2) else ( "
-			+ "if (_month(" + dateQueryItemPath + ") in_range {7 : 9}) then (3) else (4))) - "
-			+ "if (_month( current_timestamp ) in_range {1 : 3}) then (1) else ( "
-			+ "if (_month( current_timestamp ) in_range {4 : 6}) then (2) else ( "
-			+ "if (_month( current_timestamp ) in_range {7 : 9}) then (3) else (4))))";
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER]", "QUARTER", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER].[QUARTER]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER].[QUARTER]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER].[QUARTER_KEY]");
-
-	// level month
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "MONTH");
-			exp = "(_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 12 + "
-			+ "_month (" + dateQueryItemPath + ") - _month( current_timestamp )";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH]", dateQueryItemName, "MONTH_KEY", exp);
-			exp = "'M' || ((_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 12 + "
-			+ "_month (" + dateQueryItemPath + ")  - _month( current_timestamp ))";
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH]", "MONTH", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH].[MONTH]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH].[MONTH]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH].[MONTH_KEY]");
-			
-	// level day
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "DAY");
-			exp = "_day (" + dateQueryItemPath + ")";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY]", dateQueryItemName, "DAY_KEY", exp);
-			
-			if (dbEngine.equals("ORA")) {
-				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd')";
-			} else {
-				exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-				+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _day (" + dateQueryItemPath + ")";
-			}
-			
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY]", "DAY", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY].[DAY]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY].[DAY]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY].[DAY_KEY]");
-							
-	// level AM/PM
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "AM/PM");
-			exp = "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (1)  else (2)";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
-			exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-			+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _day (" + dateQueryItemPath + ") || ' ' || "
-			+ "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then ('AM')  else ('PM')";
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM]", "AM/PM", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM].[AM/PM]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM].[AM/PM]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM].[AM/PM_KEY]");
-
-	// level hour
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "HOUR");
-			exp = "_hour (  " + dateQueryItemPath + " )";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
-			exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-			+ "_month (" + dateQueryItemPath + ") || '-' || if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-			+ "_day (" + dateQueryItemPath + ")  || ' ' || if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-			+ "_hour (" + dateQueryItemPath + ")";
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR]", "HOUR", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR].[HOUR]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR].[HOUR]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR].[HOUR_KEY]");
-
-	// level date
-			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
-			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "DATE");
-			exp = dateQueryItemPath;
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
-			exp = "_year (  " + dateQueryItemPath + " ) || '-' || if ( _month (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || "
-			+ "_month (" + dateQueryItemPath + ") || '-' || "
-			+ "if ( _day (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _day (" + dateQueryItemPath + ")  || ' ' || "
-			+ "if ( _hour (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _hour (" + dateQueryItemPath + ") || ':' || "
-			+ "if ( _minute (" + dateQueryItemPath + ")  > 9) then ('') else ('0') || _minute (" + dateQueryItemPath + ") || ':' || "
-			+ "if ( _second (" + dateQueryItemPath + ")  > 9) then ('') else ('0') ||  _second (" + dateQueryItemPath + ")";
-			createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE]", "DATE", exp);
-			createDimensionRole_MC("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE].[DATE]");
-			createDimensionRole_MD("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE].[DATE]");
-			createDimensionRole_BK("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE].[DATE_KEY]");
-		
 	}
 	
 	public void recursiveParserQI(Document document, String spath, String locale, Map <String, String> map, String qsFinal) {
@@ -1857,6 +2068,9 @@ public class FactorySVC {
 			System.out.println(qsname.getStringValue() + " *    *     *     *     *    * " + map.get(qsname.getStringValue()));  // clef de map
 			String label = map.get(qsname.getStringValue());
 			if (label != null) {
+			System.out.println(locale);
+			System.out.println(label);
+			System.out.println(qsNameLocale.asXML());
 			qsNameLocale.setText(label); // valeur de map
 			}
 			String nextQIPath = spath + "/querySubject[" + i + "]";
@@ -1893,13 +2107,53 @@ public class FactorySVC {
 		while (dName != null)
 		{
 			System.out.println("dimension : " + dName.getStringValue() + " *    *     *     *     *    * " + map.get(dName.getStringValue()));  // clef de map
-			String label = map.get(dName.getStringValue());
+			
+			String label;
+			
+			//case time dimension
+			 if (dName.getStringValue().startsWith("Time Dimension ")) { //case time dimension
+				String keyField = StringUtils.replace(dName.getStringValue(), "Time Dimension ", "");
+				String keyTable = StringUtils.split(keyField, ".")[0];
+				if (map.get(keyTable)!=null) {
+					label = "(" + map.get(keyTable) + ") ";
+				} else {
+					label = "(" + keyTable + ") ";
+				}
+				if (map.get(keyField)!=null) {
+					label = label + map.get(keyField);
+				} else {
+					label = label + keyField;
+				}
+			} else if (dName.getStringValue().endsWith(" Fact")){
+				String keyField = StringUtils.replace(dName.getStringValue(), " Fact", "");
+				if (map.get(keyField)!=null) {
+					label = map.get(keyField);
+				} else {
+					label = keyField;
+				}
+				// add "Fact" translation
+				if (map.get("Fact")!=null) {
+					label = label + " " + map.get("Fact");
+				} else {
+					label = label + " Fact";
+				}
+			} else {
+				if (map.get(dName.getStringValue())!=null) {
+					label = map.get(dName.getStringValue());
+				} else {
+					label = dName.getStringValue();
+				}
+			}
+			
 			if (label != null) {
 			dNameLocale.setText(label); // valeur de map
 			}
 			String nextQIPath = spath + "/dimension[" + i + "]";
 			if (!dName.getStringValue().startsWith("Time Dimension")){
 				parserDimensionItem(document, nextQIPath, locale, map, dName.getStringValue());
+			} else {
+				parserDimensionItem(document, nextQIPath, locale, map, dName.getStringValue());
+				System.out.println("parserDimensionItem : " + " nextQIPath " + nextQIPath + ", locale " + locale + ", dName.getStringValue() " + dName.getStringValue());
 			}
 			i++;
 			dName = (Element) document.selectSingleNode(spath + "/dimension[" + i + "]/name");
@@ -1907,7 +2161,7 @@ public class FactorySVC {
 		}
 	}
 
-	public void parserDimensionItem(Document document, String spath, String locale, Map <String, String> map, String qsFinal) {
+	public void parserDimensionItem(Document document, String spath, String locale, Map <String, String> map, String dimName) {
 		
 //		s = "/project/namespace/namespace[1]/namespace[1]/querySubject[1]";
 		int i = 1;
@@ -1927,6 +2181,7 @@ public class FactorySVC {
 				prefix = prefix + "." + prefixTab[k];
 			}
 			System.out.println("hierarchy prefix : " + prefix + " * * * * * * * " + map.get(prefix));
+			
 			String label = "";
 			if (map.get(prefix)!=null) {
 				//Si il existe une traduction de dimension : prefix = dimensionName
@@ -1938,14 +2193,44 @@ public class FactorySVC {
 			if (map.get(hName.getStringValue())!=null) {
 				label = label + map.get(hName.getStringValue());
 			} else if (prefixTab.length > 1){
-				label = label + prefixTab[1];
+				label = label + prefixTab[prefixTab.length - 1];
 			}
+			// changement if time dimension 
+			if (dimName.startsWith("Time Dimension")) {
+				String timeField = StringUtils.replace(dimName, "Time Dimension ", "");
+				// field traduction  ex: CREATEDT
+				String replaceValue = "";
+				if (map.get(timeField)!=null) {
+					//Si il existe une traduction de dimension : prefix = dimensionName
+					replaceValue = map.get(timeField); // + map.get(hName.getStringValue());  // valeur de map
+				} else {
+					//Pas de traduction de dimension
+					replaceValue = timeField; // + map.get(hName.getStringValue());
+				}
+				
+				// suffix traduction ex : (By month)
+				String dimNameTab[] = StringUtils.split(timeField, ".");
+				
+				String dimNameField = dimNameTab[1];
+				String labelSufix = StringUtils.replace(hName.getStringValue(), dimNameField + " ", "");
+				// to translate (By month), (By week), (Rolling month)
+				if (map.get(labelSufix)!=null) {
+					labelSufix = " " + map.get(labelSufix);
+				} else {
+					labelSufix = " " + labelSufix;
+				}
+				
+				//label = StringUtils.replace(hName.getStringValue(), dimNameTab[dimNameTab.length - 1], replaceValue);
+				label = replaceValue + labelSufix;
+				
+			}
+			//end change if time dimension
 			
 			if (label != null) {
 				hNameLocale.setText(label);        // valeur de map
 				}
 			String nextsPath = spath + "/hierarchy[" + j + "]";
-			parserHierarchyLevel(document, nextsPath, locale, map, qsFinal);
+			parserHierarchyLevel(document, nextsPath, locale, map, dimName);
 			j++;
 			hName = (Element) document.selectSingleNode(spath + "/hierarchy[" + j + "]/name");
 			hNameLocale = (Element) document.selectSingleNode(spath + "/hierarchy[" + j + "]/name[@locale=\"" + locale + "\"]");
@@ -1964,7 +2249,7 @@ public class FactorySVC {
 		}
 	}
 	
-	public void parserHierarchyLevel(Document document, String spath, String locale, Map <String, String> map, String qsFinal) {
+	public void parserHierarchyLevel(Document document, String spath, String locale, Map <String, String> map, String dimName) {
 		
 //		s = "/project/namespace/namespace[1]/namespace[1]/querySubject[1]";
 		
@@ -1992,21 +2277,44 @@ public class FactorySVC {
 			} else if (levelName.getStringValue().endsWith("(All)") && map.get(StringUtils.replace(levelName.getStringValue(),"(All)",""))!=null) { //pour le level all
 				label = label + map.get(StringUtils.replace(levelName.getStringValue(),"(All)","")) + "(All)";
 			} else if (prefixTab.length > 1){
-				label = label + prefixTab[1];
+				label = label + prefixTab[prefixTab.length - 1];
 			}
+			
+			//case of time dimension
+			if (dimName.startsWith("Time Dimension")) {
+				label = "";
+				if (map.get(levelName.getStringValue())!=null) {
+					label = map.get(levelName.getStringValue()); // +  map.get(levelName.getStringValue());  // valeur de map
+				} else {
+					label = levelName.getStringValue(); // +  map.get(levelName.getStringValue());  
+				}
+				if (levelName.getStringValue().endsWith("(All)")) {
+					String dimNameField = StringUtils.split(StringUtils.replace(dimName,"Time Dimension ",""),".")[1];
+					String labelSufix = StringUtils.replace(levelName.getStringValue(), dimNameField + " ", "");
+					labelSufix = StringUtils.replace(labelSufix,"(All)","");
+					// to translate (By month), (By week), (Rolling month)
+					if (map.get(labelSufix)!=null) {
+						labelSufix = " " + map.get(labelSufix);
+					} else {
+						labelSufix = " " + labelSufix;
+					}
+					label = map.get(StringUtils.replace(dimName,"Time Dimension ","")) + labelSufix + "(All)";   // case of (All)
+				}
+			}
+			//end time dimension
 			
 			if (label != null) {
 				levelNameLocale.setText(label);        // valeur de maps
 				}
 			String nextsPath = spath + "/level[" + j + "]";
-			parserLevelQs(document, nextsPath, locale, map, qsFinal);
+			parserLevelQs(document, nextsPath, locale, map, dimName);
 			j++;
 			levelName = (Element) document.selectSingleNode(spath + "/level[" + j + "]/name");
 			levelNameLocale = (Element) document.selectSingleNode(spath + "/level[" + j + "]/name[@locale=\"" + locale + "\"]");
 		}
 	}
 	
-	public void parserLevelQs(Document document, String spath, String locale, Map <String, String> map, String qsFinal) {
+	public void parserLevelQs(Document document, String spath, String locale, Map <String, String> map, String dimName) {
 		
 //		s = "/project/namespace/namespace[1]/namespace[1]/querySubject[1]";
 		

@@ -1092,22 +1092,24 @@ function getDimensions(dimensionSet, selectedQs){
       Gdimensions = data.DATA;
       var emptyOption = '<option class="fontsize" value="" data-subtext="' + '' + '"></option>';
 
-      $.each(Object.values(data.DATA), function(i, dimension){
-        var dimensionOption = '<option class="fontsize" value="' + dimension.name + '" data-subtext="' + '' + '">' + dimension.name + '</option>';
-        $('#selectDimension').append(dimensionOption);
-        // $.each(dimension.bks, function(i, bk){
-        //   if(bk.selectedQs == selectedQs){
-        //     var bkOption = '<option class="fontsize" value="' + bk.qsFinalName + ' -- ' + bk.bk + '" data-subtext="' + bk.qsFinalName + '">' + bk.bk + '</option>';
-        //     $('#selectBK').append(bkOption);
-        //   }
-        // });
-        // $.each(dimension.orders, function(i, order){
-        //   var orderOption = '<option class="fontsize" value="' + order.qsFinalName + ' -- ' + order.order + '" data-subtext="' + order.qsFinalName + '">' + order.order + '</option>';
-        //   $('#selectOrder').append(orderOption);
-        //
-        // });
+      if(data.DATA != null && !data.DATA){
+        $.each(Object.values(data.DATA), function(i, dimension){
+          var dimensionOption = '<option class="fontsize" value="' + dimension.name + '" data-subtext="' + '' + '">' + dimension.name + '</option>';
+          $('#selectDimension').append(dimensionOption);
+          // $.each(dimension.bks, function(i, bk){
+          //   if(bk.selectedQs == selectedQs){
+          //     var bkOption = '<option class="fontsize" value="' + bk.qsFinalName + ' -- ' + bk.bk + '" data-subtext="' + bk.qsFinalName + '">' + bk.bk + '</option>';
+          //     $('#selectBK').append(bkOption);
+          //   }
+          // });
+          // $.each(dimension.orders, function(i, order){
+          //   var orderOption = '<option class="fontsize" value="' + order.qsFinalName + ' -- ' + order.order + '" data-subtext="' + order.qsFinalName + '">' + order.order + '</option>';
+          //   $('#selectOrder').append(orderOption);
+          //
+          // });
 
-      })
+        })
+      }
 
       $('#selectDimension').append(emptyOption);
       $('#selectDimension').selectpicker('val', "");
@@ -2178,7 +2180,7 @@ function buildRelationTable($el, cols, data, qs){
 
           // If more than one seq change above from text to select editable
           // $tableRows.eq(i).find('a').eq(4) = above
-          if(activeTab.match("Reference|Security|Translation") && row.seqs.length > 0){
+          if(activeTab.match("Reference|Security") && row.seqs.length > 0){
             $tableRows.eq(i).find('a').eq(4).editable('destroy');
             // $tableRows.eq(i).find('a').eq(0).editable('setValue', ['VARCHAR']);
             var defaultValue = '';
@@ -2190,6 +2192,32 @@ function buildRelationTable($el, cols, data, qs){
               source.push(option);
               defaultValue = seq.column_name;
             })
+
+            customFieldType.source = source;
+
+            $tableRows.eq(i).find('a').eq(4).editable(customFieldType);
+            $tableRows.eq(i).find('a').eq(4).editable('option', 'defaultValue', defaultValue);
+          }
+
+          if(activeTab.match("Translation")){
+            $tableRows.eq(i).find('a').eq(4).editable('destroy');
+            // $tableRows.eq(i).find('a').eq(0).editable('setValue', ['VARCHAR']);
+            var defaultValue = '';
+            var source = [];
+
+            var table_name = row.table_name
+
+            $.each($datasTable.bootstrapTable("getData"), function(i, qs){
+              if(qs.table_name == table_name){
+                $.each(qs.fields, function(j, field){
+                  var option = {};
+                  option.text = field.field_name;
+                  option.value = field.field_name;
+                  source.push(option);
+                  defaultValue = field.field_name;
+                })
+              }
+            });
 
             customFieldType.source = source;
 
@@ -2443,7 +2471,7 @@ function buildRelationTable($el, cols, data, qs){
 
                 if(activeTab == "Translation"){
                   row.relationship = row.relationship.split("[TRA]." + pkAlias).join(pkAlias);
-                  row.sec = false;
+                  row.tra = false;
                 }
 
                 var linked = false;
@@ -2668,7 +2696,7 @@ function RemoveKeys(row, qs){
         }
         if(activeTab == "Translation"){
           qs2rm.row.relationship = qs2rm.row.relationship.split("[TRA]." + pkAlias).join(pkAlias);
-          qs2rm.row.sec = false;
+          qs2rm.row.tra = false;
         }
 
         $datasTable.bootstrapTable('remove', {

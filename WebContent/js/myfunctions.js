@@ -858,8 +858,18 @@ function SetLanguage(language){
     if(!needInit){
         $.each($datasTable.bootstrapTable("getData"), function(i, qs){
           console.log(qs);
-          qs.label = qs.labels[language];
-          qs.description = qs.descriptions[language];
+          if(qs.labels[language]){
+            qs.label = qs.labels[language];
+          }
+          else{
+            qs.label = "";
+          }
+          if(qs.descriptions[language]){
+            qs.description = qs.descriptions[language];
+          }
+          else{
+            qs.description = "";
+          }
           $.each(qs.fields, function(j, field){
             if(field.labels[language]){
               field.label = field.labels[language];

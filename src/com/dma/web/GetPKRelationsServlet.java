@@ -46,10 +46,14 @@ public class GetPKRelationsServlet extends HttpServlet {
 	@SuppressWarnings("unchecked")
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
+
+		boolean importLabel = false;
 		
 		String table = request.getParameter("table");
 		String alias = request.getParameter("alias");
 		String type = request.getParameter("type");
+		importLabel = Boolean.parseBoolean(request.getParameter("importLabel"));
+		
 		boolean withRecCount = false;
 		boolean relationCount = false;
 
@@ -136,60 +140,66 @@ public class GetPKRelationsServlet extends HttpServlet {
 		        	relation.setType(type.toUpperCase());
 		        	relation.set_id("PK_" + relation.getPktable_alias() + "_" + alias + "_" + type.toUpperCase());
 		        	relation.setAbove(pkcolumn_name);
+		        	relation.setLabel("");
+		        	relation.setDescription("");
 		        	
-		        	String[] types = {"TABLE"};
-		    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, fktable_name, types);
-		    		String label = "";
-		    		String desc = "";
-		    		while (rst0.next()) {
-		    			label = rst0.getString("REMARKS");
-		    	    	relation.setLabel(label);
-		    	    	
-		    	    	if(label == null) {
-		    	    		label = "";
-		    	    		relation.setLabel(label);
-		    	    		relation.setDescription(desc);
-			        		if(!language.isEmpty()) {
-			        			relation.getLabels().put(language, label);
-			        			relation.getDescriptions().put(language, desc);
-			        		}
-		    	    		
-		    	    	}
-		    	    	else {
-		    		    	if(label.length() <= 50) {
-		    		    		relation.setLabel(label);
-		    		    		relation.setDescription(desc);
+		        	ResultSet rst0 = null;
+		        	if(importLabel) {
+		        	
+			        	String[] types = {"TABLE"};
+			        	rst0 = metaData.getTables(con.getCatalog(), schema, fktable_name, types);
+			    		String label = "";
+			    		String desc = "";
+			    		while (rst0.next()) {
+			    			label = rst0.getString("REMARKS");
+			    	    	relation.setLabel(label);
+			    	    	
+			    	    	if(label == null) {
+			    	    		label = "";
+			    	    		relation.setLabel(label);
+			    	    		relation.setDescription(desc);
 				        		if(!language.isEmpty()) {
 				        			relation.getLabels().put(language, label);
 				        			relation.getDescriptions().put(language, desc);
 				        		}
-		    		    	}
-		    		    	else {
-		    			    	relation.setDescription(label);
-		    		    		relation.setLabel(label.substring(0, 50));
-				        		if(!language.isEmpty()) {
-				        			relation.getLabels().put(language, label.substring(0, 50));
-				        			relation.getDescriptions().put(language, label);
-				        		}
-		    		    	}
-		    	    	}
-		    			
-		    	    }
-		    		if(rst0 != null){rst0.close();}
-		        	
-		    		if(dbmd != null){
-		    			Map<String, Object> o = (Map<String, Object>) dbmd.get(fktable_name);
-		    			if(o != null){
-		    				label = (String) o.get("table_remarks");
-			    			relation.setLabel(label);
-			    			desc = (String) o.get("table_description");
-			    			relation.setDescription(desc);
-			           		if(!language.isEmpty()) {
-			           			relation.getLabels().put(language, label);
-			           			relation.getDescriptions().put(language, desc);
-			        		}	    			
-		    			}
-		    		}
+			    	    		
+			    	    	}
+			    	    	else {
+			    		    	if(label.length() <= 50) {
+			    		    		relation.setLabel(label);
+			    		    		relation.setDescription(desc);
+					        		if(!language.isEmpty()) {
+					        			relation.getLabels().put(language, label);
+					        			relation.getDescriptions().put(language, desc);
+					        		}
+			    		    	}
+			    		    	else {
+			    			    	relation.setDescription(label);
+			    		    		relation.setLabel(label.substring(0, 50));
+					        		if(!language.isEmpty()) {
+					        			relation.getLabels().put(language, label.substring(0, 50));
+					        			relation.getDescriptions().put(language, label);
+					        		}
+			    		    	}
+			    	    	}
+			    			
+			    	    }
+			    		if(rst0 != null){rst0.close();}
+			        	
+			    		if(dbmd != null){
+			    			Map<String, Object> o = (Map<String, Object>) dbmd.get(fktable_name);
+			    			if(o != null){
+			    				label = (String) o.get("table_remarks");
+				    			relation.setLabel(label);
+				    			desc = (String) o.get("table_description");
+				    			relation.setDescription(desc);
+				           		if(!language.isEmpty()) {
+				           			relation.getLabels().put(language, label);
+				           			relation.getDescriptions().put(language, desc);
+				        		}	    			
+			    			}
+			    		}
+		        	}
 		        	
 		        	Seq seq = new Seq();
 		        	seq.setTable_name(pktable_name);

@@ -50,6 +50,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	String language = "";
 	boolean withRecCount = false;
 	boolean relationCount = false;
+	boolean importLabel = false;
 	long qs_recCount = 0L;
 	Map<String, Object> dbmd = null;
 	Map<String, String> tableAliases = null;
@@ -74,10 +75,13 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		alias = request.getParameter("alias");
 		type = request.getParameter("type");
 		linker_id = request.getParameter("linker_id");
+		importLabel = Boolean.parseBoolean(request.getParameter("importLabel"));
 		
 		System.out.println("table=" + table);
 		System.out.println("alias=" + alias);
 		System.out.println("type=" + type);
+		System.out.println("linker_id=" + linker_id);
+		System.out.println("importLabel=" + importLabel);
 		List<Object> result = new ArrayList<Object>();
 
 		try{
@@ -126,23 +130,29 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	
 	protected QuerySubject getQuerySubjects() throws SQLException{
 		
-		String[] types = {"TABLE"};
-		ResultSet rst = metaData.getTables(con.getCatalog(), schema, table, types);
+
 		String label = "";
 		String desc = "";
+		ResultSet rst = null;
+
+		if(importLabel) {
 		
-		while (rst.next()) {
-	    	label = rst.getString("REMARKS");
-	    }
-		
-		if(rst != null){rst.close();}
-		
-		if(label == null) {label = "";}
-		else {
-	    	if(label.length() > 50) {
-		    	desc = label;
-	    		label = label.substring(0, 50);
-	    	}
+			String[] types = {"TABLE"};
+			rst = metaData.getTables(con.getCatalog(), schema, table, types);
+			
+			while (rst.next()) {
+		    	label = rst.getString("REMARKS");
+		    }
+			
+			if(rst != null){rst.close();}
+			
+			if(label == null) {label = "";}
+			else {
+		    	if(label.length() > 50) {
+			    	desc = label;
+		    		label = label.substring(0, 50);
+		    	}
+			}
 		}
     	
 		QuerySubject result = new QuerySubject();
@@ -192,17 +202,20 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 			
 		}
 		
-		if(dbmd != null){
-			@SuppressWarnings("unchecked")
-			Map<String, Object> o = (Map<String, Object>) dbmd.get(table);
-			if(o != null){
-				label = (String) o.get("table_remarks"); 
-				result.setLabel(label);
-				desc = (String) o.get("table_description");
-				result.setDescription(desc);
-				if(!language.isEmpty()) {
-					result.getLabels().put(language, label);
-					result.getDescriptions().put(language, desc);
+		if(importLabel) {
+		
+			if(dbmd != null){
+				@SuppressWarnings("unchecked")
+				Map<String, Object> o = (Map<String, Object>) dbmd.get(table);
+				if(o != null){
+					label = (String) o.get("table_remarks"); 
+					result.setLabel(label);
+					desc = (String) o.get("table_description");
+					result.setDescription(desc);
+					if(!language.isEmpty()) {
+						result.getLabels().put(language, label);
+						result.getDescriptions().put(language, desc);
+					}
 				}
 			}
 		}
@@ -306,11 +319,13 @@ public class GetQuerySubjectsServlet extends HttpServlet {
         
         Map<String, Object> table_labels = null;
         Map<String, Object> columns = null;
-        if(dbmd != null){
-			table_labels = (Map<String, Object>) dbmd.get(table);
-			if(table_labels != null){
-				columns = (Map<String, Object>) table_labels.get("columns");
-			}
+        if(importLabel) {
+	        if(dbmd != null){
+				table_labels = (Map<String, Object>) dbmd.get(table);
+				if(table_labels != null){
+					columns = (Map<String, Object>) table_labels.get("columns");
+				}
+	        }
         }
 		
         while (rst.next()) {
@@ -320,35 +335,39 @@ public class GetQuerySubjectsServlet extends HttpServlet {
         	Field field = new Field();
         	field.setField_name(field_name);
         	field.setField_type(field_type);
+        	field.setLabel("");
+        	field.setDescription("");
         	
-        	field.setLabel(rst.getString("REMARKS"));
-        	
-	    	String column_remarks = rst.getString("REMARKS");
-	    	if(column_remarks == null) {
-	    		field.setLabel("");
-	    		field.setDescription("");
-	    		if(!language.isEmpty()) {
-        			field.getLabels().put(language, "");
-        			field.getDescriptions().put(language, "");
-	    		}
-	    	}
-	    	else {
-		    	if(column_remarks.length() <= 50) {
-		    		field.setLabel(column_remarks);
+        	if(importLabel) {
+	        	field.setLabel(rst.getString("REMARKS"));
+	        	
+		    	String column_remarks = rst.getString("REMARKS");
+		    	if(column_remarks == null) {
+		    		field.setLabel("");
+		    		field.setDescription("");
 		    		if(!language.isEmpty()) {
-	        			field.getLabels().put(language, column_remarks);
+	        			field.getLabels().put(language, "");
 	        			field.getDescriptions().put(language, "");
 		    		}
 		    	}
 		    	else {
-		    		field.setLabel(column_remarks.substring(0, 50));
-			    	field.setDescription(column_remarks);
-		    		if(!language.isEmpty()) {
-	        			field.getLabels().put(language, column_remarks.substring(0, 50));
-	        			field.getDescriptions().put(language, column_remarks);
-		    		}
+			    	if(column_remarks.length() <= 50) {
+			    		field.setLabel(column_remarks);
+			    		if(!language.isEmpty()) {
+		        			field.getLabels().put(language, column_remarks);
+		        			field.getDescriptions().put(language, "");
+			    		}
+			    	}
+			    	else {
+			    		field.setLabel(column_remarks.substring(0, 50));
+				    	field.setDescription(column_remarks);
+			    		if(!language.isEmpty()) {
+		        			field.getLabels().put(language, column_remarks.substring(0, 50));
+		        			field.getDescriptions().put(language, column_remarks);
+			    		}
+			    	}
 		    	}
-	    	}
+        	}
         	
         	field.setField_size(rst.getInt("COLUMN_SIZE"));
         	field.setNullable(rst.getString("IS_NULLABLE"));
@@ -474,57 +493,62 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	        	relation.set_id("FK_" + relation.getPktable_alias() + "_" + alias + "_" + type.toUpperCase());
 	        	relation.setAbove(fkcolumn_name);
 	        	
-	        	String[] types = {"TABLE"};
-	    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, pktable_name, types);
-	    		while (rst0.next()) {
-	    			String label = rst0.getString("REMARKS");
-	    	    	relation.setLabel(label);
-	    	    	
-	    	    	if(label == null) {
-	    	    		relation.setLabel("");
-	    	    		relation.setDescription("");
-			    		if(!language.isEmpty()) {
-			    			relation.getLabels().put(language, "");
-			    			relation.getDescriptions().put(language, "");
-			    		}
-	    	    	}
-	    	    	else {
-	    		    	if(label.length() <= 50) {
-	    		    		relation.setLabel(label);
+	        	if(importLabel) {
+		        	String[] types = {"TABLE"};
+		    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, pktable_name, types);
+		    		while (rst0.next()) {
+		    			String label = rst0.getString("REMARKS");
+		    	    	relation.setLabel(label);
+		    	    	
+		    	    	if(label == null) {
+		    	    		relation.setLabel("");
 		    	    		relation.setDescription("");
 				    		if(!language.isEmpty()) {
-				    			relation.getLabels().put(language, label);
+				    			relation.getLabels().put(language, "");
 				    			relation.getDescriptions().put(language, "");
 				    		}
-	    		    	}
-	    		    	else {
-	    			    	relation.setDescription(label);
-	    		    		relation.setLabel(label.substring(0, 50));
-				    		if(!language.isEmpty()) {
-				    			relation.getLabels().put(language, label.substring(0, 50));
-				    			relation.getDescriptions().put(language, label);
-				    		}
-	    		    	}
-	    	    	}
-	    	    	
-	    	    }
-	    		if(rst0 != null){rst0.close();}
+		    	    	}
+		    	    	else {
+		    		    	if(label.length() <= 50) {
+		    		    		relation.setLabel(label);
+			    	    		relation.setDescription("");
+					    		if(!language.isEmpty()) {
+					    			relation.getLabels().put(language, label);
+					    			relation.getDescriptions().put(language, "");
+					    		}
+		    		    	}
+		    		    	else {
+		    			    	relation.setDescription(label);
+		    		    		relation.setLabel(label.substring(0, 50));
+					    		if(!language.isEmpty()) {
+					    			relation.getLabels().put(language, label.substring(0, 50));
+					    			relation.getDescriptions().put(language, label);
+					    		}
+		    		    	}
+		    	    	}
+		    	    	
+		    	    }
+		    		if(rst0 != null){rst0.close();}
+	        	}
 	    		
 	    		if(relation.getLabel() == null) {relation.setLabel("");}
+	    		if(relation.getDescription() == null) {relation.setDescription("");}
 	        	
-	    		if(dbmd != null){
-	    			@SuppressWarnings("unchecked")
-	    			Map<String, Object> o = (Map<String, Object>) dbmd.get(pktable_name);
-	    			if(o != null){
-	    				String label = (String) o.get("table_remarks");
-		    			relation.setLabel(label);
-		    			String desc = (String) o.get("table_description");
-		    			relation.setDescription(desc);
-		           		if(!language.isEmpty()) {
-		           			relation.getLabels().put(language, label);
-		           			relation.getDescriptions().put(language, desc);
-		        		}	    			
-	    			}
+	    		if(importLabel) {
+		    		if(dbmd != null){
+		    			@SuppressWarnings("unchecked")
+		    			Map<String, Object> o = (Map<String, Object>) dbmd.get(pktable_name);
+		    			if(o != null){
+		    				String label = (String) o.get("table_remarks");
+			    			relation.setLabel(label);
+			    			String desc = (String) o.get("table_description");
+			    			relation.setDescription(desc);
+			           		if(!language.isEmpty()) {
+			           			relation.getLabels().put(language, label);
+			           			relation.getDescriptions().put(language, desc);
+			        		}	    			
+		    			}
+		    		}
 	    		}
 	        	
 	        	Seq seq = new Seq();

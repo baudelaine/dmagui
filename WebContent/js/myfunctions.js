@@ -861,12 +861,32 @@ function SetLanguage(language){
           qs.label = qs.labels[language];
           qs.description = qs.descriptions[language];
           $.each(qs.fields, function(j, field){
-            field.label = field.labels[language];
-            field.description = field.descriptions[language];
+            if(field.labels[language]){
+              field.label = field.labels[language];
+            }
+            else{
+              field.label = "";
+            }
+            if(field.descriptions[language]){
+              field.description = field.descriptions[language];
+            }
+            else{
+              field.description = "";
+            }
           })
           $.each(qs.relations, function(j, relation){
-            relation.description = relation.descriptions[language];
-            relation.label = relation.labels[language];
+            if(relation.descriptions[language]){
+              relation.description = relation.descriptions[language];
+            }
+            else{
+              relation.description = "";
+            }
+            if(relation.labels[language]){
+              relation.label = relation.labels[language];
+            }
+            else{
+              relation.label = "";
+            }
           })
         });
     }
@@ -3116,7 +3136,12 @@ function GetQuerySubjectsWithPK(){
 
 function GetPKRelations(table_name, table_alias, type){
 
-  var parms = "table=" + table_name + "&alias=" + table_alias + "&type=" + type;
+  var importLabel = false;
+  if($('#langSelect').find("option:selected").val() == currentProject.languages[0]){
+    importLabel = true;
+  }
+
+  var parms = "table=" + table_name + "&alias=" + table_alias + "&type=" + type + "&importLabel=" + importLabel;
 
 	console.log("calling GetPKRelations with: " + parms);
 
@@ -3206,13 +3231,19 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
 
       showalert("GetQuerySubjects()", table_alias + type + " already exists.", "alert-info", "bottom");
     }
+
   });
 
   if(qsAlreadyExist){
     return;
   }
 
-	var parms = "table=" + table_name + "&alias=" + table_alias + "&type=" + type + "&linker_id=" + linker_id;
+  var importLabel = false;
+  if($('#langSelect').find("option:selected").val() == currentProject.languages[0]){
+    importLabel = true;
+  }
+
+	var parms = "table=" + table_name + "&alias=" + table_alias + "&type=" + type + "&linker_id=" + linker_id + "&importLabel=" + importLabel;
 
 	console.log("calling GetQuerySubjects() with: " + parms);
 

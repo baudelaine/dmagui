@@ -2305,39 +2305,39 @@ function buildRelationTable($el, cols, data, qs){
             }
           }
 
-          // // disable table_alias if fin, ref, sec or tra checked
-          // // $tableRows.eq(i).find('a').eq(0) = table_alias
-          // if(activeTab.match("Final|Reference|Security|Translation")){
-          //   if(row.fin || row.ref || row.sec || row.tra){
-          //     $tableRows.eq(i).find('a').eq(0).editable('disable');
-          //     // To disable all editables
-          //     // $tableRows.eq(i).find('a').editable('disable');
-          //   }
-          // }
-          //
-          // if(activeTab.match("Reference|Security|Translation")){
-          //   if(row.fin){
-          //     $tableRows.eq(i).find('a').eq(2).editable('disable');
-          //   }
-          // }
-          //
-          // if(activeTab.match("Final|Reference|Translation")){
-          //   if(row.sec){
-          //     $tableRows.eq(i).find('a').eq(2).editable('disable');
-          //   }
-          // }
-          //
-          // if(activeTab.match("Final|Security|Translation")){
-          //   if(row.ref){
-          //     $tableRows.eq(i).find('a').eq(2).editable('disable');
-          //   }
-          // }
-          //
-          // if(activeTab.match("Final|Reference|Security")){
-          //   if(row.tra){
-          //     $tableRows.eq(i).find('a').eq(2).editable('disable');
-          //   }
-          // }
+          // disable table_alias if fin, ref, sec or tra checked
+          // $tableRows.eq(i).find('a').eq(0) = table_alias
+          if(activeTab.match("Final|Reference|Security|Translation")){
+            if(row.fin || row.ref || row.sec || row.tra){
+              $tableRows.eq(i).find('a').eq(0).editable('disable');
+              // To disable all editables
+              // $tableRows.eq(i).find('a').editable('disable');
+            }
+          }
+
+          if(activeTab.match("Reference|Security|Translation")){
+            if(row.fin){
+              $tableRows.eq(i).find('a').eq(2).editable('disable');
+            }
+          }
+
+          if(activeTab.match("Final|Reference|Translation")){
+            if(row.sec){
+              $tableRows.eq(i).find('a').eq(2).editable('disable');
+            }
+          }
+
+          if(activeTab.match("Final|Security|Translation")){
+            if(row.ref){
+              $tableRows.eq(i).find('a').eq(2).editable('disable');
+            }
+          }
+
+          if(activeTab.match("Final|Reference|Security")){
+            if(row.tra){
+              $tableRows.eq(i).find('a').eq(2).editable('disable');
+            }
+          }
 
         })
 

@@ -1117,12 +1117,16 @@ function getDimensions(dimensionSet, selectedQs){
     dataType: 'json',
     data: JSON.stringify(parms),
     success: function(data) {
-      console.log(data);
-      console.log(selectedQs);
+      // console.log(data);
+      // console.log(selectedQs);
+      // console.log("blablabla!!!!!!!");
       Gdimensions = data.DATA;
       var emptyOption = '<option class="fontsize" value="" data-subtext="' + '' + '"></option>';
+      // console.log(data.DATA);
 
-      if(data.DATA != null && !data.DATA){
+      // if(data.DATA != null && !data.DATA){
+      if(Object.keys(data.DATA).length > 0){
+        // console.log("blablabla!!!");
         $.each(Object.values(data.DATA), function(i, dimension){
           var dimensionOption = '<option class="fontsize" value="' + dimension.name + '" data-subtext="' + '' + '">' + dimension.name + '</option>';
           $('#selectDimension').append(dimensionOption);

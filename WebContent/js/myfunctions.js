@@ -1124,25 +1124,26 @@ function getDimensions(dimensionSet, selectedQs){
       var emptyOption = '<option class="fontsize" value="" data-subtext="' + '' + '"></option>';
       // console.log(data.DATA);
 
-      // if(data.DATA != null && !data.DATA){
-      if(Object.keys(data.DATA).length > 0){
-        // console.log("blablabla!!!");
-        $.each(Object.values(data.DATA), function(i, dimension){
-          var dimensionOption = '<option class="fontsize" value="' + dimension.name + '" data-subtext="' + '' + '">' + dimension.name + '</option>';
-          $('#selectDimension').append(dimensionOption);
-          // $.each(dimension.bks, function(i, bk){
-          //   if(bk.selectedQs == selectedQs){
-          //     var bkOption = '<option class="fontsize" value="' + bk.qsFinalName + ' -- ' + bk.bk + '" data-subtext="' + bk.qsFinalName + '">' + bk.bk + '</option>';
-          //     $('#selectBK').append(bkOption);
-          //   }
-          // });
-          // $.each(dimension.orders, function(i, order){
-          //   var orderOption = '<option class="fontsize" value="' + order.qsFinalName + ' -- ' + order.order + '" data-subtext="' + order.qsFinalName + '">' + order.order + '</option>';
-          //   $('#selectOrder').append(orderOption);
-          //
-          // });
+      if(data.DATA != null || !data.DATA){
+        if(Object.keys(data.DATA).length > 0){
+          // console.log("blablabla!!!");
+          $.each(Object.values(data.DATA), function(i, dimension){
+            var dimensionOption = '<option class="fontsize" value="' + dimension.name + '" data-subtext="' + '' + '">' + dimension.name + '</option>';
+            $('#selectDimension').append(dimensionOption);
+            // $.each(dimension.bks, function(i, bk){
+            //   if(bk.selectedQs == selectedQs){
+            //     var bkOption = '<option class="fontsize" value="' + bk.qsFinalName + ' -- ' + bk.bk + '" data-subtext="' + bk.qsFinalName + '">' + bk.bk + '</option>';
+            //     $('#selectBK').append(bkOption);
+            //   }
+            // });
+            // $.each(dimension.orders, function(i, order){
+            //   var orderOption = '<option class="fontsize" value="' + order.qsFinalName + ' -- ' + order.order + '" data-subtext="' + order.qsFinalName + '">' + order.order + '</option>';
+            //   $('#selectOrder').append(orderOption);
+            //
+            // });
 
-        })
+          })
+        }
       }
 
       $('#selectDimension').append(emptyOption);

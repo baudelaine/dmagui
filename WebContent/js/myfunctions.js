@@ -325,6 +325,7 @@ $qsTab.on('shown.bs.tab', function(e) {
   // $datasTable.bootstrapTable('showColumn', 'checkbox');
   $datasTable.bootstrapTable('showColumn', 'visible');
   $datasTable.bootstrapTable('showColumn', 'filter');
+  $datasTable.bootstrapTable('showColumn', 'secFilter');
   $datasTable.bootstrapTable('showColumn', 'label');
   $datasTable.bootstrapTable('hideColumn', 'operate');
   $datasTable.bootstrapTable('hideColumn', 'addRelation');
@@ -358,6 +359,7 @@ $finTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('showColumn', 'operate');
   $datasTable.bootstrapTable('hideColumn', 'visible');
   $datasTable.bootstrapTable('hideColumn', 'filter');
+  $datasTable.bootstrapTable('hideColumn', 'secFilter');
   $datasTable.bootstrapTable('showColumn', 'label');
   $datasTable.bootstrapTable('hideColumn', 'recurseCount');
   $datasTable.bootstrapTable('showColumn', 'addRelation');
@@ -384,6 +386,7 @@ $refTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('showColumn', 'operate');
   $datasTable.bootstrapTable('hideColumn', 'visible');
   $datasTable.bootstrapTable('hideColumn', 'filter');
+  $datasTable.bootstrapTable('hideColumn', 'secFilter');
   $datasTable.bootstrapTable('showColumn', 'label');
   $datasTable.bootstrapTable('showColumn', 'addPKRelation');
   // $datasTable.bootstrapTable('hideColumn', 'addFolder');
@@ -410,6 +413,7 @@ $secTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('showColumn', 'operate');
   $datasTable.bootstrapTable('hideColumn', 'visible');
   $datasTable.bootstrapTable('hideColumn', 'filter');
+  $datasTable.bootstrapTable('hideColumn', 'secFilter');
   $datasTable.bootstrapTable('showColumn', 'label');
   $datasTable.bootstrapTable('showColumn', 'addPKRelation');
   // $datasTable.bootstrapTable('hideColumn', 'addFolder');
@@ -433,6 +437,7 @@ $traTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('showColumn', 'operate');
   $datasTable.bootstrapTable('hideColumn', 'visible');
   $datasTable.bootstrapTable('hideColumn', 'filter');
+  $datasTable.bootstrapTable('hideColumn', 'secFilter');
   $datasTable.bootstrapTable('showColumn', 'label');
   $datasTable.bootstrapTable('showColumn', 'addPKRelation');
   $datasTable.bootstrapTable('showColumn', 'addRelation');

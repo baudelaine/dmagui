@@ -136,6 +136,7 @@ qsCols.push({field:"folder", title: "Folder", editable: {
 // qsCols.push({field:"folder", title: "Folder", editable: {type: "select", mode: "inline"}, sortable: true});
 // qsCols.push({field:"folder", title: "Folder", editable: {type: "text", mode: "inline"}, sortable: true});
 qsCols.push({field:"filter", title: "filter", editable: {type: "textarea", mode: "inline"}, sortable: true});
+qsCols.push({field:"secFilter", title: "security filters", editable: {type: "textarea", mode: "inline"}, sortable: true});
 qsCols.push({field:"label", title: "label", editable: {type: "textarea", mode: "inline"}, sortable: true});
 qsCols.push({field:"description", title: "Description", sortable: false, editable: {type: "textarea", mode: "inline", rows: 4}});
 qsCols.push({field:"recCount", title: "count(*)", sortable: true});

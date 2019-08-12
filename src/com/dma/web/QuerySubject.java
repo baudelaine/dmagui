@@ -16,6 +16,7 @@ public class QuerySubject {
 	String type = "";
 	boolean visible = false;
 	String filter = "";
+	String secFilter = "";
 	String Label = "";
 	String description = "";
 	boolean linker = false;
@@ -116,6 +117,12 @@ public class QuerySubject {
 	}
 	public void setFilter(String filter) {
 		this.filter = filter;
+	}
+	public String getSecFilter() {
+		return secFilter;
+	}
+	public void setSecFilter(String secFilter) {
+		this.secFilter = secFilter;
 	}
 	public String getLabel() {
 		return Label;

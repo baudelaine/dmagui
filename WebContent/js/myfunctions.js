@@ -1124,7 +1124,7 @@ function getDimensions(dimensionSet, selectedQs){
       var emptyOption = '<option class="fontsize" value="" data-subtext="' + '' + '"></option>';
       // console.log(data.DATA);
 
-      if(data.DATA != null || !data.DATA){
+      if(data.DATA != null && data.DATA){
         if(Object.keys(data.DATA).length > 0){
           // console.log("blablabla!!!");
           $.each(Object.values(data.DATA), function(i, dimension){

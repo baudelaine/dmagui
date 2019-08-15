@@ -12,8 +12,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -70,11 +72,6 @@ public class SetHiddenServlet extends HttpServlet {
 				
 				String json = (String) parms.get("qs");
 				QuerySubject qs = (QuerySubject) Tools.fromJSON(json, new TypeReference<QuerySubject>(){});
-				List<Field> fields = qs.getFields();
-				Map<String, Field> fieldsMap = new HashMap<String, Field>();
-				for(Field field: fields) {
-					fieldsMap.put(field.getField_name().toUpperCase(), field);
-				}
 				
 				Connection con = (Connection) request.getSession().getAttribute("con");
 				DatabaseMetaData metaData = con.getMetaData();
@@ -85,6 +82,7 @@ public class SetHiddenServlet extends HttpServlet {
 				
 				ResultSet rst0 = metaData.getColumns(con.getCatalog(), schema, table, "%");
 				Statement stmt = con.createStatement();
+				Set<String> rst0Result = new HashSet<String>();
 			    
 			    while (rst0.next()) {
 			    	String colName = rst0.getString("COLUMN_NAME").toUpperCase();
@@ -95,7 +93,7 @@ public class SetHiddenServlet extends HttpServlet {
 		            	System.out.println(query1); 
 			            if (!rst1.next()) {    
 			                System.out.println("No data"); 
-			                fieldsMap.get(colName).setHidden(true);
+			                rst0Result.add(colName);
 			            } 		            
 		            }
 		            catch(SQLException e){
@@ -112,9 +110,12 @@ public class SetHiddenServlet extends HttpServlet {
 			    if(stmt != null) {stmt.close();}
 		        if(rst0 != null){rst0.close();}
 		        
+				for(Field field: qs.getFields()) {
+					if(rst0Result.contains(field.getField_name())) {
+						field.setHidden(true);
+					}
+				}
 		        
-		        
-		        qs.setFields(new ArrayList<Field>(fieldsMap.values()));
 				result.put("DATAS", qs);
 				result.put("STATUS", "OK");
 				

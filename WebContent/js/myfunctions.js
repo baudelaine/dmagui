@@ -704,7 +704,13 @@ tableLabelQuery.addEventListener(
     }
     tables = Array.from(tables);
 
-    BuildTestQuery(query, type, tables);
+    console.log(tables);
+    if(tables.length == 0){
+      ShowAlert("Import at least one Query Subject to test.", "alert-warning", $("#queryModalAlert"));
+    }
+    else{
+      BuildTestQuery(query, type, tables);
+    }
     event.preventDefault();
   },
 false);
@@ -2986,6 +2992,7 @@ function buildTable($el, cols, data) {
     // $el.bootstrapTable('hideColumn', 'checkbox');
     $el.bootstrapTable('hideColumn', 'visible');
     $el.bootstrapTable('hideColumn', 'filter');
+    $el.bootstrapTable('hideColumn', 'secFilter');
     $el.bootstrapTable('showColumn', 'label');
     $el.bootstrapTable('hideColumn', 'recurseCount');
     $el.bootstrapTable('hideColumn', 'addPKRelation');
@@ -3283,6 +3290,17 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
   		$datasTable.bootstrapTable('append', data);
       datas = $datasTable.bootstrapTable("getData");
       $datasTable.bootstrapTable('expandRow', index);
+
+      console.log(datas);
+
+      $("#qsSelect").empty();
+      $.each(datas, function(i, data){
+        if(data.type.match("Final|Ref")){
+          var option = '<option class="fontsize" value="' + data.table_name + '" data-subtext="' + data.type + '" data-content="">' + data._id + '</option>';
+          $("#qsSelect").append(option);
+        }
+      })
+      $("#qsSelect").selectpicker('refresh');
 
   	},
       error: function(data) {
@@ -3891,6 +3909,16 @@ function OpenModel(id){
       $("#langSelect").selectpicker('refresh');
       SetLanguage(langs[0]);
 
+      $("#qsSelect").empty();
+      $.each($datasTable.bootstrapTable("getData"), function(i, data){
+        if(data.type.match("Final|Ref")){
+          var option = '<option class="fontsize" value="' + data.table_name + '" data-subtext="' + data.type + '" data-content="">' + data._id + '</option>';
+          $("#qsSelect").append(option);
+        }
+      })
+      $("#qsSelect").selectpicker('refresh');
+
+
 		},
 		error: function(data) {
 			showalert("OpenModel()", "Opening model failed.", "alert-danger", "bottom");
@@ -4392,6 +4420,60 @@ function OpenQueries(id){
 
 }
 
+$("#setHidden").click(function(){
+  var table = $("#qsSelect").find("option:selected").val();
+  console.log(table);
+  if(!table == ""){
+    $("#hiddenQueryModal").modal("toggle");
+    $("#hiddenQueryModalLabel").text("SQL queries for hidden" + " - " + table);
+  }
+  else{
+    showalert("No Query Subject selected.", "Select a Query Subject first.", "alert-warning", "bottom");
+  }
+})
+
+function setHidden(){
+
+  var qsId = $("#qsSelect").find("option:selected").text();
+  var qss = $datasTable.bootstrapTable('getData');
+  var qs;
+  var index;
+  $.each(qss, function(i, o){
+    if(o._id.match(qsId)){
+      qs = o;
+      index = i;
+    }
+  })
+
+  var query = $("#hiddenQuery").val().toUpperCase();
+
+  var parms = {"qs": JSON.stringify(qs), "query": query};
+
+  console.log(JSON.stringify(parms));
+
+  $.ajax({
+		type: 'POST',
+		url: "SetHidden",
+		dataType: 'json',
+    data: JSON.stringify(parms),
+
+		success: function(data) {
+      console.log(data.DATAS);
+      qss[index] = data.DATAS;
+      $refTab.tab('show');
+      $qsTab.tab('show');
+      $datasTable.bootstrapTable('expandRow', index);
+
+		},
+		error: function(data) {
+      console.log(data);
+		}
+	});
+
+  $("#hiddenQueryModal").modal("toggle");
+
+}
+
 $("#addLangMenu").click(function(){
 	$('#langModal').modal('toggle');
 	$("#langList").selectpicker("val", emptyOption);
@@ -4664,6 +4746,8 @@ $("#removeQS").click(function(){
     callback: function(result){
       if(result){
         $datasTable.bootstrapTable("removeAll");
+        $("#qsSelect").empty();
+        $("#qsSelect").selectpicker('refresh');
       }
     }
   });

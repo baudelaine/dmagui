@@ -142,6 +142,10 @@ $('#queryModal').on('hidden.bs.modal', function() {
     $('#searchSelect').selectpicker('deselectAll');
 });
 
+$("#addSqlLabel").click(function(){
+  $('#queryModal').modal('toggle');
+})
+
 tableLabelQuery.addEventListener('click', function(event){
   var query = $("#tableLabel").val();
   var type = 'table';
@@ -274,7 +278,6 @@ function OpenQueries(id){
 
 function GetQueriesList(){
 
-  $('#modQueriesList').modal('toggle');
 
 	$.ajax({
 		type: 'POST',
@@ -289,10 +292,11 @@ function GetQueriesList(){
       console.log("queriesList");
       console.log(queriesList);
 			// showalert("GetQueriesList()", "Queries list get successfull.", "alert-success", "bottom");
+      $('#modQueriesList').modal('toggle');
 
 		},
 		error: function(data) {
-			showalert("GetQueriesList()", "Getting queries list failed.", "alert-danger", "bottom");
+			ShowAlert("Getting queries list failed.", "alert-danger", $("#queryModalAlert"));
 		}
 	});
 
@@ -320,7 +324,7 @@ function SaveQueries(){
   console.log(vide);
 
   if(vide){
-    showalert("SaveQueries()", "Nothing to save.", "alert-warning", "bottom");
+    ShowAlert("Nothing to save.", "alert-warning", $("#queryModalAlert"));
     return;
   }
 
@@ -350,10 +354,10 @@ function SaveQueries(){
      		data: JSON.stringify(parms),
 
      		success: function(data) {
-     			showalert("SaveQueries()", "Queries saved successfully.", "alert-success", "bottom");
+     			ShowAlert("Queries saved successfully.", "alert-success", $("#queryModalAlert"));
      		},
      		error: function(data) {
-     			showalert("SaveQueries()", "Saving Queries failed.", "alert-danger", "bottom");
+     			ShowAlert("Saving Queries failed.", "alert-danger", $("#queryModalAlert"));
      		}
      	});
     }

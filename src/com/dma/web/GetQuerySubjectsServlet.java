@@ -277,6 +277,9 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		    head = head.substring(0, head.lastIndexOf(","));
 		    
 		    String sql = head + " from " + table_name;
+		    
+		    System.out.println(sql);
+		    
 		    PreparedStatement stmt0 = con.prepareStatement(sql);
 		    
 		    try {
@@ -298,6 +301,8 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 					}
 					recCount.put(table_name, rec);
 				}
+				
+				System.out.println(Tools.toJSON(recCount));
 		    }
             catch(SQLException e){
             	System.out.println("CATCHING SQLEXCEPTION...");

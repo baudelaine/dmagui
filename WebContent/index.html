@@ -359,6 +359,61 @@
 	  </div>
 	  <!-- logout modal -->
 
+		<!-- hiddenQuery modal -->
+		<div class="modal fade" id="hiddenQueryModal" tabindex="-1" role="dialog" aria-labelledby="hiddenQueryModalLabel" data-keyboard="false" data-backdrop="static">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h4 class="modal-title" id="hiddenQueryModalLabel">SQL queries for hidden</h4>
+					</div>
+					<div class="modal-body">
+						<div id="hiddenQueryModalAlert"></div>
+						<form>
+		          <div class="form-group">
+		            <!-- <label for="tableLabel" class="col-form-label">Table Label</label> -->
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelSyntax" aria-expanded="false" aria-controls="collapseExample">SQL syntax</a>
+								<div class="collapse" id="tableLabelSyntax">
+								  <div class="well well-sm">
+								    SELECT * FROM $TABLE WHERE $TABLE.$FIELD...
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelAboutParameter" aria-expanded="false" aria-controls="collapseExample">About parameter(s)</a>
+								<div class="collapse" id="tableLabelAboutParameter">
+								  <div class="well well-sm">
+								    $TABLE stand for the selected query subject table. <br>$FIELD stand for all fields of the table.
+										<br><br><span class="glyphicon glyphicon-info-sign" aria-hidden="true"> <strong>One query</strong> will be executed for <strong>each $FIELD</strong>. If <strong>no result found</strong>, <strong>hidden</strong> will be set to <strong>true</strong>.</span>
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelEG0" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
+								<div class="collapse" id="tableLabelEG0">
+								  <div class="well well-sm">
+										select * from $table where $table.$field is not null and $table.$field != '0' and $table.stx_at = 0
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelEG1" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
+								<div class="collapse" id="tableLabelEG1">
+								  <div class="well well-sm">
+										select * from workorder where $table.$field is not null and $table.$field != '0' and workorder.stx_at = 0
+								  </div>
+								</div>
+								<!-- <button type="button" id="tableLabelQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button> -->
+		          </div>
+        		</form>
+						<textarea class="form-control" id="hiddenQuery" rows="4"></textarea>
+					</div>
+					<div class="modal-footer">
+						<!-- <button type="button" onclick="SaveHiddenQueries()" class="btn btn-default" data-toggle="tooltip" title="Save queries to server."><span class="glyphicon glyphicon-save-file" aria-hidden="true"></span></button>
+						<button type="button" onclick="GetHiddenQueriesList()" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Open queries from server."><span class="glyphicon glyphicon-open-file" aria-hidden="true"></span></button> -->
+						<button type="button" class="btn btn-primary" onclick="setHidden()"><span class="glyphicon glyphicon-ok" aria-hidden="true"></button>
+						<button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove" aria-hidden="true"></button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- hiddenQuery modal -->
+
+
 		<!-- queriesList modal -->
 		<div class="modal fade" id="queryModal" tabindex="-1" role="dialog" aria-labelledby="queryModalLabel" data-keyboard="false" data-backdrop="static">
 			<div class="modal-dialog" role="document">
@@ -537,7 +592,7 @@
 
 				<div class="input-group">
 					<div class="input-group-btn">
-						<select class="selectpicker" data-style="btn-default" id="tables" data-live-search="true" title="Query Subjects..."></select>
+						<select class="selectpicker" data-style="btn-default" id="tables" data-live-search="true" title="Tables..."></select>
 						<button type="button" id="magnet" onclick="GetQuerySubjects()"class="btn btn-default dropdown-toggle" data-toggle="tooltip" data-placement="top" title="Get Query Subject."><span class="glyphicon glyphicon-magnet" aria-hidden="true"></span></button>
 						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 							<span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
@@ -550,6 +605,20 @@
 							<li><a href="#" id="expandQS">Expand All</a></li>
 							<li><a href="#" id="collapseQS">Collapse All</a></li>
 							<li><a href="#" id="removeQS">Remove All</a></li>
+						</ul>
+					</div>
+				</div>
+
+				<div class="input-group">
+					<div class="input-group-btn">
+						<select class="selectpicker" data-style="btn-default" id="qsSelect" data-live-search="true" title="Query Subjets..."></select>
+						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+							<span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+						</button>
+						<input type="hidden" id="alias" value=""/>
+						<ul class="dropdown-menu" id="qsMenu">
+							<li><a href="#" id="setHidden">Set Hidden</a></li>
+							<li class="disabled"><a href="#" id="unsetHidden">Unset Hidden</a></li>
 						</ul>
 					</div>
 				</div>

@@ -3181,29 +3181,36 @@ function GetPKRelations(table_name, table_alias, type){
 
     success: function(data) {
 			console.log(data);
-			if (data.length == 0) {
-				showalert("GetPKRelations()", table_name + " has no PK.", "alert-info", "bottom");
-				return;
-			}
+      if(data.DATAS){
+  			if (data.length == 0) {
+  				showalert("GetPKRelations()", table_name + " has no PK.", "alert-info", "bottom");
+  				return;
+  			}
+      }
 
-      if($activeSubDatasTable != undefined){
+      if(data.STATUS == "OK" && data.DATAS){
+        if($activeSubDatasTable != undefined){
 
-        var index;
-        var datas = $datasTable.bootstrapTable("getData");
-        $.each(datas, function(i, obj){
-          if(obj._id == table_alias + type){
-            index = i;
-          }
-        })
-        var relations = datas[index].relations;
+          var index;
+          var datas = $datasTable.bootstrapTable("getData");
+          $.each(datas, function(i, obj){
+            if(obj._id == table_alias + type){
+              index = i;
+            }
+          })
+          var relations = datas[index].relations;
 
-        $.each(data, function(i, obj){
-          $datasTable.bootstrapTable("getData")[index].relations.push(obj);
-        });
+          $.each(data.DATAS, function(i, obj){
+            $datasTable.bootstrapTable("getData")[index].relations.push(obj);
+          });
 
-        $datasTable.bootstrapTable("collapseRow", index);
-        $datasTable.bootstrapTable("expandRow", index);
+          $datasTable.bootstrapTable("collapseRow", index);
+          $datasTable.bootstrapTable("expandRow", index);
 
+        }
+      }
+      else{
+        showalert("GetPKRelations()", 'Operation failed.<br>' + data.EXCEPTION + "<br>" + data.MESSAGE + '<br><br><strong><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> ' + data.TROUBLESHOOTING + "</strong>", "alert-danger", "bottom");
       }
 
   	},
@@ -3283,29 +3290,91 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
 
     success: function(data) {
 			console.log(data);
-			if (data[0].relations.length == 0) {
-				showalert("GetQuerySubjects()", table_name + " has no key.", "alert-info", "bottom");
-				// return;
-			}
-  		$datasTable.bootstrapTable('append', data);
-      datas = $datasTable.bootstrapTable("getData");
-      $datasTable.bootstrapTable('expandRow', index);
+      if(data.DATAS){
+  			if (data.DATAS.relations.length == 0) {
+  				showalert("GetQuerySubjects()", table_name + " has no key.", "alert-info", "bottom");
+  				// return;
+  			}
+      }
+      if(data.STATUS == "OK"){
+        var newQS = [];
+        newQS.push(data.DATAS);
+    		$datasTable.bootstrapTable('append', newQS);
+        datas = $datasTable.bootstrapTable("getData");
+        $datasTable.bootstrapTable('expandRow', index);
 
-      console.log(datas);
+        console.log(datas);
 
-      $("#qsSelect").empty();
-      $.each(datas, function(i, data){
-        if(data.type.match("Final|Ref")){
-          var option = '<option class="fontsize" value="' + data.table_name + '" data-subtext="' + data.type + '" data-content="">' + data._id + '</option>';
-          $("#qsSelect").append(option);
+        $("#qsSelect").empty();
+        $.each(datas, function(i, data){
+          if(data.type.match("Final|Ref")){
+            var option = '<option class="fontsize" value="' + data.table_name + '" data-subtext="' + data.type + '" data-content="">' + data._id + '</option>';
+            $("#qsSelect").append(option);
+          }
+        })
+        $("#qsSelect").selectpicker('refresh');
+      }
+      else{
+        if(index){
+          $.each($datasTable.bootstrapTable("getData")[index].relations, function(i, rel){
+            if(rel.pktable_alias.match(table_alias)){
+              switch(type){
+                case 'Final':
+                  rel.fin = false;
+                  break;
+                case 'Ref':
+                  rel.ref = false;
+                  break;
+                case 'Sec':
+                  rel.sec = false;
+                  break;
+                case 'Tra':
+                  rel.tra = false;
+                  break;
+                default:
+              }
+            }
+          })
+          $datasTable.bootstrapTable('expandRow', index);
         }
-      })
-      $("#qsSelect").selectpicker('refresh');
+
+        showalert("GetQuerySubjects()", 'Operation failed.<br>' + data.EXCEPTION + "<br>" + data.MESSAGE + '<br><br><strong><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> ' + data.TROUBLESHOOTING + "</strong>", "alert-danger", "bottom");
+      }
 
   	},
       error: function(data) {
           console.log(data);
+          console.log(index);
+          console.log(table_alias);
+          console.log(type);
+          console.log($datasTable.bootstrapTable("getData"));
+
+          if(index){
+            $.each($datasTable.bootstrapTable("getData")[index].relations, function(i, rel){
+              if(rel.pktable_alias.match(table_alias)){
+                switch(type){
+                  case 'Final':
+                    rel.fin = false;
+                    break;
+                  case 'Ref':
+                    rel.ref = false;
+                    break;
+                  case 'Sec':
+                    rel.sec = false;
+                    break;
+                  case 'Tra':
+                    rel.tra = false;
+                    break;
+                  default:
+                }
+              }
+            })
+            $datasTable.bootstrapTable('expandRow', index);
+          }
+
           showalert("GetQuerySubjects()", "Operation failed.", "alert-danger", "bottom");
+
+
     }
 
   });
@@ -4449,8 +4518,6 @@ function setHidden(){
 
   var parms = {"qs": JSON.stringify(qs), "query": query};
 
-  console.log(JSON.stringify(parms));
-
   $.ajax({
 		type: 'POST',
 		url: "SetHidden",
@@ -4458,7 +4525,6 @@ function setHidden(){
     data: JSON.stringify(parms),
 
 		success: function(data) {
-      console.log(data.DATAS);
       qss[index] = data.DATAS;
       $refTab.tab('show');
       $qsTab.tab('show');

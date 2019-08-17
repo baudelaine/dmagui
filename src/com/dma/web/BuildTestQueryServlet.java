@@ -1,20 +1,15 @@
 package com.dma.web;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -53,7 +48,6 @@ public class BuildTestQueryServlet extends HttpServlet {
 		Map<String, Object> results = new HashMap<String, Object>();
 		String schema = null;
 		String dbEngine = null;
-		PreparedStatement stmt = null;
 		ResultSet rst = null;
 		
 		try {
@@ -81,6 +75,13 @@ public class BuildTestQueryServlet extends HttpServlet {
 			
 			switch(type){
 			
+				case "relation":
+
+					if(!query.isEmpty() && StringUtils.countMatches(query, " = ?") == 1){
+						query = StringUtils.replace(query, " = ?", " IN " + tableInClause);
+					}
+					break;
+					
 				case "table": 
 					
 					if(!query.isEmpty() && StringUtils.countMatches(query, "(?)") == 1){

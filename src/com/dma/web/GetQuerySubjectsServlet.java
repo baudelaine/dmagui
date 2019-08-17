@@ -1,18 +1,18 @@
 package com.dma.web;
 
 import java.io.IOException;
-import java.math.BigDecimal;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.math.RoundingMode;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,8 +20,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -30,6 +30,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Servlet implementation class GetImportedKeysServlet
@@ -71,6 +73,24 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		
+		Map<String, Object> result = new HashMap<String, Object>();
+		
+		result.put("CLIENT", request.getRemoteAddr() + ":" + request.getRemotePort());
+		result.put("SERVER", request.getLocalAddr() + ":" + request.getLocalPort());
+		
+		result.put("FROM", this.getServletName());
+		
+		String user = request.getUserPrincipal().getName();
+		result.put("USER", user);
+
+		result.put("JSESSIONID", request.getSession().getId());
+		
+		Path wks = Paths.get(getServletContext().getRealPath("/datas") + "/" + user);			
+		result.put("WKS", wks.toString());
+		
+		Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
+		result.put("PRJ", prj.toString());
+		
 		table = request.getParameter("table");
 		alias = request.getParameter("alias");
 		type = request.getParameter("type");
@@ -82,7 +102,6 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		System.out.println("type=" + type);
 		System.out.println("linker_id=" + linker_id);
 		System.out.println("importLabel=" + importLabel);
-		List<Object> result = new ArrayList<Object>();
 
 		try{
 			
@@ -100,24 +119,44 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 			
 			querySubject.setFields(getFields());
 			
-			if(schema.equalsIgnoreCase("MAXIMO")) {
-				Path path = Paths.get(request.getServletContext().getRealPath("res/maximo.json"));
-				relationsQuery = (String) Tools.fromJSON(path.toFile()).get("relationsQuery");
-
+			relationsQuery = (String) request.getSession().getAttribute("relationsQuery");
+			
+			if(relationsQuery == null) {
+			
+				Path path = Paths.get(prj + "/queries/relations.json");
+				
+				if(Files.exists(path)) {
+	
+					Map<String, String> query = (Map<String, String>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, String>>(){});
+					relationsQuery = query.get("FKquery");
+					request.getSession().setAttribute("FKQuery", relationsQuery);
+				}
+				
 			}
 			
 			querySubject.addRelations(getForeignKeys());
 				
-			result.add(querySubject);
+			result.put("DATAS", querySubject);
+			result.put("STATUS", "OK");
 			
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			result.put("STATUS", "KO");
+			result.put("EXCEPTION", e.getClass().getName());
+			result.put("MESSAGE", e.getMessage());
+			result.put("TROUBLESHOOTING", "Check relations settings are matching connected datasource.");
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			result.put("STACKTRACE", sw.toString());
+			e.printStackTrace(System.err);
+		}
+
+		finally{
 			response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
-			response.getWriter().write(Tools.toJSON(result));			
-		
+			response.getWriter().write(Tools.toJSON(result));
 		}
-		catch (Exception e){
-			e.printStackTrace(System.err);
-		}			
 	}
 
 	/**
@@ -248,62 +287,27 @@ public class GetQuerySubjectsServlet extends HttpServlet {
         if(rst != null){rst.close();}
         
         
-		Map<String, Object> recCount = new HashMap<String, Object>();
+		Set<String> emptyColumns = new HashSet<String>();
 		
         rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
+	    Statement stmt = con.createStatement();
 		
 	    while (rst.next()) {
 
-	    	String table_name = (rst.getString("TABLE_NAME"));
-
-		    ResultSet rst0 = metaData.getColumns(con.getCatalog(), schema, table_name, "%");
-	    	StringBuffer sb = new StringBuffer("select ");
-	    	Set<Integer> dataTypes = new HashSet<Integer>();
-	    	dataTypes.add(Types.BLOB);
-	    	dataTypes.add(Types.CLOB);
-	    	dataTypes.add(Types.NCLOB);
+	    	String colName = (rst.getString("COLUMN_NAME"));
 	    	
-		    while(rst0.next()){
-		    	String column_name =  rst0.getString("COLUMN_NAME");
-		    	int data_type = rst0.getInt("DATA_TYPE");
-		    	if(!dataTypes.contains(data_type)) {
-		    		sb.append("count(" + column_name + ") as " + column_name + ", ");
-		    	}
-		    }
+	    	String query = "select * from " + table + " where " + colName + " is not null";
+
 		    
-		    if(rst0 != null){rst0.close();}
-		    
-		    String head = sb.toString();
-		    head = head.substring(0, head.lastIndexOf(","));
-		    
-		    String sql = head + " from " + table_name;
-		    
-		    System.out.println(sql);
-		    
-		    PreparedStatement stmt0 = con.prepareStatement(sql);
-		    
-		    try {
-		    
-				rst0 = stmt0.executeQuery();
-				ResultSetMetaData rsmd = rst0.getMetaData();
-				int colCount = rsmd.getColumnCount();
-	
-				List<String> column_names = new ArrayList<String>();
-				
-				for(int colid = 1; colid <= colCount; colid++){
-					column_names.add(rsmd.getColumnLabel(colid));
-				}
-				
-				while(rst0.next()){
-					Map<String, Object> rec = new HashMap<String, Object>();
-					for(int colid = 1; colid <= colCount; colid++){
-						rec.put(column_names.get(colid -1), rst0.getObject(colid));
-					}
-					recCount.put(table_name, rec);
-				}
-				
-				System.out.println(Tools.toJSON(recCount));
-		    }
+    		ResultSet rst1 = null;
+            try{
+	            rst1 = stmt.executeQuery(query);
+            	System.out.println(query); 
+	            if (!rst1.next()) {    
+	                System.out.println("No data"); 
+	                emptyColumns.add(colName);
+	            } 		            
+            }
             catch(SQLException e){
             	System.out.println("CATCHING SQLEXCEPTION...");
             	System.out.println(e.getSQLState());
@@ -311,12 +315,12 @@ public class GetQuerySubjectsServlet extends HttpServlet {
             	
             }
             finally {
-				rst0.close();
-				stmt0.close();
+				if(rst1 != null) {rst1.close();}
             }
 		
 	    }
 	    if(rst != null){rst.close();}
+	    if(stmt != null) {stmt.close();}
 
 		List<Field> result = new ArrayList<Field>();
 		
@@ -403,29 +407,8 @@ public class GetQuerySubjectsServlet extends HttpServlet {
     			field.setTimeDimension(true);
     		}
     		
-
-    	    if(recCount.containsKey(table)) {
-    	    	Map<String, Object> obj = (Map<String, Object>) recCount.get(table);
-    	    	if(obj.containsKey(field_name)) {
-    	    		Object o = obj.get(field_name);
-    	    		field.setRecCount(o);
-    	    		
-    	    		if(o != null) {
-    	    		
-    	    			if(o instanceof Integer) {
-    	    	    		if((int) o == 0) {
-    	    	    			field.setHidden(true);
-    	    	    		}
-    	    			}
-    	    			if(o instanceof BigDecimal) {
-    	    				BigDecimal zero = new BigDecimal(0);
-    	    				if(((BigDecimal) o).compareTo(zero) == 0) {
-    	    	    			field.setHidden(true);
-    	    				}
-    	    			}
-    	    			
-    	    		}
-    	    	}
+    	    if(emptyColumns.contains(field_name)) {
+    	    	field.setHidden(true);
     	    }
     		
         	result.add(field);
@@ -441,12 +424,13 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		
 		Map<String, Relation> map = new HashMap<String, Relation>();
 		
+		PreparedStatement stmt = null;
 		ResultSet rst = null;
 		
-		if(schema.equalsIgnoreCase("MAXIMO") && !relationsQuery.isEmpty()) {
-			Statement stmt = con.createStatement();
-    		stmt.execute("SET SCHEMA " + schema);
-    		rst = stmt.executeQuery(relationsQuery.replace(";", "") + " WHERE TARGETOBJ = '" + table + "'");
+		if(relationsQuery != null && !relationsQuery.isEmpty()) {
+			stmt = con.prepareStatement(relationsQuery);
+			stmt.setString(1, table);
+    		rst = stmt.executeQuery();
     	}
 		else {
 			rst = metaData.getImportedKeys(con.getCatalog(), schema, table);
@@ -589,11 +573,11 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		        	relation.setWhere(sb.toString());
 		        	
 	        	}
-	        	
 	        }
-        	
 	        	
 	    }
+	    if(rst != null) {rst.close();}
+	    if(stmt != null) {stmt.close();}
 	    
 	    if(relationCount){
 	    	for(Entry<String, Relation> relation: map.entrySet()){
@@ -621,13 +605,13 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	    		String tables = sb.toString().substring(1);
 	    		
 	            long recCount = 0;
-	    		Statement stmt = null;
+	    		Statement stm = null;
 	    		ResultSet rs = null;
 	            try{
 		    		String query = "SELECT COUNT(*) FROM " + tables + " WHERE " + rel.where;
 		    		System.out.println(query);
-		    		stmt = con.createStatement();
-		            rs = stmt.executeQuery(query);
+		    		stm = con.createStatement();
+		            rs = stm.executeQuery(query);
 		            while (rs.next()) {
 		            	recCount = rs.getLong(1);
 		            }

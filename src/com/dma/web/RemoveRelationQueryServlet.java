@@ -3,17 +3,11 @@ package com.dma.web;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -21,19 +15,17 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 /**
  * Servlet implementation class AppendSelectionsServlet
  */
-@WebServlet(name = "SetHidden", urlPatterns = { "/SetHidden" })
-public class SetHiddenServlet extends HttpServlet {
+@WebServlet(name = "RemoveRelationQuery", urlPatterns = { "/RemoveRelationQuery" })
+public class RemoveRelationQueryServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public SetHiddenServlet() {
+    public RemoveRelationQueryServlet() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -63,67 +55,21 @@ public class SetHiddenServlet extends HttpServlet {
 			
 			Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
 			result.put("PRJ", prj.toString());
-			
-			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
-			
-			if(parms != null && parms.get("qs") != null && parms.get("query") != null) {
-				
-				String json = (String) parms.get("qs");
-				QuerySubject qs = (QuerySubject) Tools.fromJSON(json, new TypeReference<QuerySubject>(){});
-				
-				Connection con = (Connection) request.getSession().getAttribute("con");
-				DatabaseMetaData metaData = con.getMetaData();
-				String schema = (String) request.getSession().getAttribute("schema");
-				String table = qs.getTable_name();
-				String query0 = (String) parms.get("query");
-				query0 = query0.replaceAll("\\$TABLE", table);
-				
-				ResultSet rst0 = metaData.getColumns(con.getCatalog(), schema, table, "%");
-				Statement stmt = con.createStatement();
-				Set<String> rst0Result = new HashSet<String>();
-			    
-			    while (rst0.next()) {
-			    	String colName = rst0.getString("COLUMN_NAME").toUpperCase();
-			    	String query1 = query0.replaceAll("\\$FIELD", colName);
-		    		ResultSet rst1 = null;
-		            try{
-			            rst1 = stmt.executeQuery(query1);
-		            	System.out.println(query1); 
-			            if (!rst1.next()) {    
-			                System.out.println("No data"); 
-			                rst0Result.add(colName);
-			            } 		            
-		            }
-		            catch(SQLException e){
-		            	System.out.println("CATCHING SQLEXEPTION...");
-		            	System.out.println(e.getSQLState());
-		            	System.out.println(e.getMessage());
-		            	
-		            }
-		            finally {
-			            if(rst1 != null){rst1.close();}
-					}
-			    }
 
-			    if(stmt != null) {stmt.close();}
-		        if(rst0 != null){rst0.close();}
-		        
-				for(Field field: qs.getFields()) {
-					if(rst0Result.contains(field.getField_name())) {
-						field.setHidden(true);
-					}
-				}
-		        
-				result.put("DATAS", qs);
+			Path path = Paths.get(prj + "/queries/relations.json");
+			
+			if(Files.exists(path)) {
+
+				Files.delete(path);
 				result.put("STATUS", "OK");
-				
 			}
 			else {
 				result.put("STATUS", "KO");
-				result.put("ERROR", "Input parameters are not valid.");
-				throw new Exception();
-			}			
+				result.put("MESSAGE", path.toString() + " not found.");
+			}
 			
+			request.getSession().removeAttribute("FKQuery");
+			request.getSession().removeAttribute("PKQuery");
 		}
 		
 		catch (Exception e) {
@@ -131,6 +77,7 @@ public class SetHiddenServlet extends HttpServlet {
 			result.put("STATUS", "KO");
 			result.put("EXCEPTION", e.getClass().getName());
 			result.put("MESSAGE", e.getMessage());
+			result.put("TROUBLESHOOTING", "");
 			StringWriter sw = new StringWriter();
 			e.printStackTrace(new PrintWriter(sw));
 			result.put("STACKTRACE", sw.toString());

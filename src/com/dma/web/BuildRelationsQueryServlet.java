@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -21,19 +22,21 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Servlet implementation class AppendSelectionsServlet
  */
-@WebServlet(name = "SetHidden", urlPatterns = { "/SetHidden" })
-public class SetHiddenServlet extends HttpServlet {
+@WebServlet(name = "RunRelationsQuery", urlPatterns = { "/RunRelationsQuery" })
+public class BuildRelationsQueryServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public SetHiddenServlet() {
+    public BuildRelationsQueryServlet() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -66,56 +69,31 @@ public class SetHiddenServlet extends HttpServlet {
 			
 			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
 			
-			if(parms != null && parms.get("qs") != null && parms.get("query") != null) {
-				
-				String json = (String) parms.get("qs");
-				QuerySubject qs = (QuerySubject) Tools.fromJSON(json, new TypeReference<QuerySubject>(){});
-				
-				Connection con = (Connection) request.getSession().getAttribute("con");
-				DatabaseMetaData metaData = con.getMetaData();
-				String schema = (String) request.getSession().getAttribute("schema");
-				String table = qs.getTable_name();
-				String query0 = (String) parms.get("query");
-				query0 = query0.replaceAll("\\$TABLE", table);
-				
-				ResultSet rst0 = metaData.getColumns(con.getCatalog(), schema, table, "%");
-				Statement stmt = con.createStatement();
-				Set<String> rst0Result = new HashSet<String>();
-			    
-			    while (rst0.next()) {
-			    	String colName = rst0.getString("COLUMN_NAME").toUpperCase();
-			    	String query1 = query0.replaceAll("\\$FIELD", colName);
-		    		ResultSet rst1 = null;
-		            try{
-			            rst1 = stmt.executeQuery(query1);
-		            	System.out.println(query1); 
-			            if (!rst1.next()) {    
-			                System.out.println("No data"); 
-			                rst0Result.add(colName);
-			            } 		            
-		            }
-		            catch(SQLException e){
-		            	System.out.println("CATCHING SQLEXEPTION...");
-		            	System.out.println(e.getSQLState());
-		            	System.out.println(e.getMessage());
-		            	
-		            }
-		            finally {
-			            if(rst1 != null){rst1.close();}
-					}
-			    }
+			if(parms != null && parms.get("query") != null) {
 
-			    if(stmt != null) {stmt.close();}
-		        if(rst0 != null){rst0.close();}
-		        
-				for(Field field: qs.getFields()) {
-					if(rst0Result.contains(field.getField_name())) {
-						field.setHidden(true);
+				String query = (String) parms.get("query");
+
+				if(StringUtils.countMatches(query, " ? ") == 1) {
+				
+					Connection con = (Connection) request.getSession().getAttribute("con");
+					DatabaseMetaData metaData = con.getMetaData();
+					String schema = (String) request.getSession().getAttribute("schema");
+					
+					String[] types = {"TABLE"};
+					ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, "%", types);
+					
+					while (rst0.next()) {
+
+				    	String table_name = rst0.getString("TABLE_NAME");
+					
+					
+				    	PreparedStatement stmt = con.prepareStatement(query);
+					
 					}
+					if(rst0 != null) {rst0.close();}
+					
+					result.put("STATUS", "OK");
 				}
-		        
-				result.put("DATAS", qs);
-				result.put("STATUS", "OK");
 				
 			}
 			else {

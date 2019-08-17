@@ -1,21 +1,19 @@
 package com.dma.web;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,8 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Servlet implementation class GetTablesServlet
@@ -47,38 +43,43 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
+	
+	@SuppressWarnings({ "resource", "unchecked" })
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
-		Connection con = null;
-		Map<String, Object> result = new HashMap<String, Object>();
-		String schema = "";
 
+		Map<String, Object> result = new HashMap<String, Object>();
+		
 		try {
+
+			result.put("CLIENT", request.getRemoteAddr() + ":" + request.getRemotePort());
+			result.put("SERVER", request.getLocalAddr() + ":" + request.getLocalPort());
+			result.put("FROM", this.getServletName());
+			String user = request.getUserPrincipal().getName();
+			result.put("USER", user);
+			result.put("JSESSIONID", request.getSession().getId());
+			Path wks = Paths.get(getServletContext().getRealPath("/datas") + "/" + user);			
+			result.put("WKS", wks.toString());
+			Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
+			result.put("PRJ", prj.toString());
+//			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
 			
 			Path path = Paths.get((String) request.getSession().getAttribute("projectPath") + "/dbmd.json");
+			
+			Map<String, DBMDTable> dbmd = new HashMap<String, DBMDTable>();
 			
 			if(Files.exists(path)){
 				
 				System.out.println("Load Database Meta Datas from cache...");
 				
-				BufferedReader br = new BufferedReader(new FileReader(path.toFile()));
+				dbmd = (Map<String, DBMDTable>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, DBMDTable>>(){});				
+				result.put("DATAS", dbmd);
 				
-				ObjectMapper mapper = new ObjectMapper();
-		        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-				result = mapper.readValue(br, new TypeReference<Map<String, Object>>(){});
-
-				request.getSession().setAttribute("dbmd", result);
-				
-				response.setContentType("application/json");
-				response.setCharacterEncoding("UTF-8");
-				response.getWriter().write(Tools.toJSON(result));
-				
-				if(br != null){br.close();}
 			}
 			else{			
 			
-				con = (Connection) request.getSession().getAttribute("con");
-				schema = (String) request.getSession().getAttribute("schema");
+				Connection con = (Connection) request.getSession().getAttribute("con");
+				String schema = (String) request.getSession().getAttribute("schema");
 				
 			    DatabaseMetaData metaData = con.getMetaData();
 			    //String[] types = {"TABLE", "VIEW", "SYSTEM TABLE", "GLOBAL TEMPORARY", "LOCAL TEMPORARY", "ALIAS", "SYNONYM"};
@@ -90,25 +91,50 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 
 			    	String table_name = rst0.getString("TABLE_NAME");
 			    	
-			    	ResultSet rst = metaData.getImportedKeys(con.getCatalog(), schema, table_name);
+			    	ResultSet rst = null;
+			    	PreparedStatement stmt = null;
 			    	int FKSeqCount = 0;
 			    	Set<String> FKSet = new HashSet<String>();
+			    	
+			    	Path rels = Paths.get(prj + "/relationsQuery.json");
+			    	
+			    	if(Files.exists(rels)) {
+						String relationsQuery = (String) Tools.fromJSON(rels.toFile()).get("relationsQuery");
+						relationsQuery = relationsQuery.replace(";", "");
+			    		stmt = con.prepareStatement(relationsQuery);
+			    		stmt.setString(1, table_name);
+			    		rst = stmt.executeQuery();
+			    	}
+			    	else {
+				    	rst = metaData.getImportedKeys(con.getCatalog(), schema, table_name);
+			    	}
 			    	while(rst.next()){
 			    		String FKName = rst.getString("FK_NAME");
 			    		FKSet.add(FKName);
 			    		FKSeqCount++;
 			    	}
 		            if(rst != null){rst.close();}
-	
-			    	rst = metaData.getExportedKeys(con.getCatalog(), schema, table_name);
+		    		if(stmt != null){stmt.close();}
+
 			    	int PKSeqCount = 0;
 			    	Set<String> PKSet = new HashSet<String>();
+			    	if(Files.exists(rels)) {
+						String relationsQuery = (String) Tools.fromJSON(rels.toFile()).get("relationsQuery");
+						relationsQuery = relationsQuery.replace(";", "");
+			    		stmt = con.prepareStatement(relationsQuery);
+			    		stmt.setString(1, table_name);
+			    		rst = stmt.executeQuery();
+			    	}
+			    	else {
+			    		rst = metaData.getExportedKeys(con.getCatalog(), schema, table_name);
+			    	}
 			    	while(rst.next()){
 			    		String PKName = rst.getString("FK_NAME");
 			    		PKSet.add(PKName);
 			    		PKSeqCount++;
 			    	}
 		            if(rst != null){rst.close();}
+		    		if(stmt != null){stmt.close();}
 
 				    rst = metaData.getPrimaryKeys(con.getCatalog(), schema, table_name);
 				    Set<String> pks = new HashSet<String>();
@@ -127,7 +153,7 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 			        if(rst != null){rst.close();}
 			    	
 			    	long recCount = 0;
-		    		Statement stmt = null;
+		    		Statement stm = null;
 		    		ResultSet rs = null;
 		            try{
 			    		String query = "SELECT COUNT(*) FROM ";
@@ -135,8 +161,8 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 			    			query += schema + ".";
 			    		}
 			    		query += table_name;
-			    		stmt = con.createStatement();
-			            rs = stmt.executeQuery(query);
+			    		stm = con.createStatement();
+			            rs = stm.executeQuery(query);
 			            while (rs.next()) {
 			            	recCount = rs.getLong(1);
 			            }
@@ -148,76 +174,122 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 		            	
 		            }
 		            finally {
-			            if (stmt != null) { stmt.close();}
+			            if (stm != null) { stm.close();}
 			            if(rs != null){rs.close();}
 						
 					}
 			    	
+		            
+		            DBMDTable table = new DBMDTable();
+		            
 			    	String table_type = rst0.getString("TABLE_TYPE");
 			    	String table_remarks = rst0.getString("REMARKS");
 			    	String table_schema = rst0.getString("TABLE_SCHEM");
-			    	Map<String, Object> table = new HashMap<String, Object>();
-			    	table.put("table_name", table_name);
-			    	table.put("table_schema", table_schema);
-			    	table.put("table_type", table_type);
-			    	table.put("table_remarks", table_remarks);
-			    	table.put("table_recCount", recCount);
-			    	table.put("table_description", "");
-		    		table.put("table_primaryKeyFieldsCount", pks.size());
-		    		table.put("table_importedKeysCount", FKSet.size());
-		    		table.put("table_importedKeysSeqCount", FKSeqCount);
-		    		table.put("table_exportedKeysCount", PKSet.size());
-		    		table.put("table_exportedKeysSeqCount", PKSeqCount);
-		    		table.put("table_indexesCount", indexes.size());
+			    	table.setTable_name(table_name);
+			    	table.setTable_schema(table_schema);
+			    	table.setTable_type(table_type);
+			    	table.setTable_remarks(table_remarks);
+			    	
+			    	if(table_remarks == null) {
+			    		table.setTable_remarks("");
+			    		table.setTable_description("");
+			    	}
+			    	else {
+			    		if(table_remarks.length() <= 50) {
+				    		table.setTable_remarks(table_remarks);
+				    		table.setTable_description("");
+			    		}
+			    		else {
+				    		table.setTable_remarks(table_remarks.substring(1, 50));
+				    		table.setTable_description(table_remarks);
+			    		}
+			    	}
+			    	
+			    	table.setTable_recCount(recCount);
+		    		table.setTable_primaryKeyFieldsCount(pks.size());
+		    		table.setTable_importedKeysCount(FKSet.size());
+		    		table.setTable_importedKeysSeqCount(FKSeqCount);
+		    		table.setTable_exportedKeysCount(PKSet.size());
+		    		table.setTable_exportedKeysSeqCount(PKSeqCount);
+		    		table.setTable_indexesCount(indexes.size());
+
 		    		String stats = "(" + pks.size() + ") (" + FKSet.size() + ") (" + FKSeqCount + ") (" + PKSet.size() +
 		    				") (" + PKSeqCount + ") (" +  indexes.size() + ") (" + recCount + ")";  
-			    	table.put("table_stats", stats);
+			    	table.setTable_stats(stats);
 				    
 				    ResultSet rst1 = metaData.getColumns(con.getCatalog(), schema, table_name, "%");
-				    Map<String, Object> fields = new HashMap<String, Object>();
+				    
+				    Map<String, DBMDColumn> fields = new HashMap<String, DBMDColumn>();
+				    
 				    while(rst1.next()){
-					    Map<String, Object> field = new HashMap<>();
-				    	field.put("column_name", rst1.getString("COLUMN_NAME"));
-				    	field.put("column_type", rst1.getString("TYPE_NAME"));
-				    	field.put("column_remarks", rst1.getString("REMARKS"));
-			        	field.put("column_size", rst1.getInt("COLUMN_SIZE"));
-				    	field.put("column_description", null);
+					    DBMDColumn field = new DBMDColumn();
+				    	field.setColumn_name(rst1.getString("COLUMN_NAME"));
+				    	field.setColumn_type(rst1.getString("TYPE_NAME"));
+				    	String column_remarks = rst1.getString("REMARKS");
+				    	if(column_remarks == null) {
+				    		field.setColumn_remarks("");
+					    	field.setColumn_description("");
+				    	}
+				    	else {
+					    	if(column_remarks.length() <= 50) {
+					    		field.setColumn_remarks(column_remarks);
+						    	field.setColumn_description("");
+					    	}
+					    	else {
+					    		field.setColumn_remarks(column_remarks.substring(1, 50));
+						    	field.setColumn_description(column_remarks);
+					    	}
+				    	}
+			        	field.setColumn_size(rst1.getInt("COLUMN_SIZE"));
 			        	if(pks.contains(rst1.getString("COLUMN_NAME"))){
-			    			field.put("column_isPrimaryKey", true);
+			    			field.setColumn_isPrimaryKey(true);
 			    		}
 			        	else{
-			    			field.put("column_isPrimaryKey", false);
+			    			field.setColumn_isPrimaryKey(false);
 			        	}
 			        	if(indexes.contains(rst1.getString("COLUMN_NAME"))){
-			        		field.put("column_isIndexed", true);
+			        		field.setColumn_isIndexed(true);
 			        	}
 			        	else{
-			        		field.put("column_isIndexed", false);
+			        		field.setColumn_isIndexed(false);
 			        	}
 				    	
-			        	field.put("column_isNullable", rst1.getString("IS_NULLABLE"));
-				    	field.put("column_isFiltered", false);
-				    	field.put("filtered", false);
+			        	field.setColumn_isNullable(rst1.getString("IS_NULLABLE"));
+				    	field.setColumn_isFiltered(false);
+				    	field.setFiltered(false);
 					    fields.put(rst1.getString("COLUMN_NAME"), field);
 				    }
 				    if(rst1 != null){rst1.close();}
-				    table.put("columns", fields);
-				    result.put(table_name, table);
+				    table.setColumns(fields);
+				    dbmd.put(table_name, table);
 				    
 			    }		    
 			    
 			    if(rst0 != null){rst0.close();}
 			    
-			    response.setContentType("application/json");
-				response.setCharacterEncoding("UTF-8");
-				response.getWriter().write(Tools.toJSON(result));
-				
+				request.getSession().setAttribute("dbmd", dbmd);
+				result.put("DATAS", dbmd);
+			    
 			}
 			
 		}
-		catch (Exception e){
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			result.put("STATUS", "KO");
+			result.put("EXCEPTION", e.getClass().getName());
+			result.put("MESSAGE", e.getMessage());
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			result.put("STACKTRACE", sw.toString());
 			e.printStackTrace(System.err);
-		}		
+		}
+
+		finally{
+			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
+			response.getWriter().write(Tools.toJSON(result));
+		}
+		
 		
 	}
 

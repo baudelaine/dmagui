@@ -1,11 +1,15 @@
 package com.dma.web;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.math.RoundingMode;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -13,17 +17,18 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Servlet implementation class GetTablesServlet
@@ -47,6 +52,25 @@ public class GetPKRelationsServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 
+		
+		Map<String, Object> result = new HashMap<String, Object>();
+		
+		result.put("CLIENT", request.getRemoteAddr() + ":" + request.getRemotePort());
+		result.put("SERVER", request.getLocalAddr() + ":" + request.getLocalPort());
+		
+		result.put("FROM", this.getServletName());
+		
+		String user = request.getUserPrincipal().getName();
+		result.put("USER", user);
+
+		result.put("JSESSIONID", request.getSession().getId());
+		
+		Path wks = Paths.get(getServletContext().getRealPath("/datas") + "/" + user);			
+		result.put("WKS", wks.toString());
+		
+		Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
+		result.put("PRJ", prj.toString());
+		
 		boolean importLabel = false;
 		
 		String table = request.getParameter("table");
@@ -57,12 +81,9 @@ public class GetPKRelationsServlet extends HttpServlet {
 		boolean withRecCount = false;
 		boolean relationCount = false;
 
-		List<Object> result = new ArrayList<Object>();
 		Map<String, Object> dbmd = null;
 		
 		Connection con = null;
-		ResultSet rst = null;
-		Statement stmt = null;
 		DatabaseMetaData metaData = null;
 		String schema = "";
 		String language = "";
@@ -84,12 +105,28 @@ public class GetPKRelationsServlet extends HttpServlet {
 			
 		    Map<String, Relation> map = new HashMap<String, Relation>();
 		    
-			if(schema.equalsIgnoreCase("MAXIMO")) {
-				Path path = Paths.get(request.getServletContext().getRealPath("res/maximo.json"));
-				String relationsQuery = (String) Tools.fromJSON(path.toFile()).get("relationsQuery");
-	    		stmt = con.createStatement();
-	    		stmt.execute("SET SCHEMA " + schema);
-	    		rst = stmt.executeQuery(relationsQuery.replace(";", "") + " WHERE OBJECTNAME = '" + table + "'");
+			String relationsQuery = (String) request.getSession().getAttribute("relationsQuery");
+			
+			if(relationsQuery == null) {
+			
+				Path path = Paths.get(prj + "/queries/relations.json");
+				
+				if(Files.exists(path)) {
+	
+					Map<String, String> query = (Map<String, String>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, String>>(){});
+					relationsQuery = query.get("PKquery");
+					request.getSession().setAttribute("PKQuery", relationsQuery);
+				}
+				
+			}
+		    
+			PreparedStatement stmt = null;
+			ResultSet rst = null;
+			
+			if(relationsQuery != null && !relationsQuery.isEmpty()) {
+				stmt = con.prepareStatement(relationsQuery);
+				stmt.setString(1, table);
+	    		rst = stmt.executeQuery();
 	    	}
 			else {
 				rst = metaData.getExportedKeys(con.getCatalog(), schema, table);
@@ -246,7 +283,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 		    if(withRecCount){
 		    	
 	            long tableRecCount = 0;
-	    		stmt = null;
+	    		Statement stm = null;
 	    		ResultSet rs = null;
 	            try{
 		    		String query = "SELECT COUNT(*) FROM ";
@@ -255,8 +292,8 @@ public class GetPKRelationsServlet extends HttpServlet {
 		    		}
 		    		query += table;
 		    		
-		    		stmt = con.createStatement();
-		            rs = stmt.executeQuery(query);
+		    		stm = con.createStatement();
+		            rs = stm.executeQuery(query);
 		            while (rs.next()) {
 		            	tableRecCount = rs.getLong(1);
 		            }
@@ -268,7 +305,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 	            	
 	            }
 	            finally {
-		            if (stmt != null) { stmt.close();}
+		            if (stm != null) { stm.close();}
 		            if(rst != null){rst.close();}
 					
 				}
@@ -299,13 +336,13 @@ public class GetPKRelationsServlet extends HttpServlet {
 			    		String tables = sb.toString().substring(1);
 			    		
 			            long recCount = 0;
-			    		stmt = null;
+			    		stm = null;
 			    		rs = null;
 			            try{
 				    		String query = "SELECT COUNT(*) FROM " + tables + " WHERE " + rel.where;
 				    		System.out.println(query);
-				    		stmt = con.createStatement();
-				            rs = stmt.executeQuery(query);
+				    		stm = con.createStatement();
+				            rs = stm.executeQuery(query);
 				            while (rs.next()) {
 				            	recCount = rs.getLong(1);
 				            }
@@ -319,7 +356,6 @@ public class GetPKRelationsServlet extends HttpServlet {
 				    		double num = (d0/d1) * 100;
 				    		NumberFormat nf = NumberFormat.getInstance(Locale.ENGLISH);
 				    		nf.setMaximumFractionDigits(3);
-//				    		nf.setMinimumFractionDigits(5);	    
 				    		nf.setRoundingMode(RoundingMode.UP);
 				    	    num = Double.parseDouble(nf.format(num));
 				            rel.setRecCountPercent(num);
@@ -332,7 +368,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 			            	
 			            }
 			            finally {
-				            if (stmt != null) { stmt.close();}
+				            if (stm != null) { stm.close();}
 				            if(rst != null){rst.close();}
 							
 						}
@@ -341,16 +377,28 @@ public class GetPKRelationsServlet extends HttpServlet {
 	            }
 		    }		    
 		    
-		    result = new ArrayList<Object>(map.values());
+		    result.put("DATAS", new ArrayList<Object>(map.values()));
 			
-		    response.setContentType("application/json");
+			result.put("STATUS", "OK");
+		    
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			result.put("STATUS", "KO");
+			result.put("EXCEPTION", e.getClass().getName());
+			result.put("MESSAGE", e.getMessage());
+			result.put("TROUBLESHOOTING", "Check relations settings are matching connected datasource.");
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			result.put("STACKTRACE", sw.toString());
+			e.printStackTrace(System.err);
+		}
+
+		finally{
+			response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
 			response.getWriter().write(Tools.toJSON(result));
-			
 		}
-		catch (Exception e){
-			e.printStackTrace(System.err);
-		}		
 		
 	}
 

@@ -46,6 +46,7 @@
 						<li role="separator" class="divider"></li>
 						<li><a href="#" id="addSqlRel">Add SQL Relations</a></li>
 						<li><a href="#" id="addCsvRel">Add CSV Relations</a></li>
+						<li><a href="#" id="removeRel">Remove Relations</a></li>
 					</ul>
 				</div>
 			</div>
@@ -80,6 +81,96 @@
 		</div>
 		<!-- dynamic modal -->
 
+		<!-- relsQuery modal -->
+		<div class="modal fade" id="relsQueryModal" tabindex="-1" role="dialog" aria-labelledby="relsQueryModalLabel" data-keyboard="false" data-backdrop="static">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h4 class="modal-title" id="relsQueryModalLabel">SQL queries for relations</h4>
+					</div>
+					<div class="modal-body">
+						<div id="relsQueryModalAlert"></div>
+						<form>
+		          <div class="form-group">
+		            <label for="tableLabel" class="col-form-label">Foreign Key</label>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQuerySyntax" aria-expanded="false" aria-controls="collapseExample">SQL syntax</a>
+								<div class="collapse" id="relsQuerySyntax">
+								  <div class="well well-sm">
+								    SELECT ... as FK_NAME, ... as PK_NAME, ... as FKTABLE_NAME, ... as PKTABLE_NAME, ... as KEY_SEQ, ... as FKCOLUMN_NAME, ... as PKCOLUMN_NAME FROM .. = ?
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQueryAboutParameter" aria-expanded="false" aria-controls="collapseExample">About parameter(s)</a>
+								<div class="collapse" id="relsQueryAboutParameter">
+								  <div class="well well-sm">
+								    ? stand for each table available in database.
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQueryFKEG0" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
+								<div class="collapse" id="relsQueryFKEG0">
+								  <div class="well well-sm">
+										<strong>SELECT</strong> fk <strong>as FK_NAME,</strong> pk <strong>as PK_NAME,</strong> fkTable <strong>as FKTABLE_NAME,</strong> pkTable <strong>as PKTABLE_NAME,</strong> seq <strong>as KEY_SEQ,</strong> fkColumn <strong>as FKCOLUMN_NAME,</strong> pkColumn <strong>as PKCOLUMN_NAME FROM</strong> relationsTable WHERE fkTable <strong>= ?</strong>
+										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQueryFKEG1" aria-expanded="false" aria-controls="collapseExample">e.g. MAXIMO</a>
+								<div class="collapse" id="relsQueryFKEG1">
+								  <div class="well well-sm">
+										SELECT 'FK_' || TARGETOBJ || '_' || OBJECTNAME || '_' || LOGICALRELATIONSHIP.LOGICALRELATIONSHIPID as FK_NAME, 'PK_' || OBJECTNAME || '_' || TARGETOBJ || '_' || LOGICALRELATIONSHIP.LOGICALRELATIONSHIPID as PK_NAME, TARGETOBJ as FKTABLE_NAME, OBJECTNAME as PKTABLE_NAME, KEYNUM as KEY_SEQ, TARGETKEY as FKCOLUMN_NAME, PARENTKEY as PKCOLUMN_NAME FROM LOGICALRELATIONSHIP join LRKEYS on LOGICALRELATIONSHIP.LOGICALRELATIONSHIPID = LRKEYS.LOGICALRELATIONSHIPID WHERE TARGETOBJ = ?
+								  </div>
+								</div>
+								<button type="button" id="runFKQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+								<textarea class="form-control" id="FKQuery" rows="8"></textarea>
+		          </div>
+        		</form>
+
+						<form>
+		          <div class="form-group">
+		            <label for="tableLabel" class="col-form-label">Primary Key</label>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQuerySyntax" aria-expanded="false" aria-controls="collapseExample">SQL syntax</a>
+								<div class="collapse" id="relsQuerySyntax">
+								  <div class="well well-sm">
+								    SELECT ... as FK_NAME, ... as PK_NAME, ... as FKTABLE_NAME, ... as PKTABLE_NAME, ... as KEY_SEQ, ... as FKCOLUMN_NAME, ... as PKCOLUMN_NAME FROM .. = ?
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQueryAboutParameter" aria-expanded="false" aria-controls="collapseExample">About parameter(s)</a>
+								<div class="collapse" id="relsQueryAboutParameter">
+								  <div class="well well-sm">
+								    ? stand for each table available in database.
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQueryPKEG0" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
+								<div class="collapse" id="relsQueryPKEG0">
+								  <div class="well well-sm">
+										<strong>SELECT</strong> fk <strong>as FK_NAME,</strong> pk <strong>as PK_NAME,</strong> fkTable <strong>as FKTABLE_NAME,</strong> pkTable <strong>as PKTABLE_NAME,</strong> seq <strong>as KEY_SEQ,</strong> fkColumn <strong>as FKCOLUMN_NAME,</strong> pkColumn <strong>as PKCOLUMN_NAME FROM</strong> relationsTable WHERE pkTable <strong>= ?</strong>
+										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQueryPKEG1" aria-expanded="false" aria-controls="collapseExample">e.g. MAXIMO</a>
+								<div class="collapse" id="relsQueryPKEG1">
+								  <div class="well well-sm">
+										SELECT 'FK_' || TARGETOBJ || '_' || OBJECTNAME || '_' || LOGICALRELATIONSHIP.LOGICALRELATIONSHIPID as FK_NAME, 'PK_' || OBJECTNAME || '_' || TARGETOBJ || '_' || LOGICALRELATIONSHIP.LOGICALRELATIONSHIPID as PK_NAME, TARGETOBJ as FKTABLE_NAME, OBJECTNAME as PKTABLE_NAME, KEYNUM as KEY_SEQ, TARGETKEY as FKCOLUMN_NAME, PARENTKEY as PKCOLUMN_NAME FROM LOGICALRELATIONSHIP join LRKEYS on LOGICALRELATIONSHIP.LOGICALRELATIONSHIPID = LRKEYS.LOGICALRELATIONSHIPID WHERE OBJECTNAME = ?
+								  </div>
+								</div>
+								<button type="button" id="runPKQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+								<textarea class="form-control" id="PKQuery" rows="8"></textarea>
+		          </div>
+        		</form>
+
+					</div>
+					<div class="modal-footer">
+						<!-- <button type="button" onclick="SaveHiddenQueries()" class="btn btn-default" data-toggle="tooltip" title="Save queries to server."><span class="glyphicon glyphicon-save-file" aria-hidden="true"></span></button>
+						<button type="button" onclick="GetHiddenQueriesList()" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Open queries from server."><span class="glyphicon glyphicon-open-file" aria-hidden="true"></span></button> -->
+						<button type="button" class="btn btn-primary" onclick="saveRelsQuery()">Save</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal">Exit</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- relsQuery modal -->
+
+
+
 		<!-- queriesList modal -->
 		<div class="modal fade" id="queryModal" tabindex="-1" role="dialog" aria-labelledby="queryModalLabel" data-keyboard="false" data-backdrop="static">
 			<div class="modal-dialog" role="document">
@@ -112,6 +203,14 @@
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
+
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelEG1" aria-expanded="false" aria-controls="collapseExample">e.g. MAXIMO</a>
+								<div class="collapse" id="tableLabelEG1">
+								  <div class="well well-sm">
+										SELECT MAXIMO.MAXTABLE.TABLENAME AS Table_Name, MAXIMO.MAXOBJECT.DESCRIPTION AS Table_Label FROM MAXIMO.MAXTABLE join MAXIMO.MAXOBJECT on MAXIMO.MAXTABLE.TABLENAME = MAXIMO.MAXOBJECT.OBJECTNAME where MAXTABLE.TABLENAME IN (?)
+								  </div>
+								</div>
+
 								<button type="button" id="tableLabelQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
 		            <textarea class="form-control" id="tableLabel" rows="4"></textarea>
 		          </div>
@@ -136,6 +235,14 @@
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
+
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableDescriptionEG1" aria-expanded="false" aria-controls="collapseExample">e.g. MAXIMO</a>
+								<div class="collapse" id="tableDescriptionEG1">
+								  <div class="well well-sm">
+										SELECT MAXIMO.MAXTABLE.TABLENAME AS Table_Name, MAXIMO.MAXOBJECT.DESCRIPTION AS Table_Description FROM MAXIMO.MAXTABLE join MAXIMO.MAXOBJECT on MAXIMO.MAXTABLE.TABLENAME = MAXIMO.MAXOBJECT.OBJECTNAME where MAXTABLE.TABLENAME IN (?)
+								  </div>
+								</div>
+
 								<button type="button" id="tableDescriptionQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
 		            <textarea class="form-control" id="tableDescription" rows="4"></textarea>
 		          </div>
@@ -161,6 +268,14 @@
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
+
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnLabelEG1" aria-expanded="false" aria-controls="collapseExample">e.g. MAXIMO</a>
+								<div class="collapse" id="columnLabelEG1">
+								  <div class="well well-sm">
+										SELECT maxattribute.objectname AS Table_Name, maxattribute.attributeName AS Column_Name, maxattribute.title AS Column_Label FROM maxattribute where maxattribute.objectname = ? and maxattribute.attributeName IN (?)
+								  </div>
+								</div>
+
 								<button type="button" id="columnLabelQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
 		            <textarea class="form-control" id="columnLabel" rows="4"></textarea>
 		          </div>
@@ -186,6 +301,14 @@
 										<br><br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Everything in <strong>bold</strong> is <strong>mandatory</strong>.</span>
 								  </div>
 								</div>
+
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnDescriptionEG1" aria-expanded="false" aria-controls="collapseExample">e.g. MAXIMO</a>
+								<div class="collapse" id="columnDescriptionEG1">
+								  <div class="well well-sm">
+										SELECT maxattribute.objectname AS Table_Name, maxattribute.attributeName AS Column_Name, maxattribute.remarks AS Column_Description FROM maxattribute where maxattribute.objectname = ? and maxattribute.attributeName IN (?)
+								  </div>
+								</div>
+
 								<button type="button" id="columnDescriptionQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
 		            <textarea class="form-control" id="columnDescription" rows="4"></textarea>
 		          </div>

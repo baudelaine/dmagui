@@ -146,6 +146,122 @@ $("#addSqlLabel").click(function(){
   $('#queryModal').modal('toggle');
 })
 
+$("#addSqlRel").click(function(){
+  $('#relsQueryModal').modal('toggle');
+})
+
+$('#relsQueryModal').on('shown.bs.modal', function() {
+  if($('#searchSelect').val().length == 0){
+    $('#searchSelect').selectpicker('selectAll');
+  }
+
+  $.ajax({
+ 		type: 'POST',
+ 		url: "GetRelationQuery",
+ 		dataType: 'json',
+
+ 		success: function(data) {
+      console.log(data)
+      if(data.DATAS){
+        $("#FKQuery").val(data.DATAS.FKquery);
+        $("#PKQuery").val(data.DATAS.PKquery);
+      }
+ 		},
+ 		error: function(data) {
+      console.log(data)
+ 			ShowAlert("Getting relations queries failed.", "alert-danger", $("#relsQueryModalAlert"));
+ 		}
+ 	});
+
+
+});
+
+$('#relsQueryModal').on('hidden.bs.modal', function() {
+    $('#searchSelect').selectpicker('deselectAll');
+});
+
+function saveRelsQuery(){
+  var FKquery = $("#FKQuery").val().trim();
+  var PKquery = $("#PKQuery").val().trim();
+  if(FKquery.length == 0 && PKquery.length == 0){
+    ShowAlert("Nothing to save.", "alert-warning", $("#relsQueryModalAlert"));
+    return;
+  }
+
+  var parms = {"FKquery" : FKquery, "PKquery": PKquery};
+  console.log(parms);
+
+ 	$.ajax({
+ 		type: 'POST',
+ 		url: "SaveRelationQuery",
+ 		dataType: 'json',
+ 		data: JSON.stringify(parms),
+
+ 		success: function(data) {
+      console.log(data)
+ 			ShowAlert(data.MESSAGE, "alert-success", $("#relsQueryModalAlert"));
+      $('#searchSelect').selectpicker('unSelectAll');
+ 		},
+ 		error: function(data) {
+      console.log(data)
+ 			ShowAlert("Saving Query failed.", "alert-danger", $("#relsQueryModalAlert"));
+ 		}
+ 	});
+
+}
+
+removeRel.addEventListener('click', function(event){
+
+  bootbox.confirm({
+    title: "Removing relations.",
+    message: "Relations will be dropped.",
+    buttons: {
+      cancel: {
+          label: 'Cancel',
+          className: 'btn btn-default'
+      },
+      confirm: {
+          label: 'Confirm',
+          className: 'btn btn-primary'
+      }
+    },
+    callback: function(result){
+      if(result){
+        $.ajax({
+      		type: 'POST',
+      		url: "RemoveRelationQuery",
+      		dataType: 'json',
+
+      		success: function(data) {
+            console.log(data);
+            showalert("RemoveRelationQuery()", "Removing relations successfully.", "alert-success", "bottom");
+      		},
+      		error: function(data) {
+            console.log(data);
+      			showalert("RemoveRelationQuery()", "Removing relations query failed.", "alert-danger", "bottom");
+      		}
+      	});
+
+      }
+    }
+  });
+
+  event.preventDefault();
+}, false);
+
+runFKQuery.addEventListener('click', function(event){
+  var query = $("#FKQuery").val().trim();
+
+  console.log(query);
+  var type = 'relation';
+  var tables = $('#searchSelect').val();
+  if(CheckIfTableSelected()){
+    BuildTestQuery(query, type, tables);
+  }
+
+  event.preventDefault();
+}, false);
+
 tableLabelQuery.addEventListener('click', function(event){
   var query = $("#tableLabel").val();
   var type = 'table';
@@ -536,7 +652,7 @@ function GetDBMD(table) {
     $.when(
       $.ajax({
         type: 'POST',
-        url: "GetMaxDBMD",
+        url: "GetDBMD",
         dataType: 'json',
         async: true,
         success: function(data) {
@@ -547,7 +663,7 @@ function GetDBMD(table) {
     )
     .then(
       function(data){
-        dbmd = data;
+        dbmd = data.DATAS;
         loadDBMD(dbmd);
       }
     );

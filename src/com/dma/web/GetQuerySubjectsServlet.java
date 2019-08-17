@@ -247,63 +247,27 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 
         if(rst != null){rst.close();}
         
-        
-		Map<String, Object> recCount = new HashMap<String, Object>();
+Set<String> emptyColumns = new HashSet<String>();
 		
         rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
+	    Statement stmt = con.createStatement();
 		
 	    while (rst.next()) {
 
-	    	String table_name = (rst.getString("TABLE_NAME"));
-
-		    ResultSet rst0 = metaData.getColumns(con.getCatalog(), schema, table_name, "%");
-	    	StringBuffer sb = new StringBuffer("select ");
-	    	Set<Integer> dataTypes = new HashSet<Integer>();
-	    	dataTypes.add(Types.BLOB);
-	    	dataTypes.add(Types.CLOB);
-	    	dataTypes.add(Types.NCLOB);
+	    	String colName = (rst.getString("COLUMN_NAME"));
 	    	
-		    while(rst0.next()){
-		    	String column_name =  rst0.getString("COLUMN_NAME");
-		    	int data_type = rst0.getInt("DATA_TYPE");
-		    	if(!dataTypes.contains(data_type)) {
-		    		sb.append("count(" + column_name + ") as " + column_name + ", ");
-		    	}
-		    }
+	    	String query = "select * from " + table + "where " + colName + " is not null";
+
 		    
-		    if(rst0 != null){rst0.close();}
-		    
-		    String head = sb.toString();
-		    head = head.substring(0, head.lastIndexOf(","));
-		    
-		    String sql = head + " from " + table_name;
-		    
-		    System.out.println(sql);
-		    
-		    PreparedStatement stmt0 = con.prepareStatement(sql);
-		    
-		    try {
-		    
-				rst0 = stmt0.executeQuery();
-				ResultSetMetaData rsmd = rst0.getMetaData();
-				int colCount = rsmd.getColumnCount();
-	
-				List<String> column_names = new ArrayList<String>();
-				
-				for(int colid = 1; colid <= colCount; colid++){
-					column_names.add(rsmd.getColumnLabel(colid));
-				}
-				
-				while(rst0.next()){
-					Map<String, Object> rec = new HashMap<String, Object>();
-					for(int colid = 1; colid <= colCount; colid++){
-						rec.put(column_names.get(colid -1), rst0.getObject(colid));
-					}
-					recCount.put(table_name, rec);
-				}
-				
-				System.out.println(Tools.toJSON(recCount));
-		    }
+    		ResultSet rst1 = null;
+            try{
+	            rst1 = stmt.executeQuery(query);
+            	System.out.println(query); 
+	            if (!rst1.next()) {    
+	                System.out.println("No data"); 
+	                emptyColumns.add(colName);
+	            } 		            
+            }
             catch(SQLException e){
             	System.out.println("CATCHING SQLEXCEPTION...");
             	System.out.println(e.getSQLState());
@@ -311,12 +275,12 @@ public class GetQuerySubjectsServlet extends HttpServlet {
             	
             }
             finally {
-				rst0.close();
-				stmt0.close();
+				if(rst1 != null) {rst1.close();}
             }
 		
 	    }
 	    if(rst != null){rst.close();}
+	    if(stmt != null) {stmt.close();}        
 
 		List<Field> result = new ArrayList<Field>();
 		
@@ -403,30 +367,10 @@ public class GetQuerySubjectsServlet extends HttpServlet {
     			field.setTimeDimension(true);
     		}
     		
-
-    	    if(recCount.containsKey(table)) {
-    	    	Map<String, Object> obj = (Map<String, Object>) recCount.get(table);
-    	    	if(obj.containsKey(field_name)) {
-    	    		Object o = obj.get(field_name);
-    	    		field.setRecCount(o);
-    	    		
-    	    		if(o != null) {
-    	    		
-    	    			if(o instanceof Integer) {
-    	    	    		if((int) o == 0) {
-    	    	    			field.setHidden(true);
-    	    	    		}
-    	    			}
-    	    			if(o instanceof BigDecimal) {
-    	    				BigDecimal zero = new BigDecimal(0);
-    	    				if(((BigDecimal) o).compareTo(zero) == 0) {
-    	    	    			field.setHidden(true);
-    	    				}
-    	    			}
-    	    			
-    	    		}
-    	    	}
+   	    if(emptyColumns.contains(field_name)) {
+    	    	field.setHidden(true);
     	    }
+    		
     		
         	result.add(field);
         }

@@ -256,7 +256,7 @@ Set<String> emptyColumns = new HashSet<String>();
 
 	    	String colName = (rst.getString("COLUMN_NAME"));
 	    	
-	    	String query = "select * from " + table + "where " + colName + " is not null";
+	    	String query = "select * from " + table + " where " + colName + " is not null";
 
 		    
     		ResultSet rst1 = null;

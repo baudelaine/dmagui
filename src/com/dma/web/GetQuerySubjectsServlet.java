@@ -286,7 +286,6 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 
         if(rst != null){rst.close();}
         
-        
 		Set<String> emptyColumns = new HashSet<String>();
 		
         rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
@@ -410,6 +409,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
     	    if(emptyColumns.contains(field_name)) {
     	    	field.setHidden(true);
     	    }
+    		
     		
         	result.add(field);
         }

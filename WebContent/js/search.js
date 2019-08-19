@@ -146,6 +146,212 @@ $("#addSqlLabel").click(function(){
   $('#queryModal').modal('toggle');
 })
 
+$("#addCsvLabel").click(function(){
+  $('#csvLabelModal').modal('toggle');
+})
+
+$('#csvLabelModal').on('shown.bs.modal', function() {
+  $.ajax({
+ 		type: 'POST',
+ 		url: "GetCSVFirstRecords",
+ 		dataType: 'json',
+
+ 		success: function(data) {
+      console.log(data);
+
+      var $table = $("#csvTableLabelTable");
+      $table.find("tr:gt(0)").remove();
+      if(data.DATAS.tableLabel){
+        $.each(data.DATAS.tableLabel, function(i, record){
+          $table.append($('<tr>')
+            .append($('<td>').append(record.tableName))
+            .append($('<td>').append(record.tableLabel))
+          )
+        })
+        $table.append($('<tr>')
+          .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
+        )
+      }
+      else{
+        $table.append($('<tr>')
+          .append($('<td style="text-align: center; vertical-align: middle;" colspan="2">').append("no record found"))
+        )
+      }
+
+      $table = $("#csvTableDescriptionTable");
+      $table.find("tr:gt(0)").remove();
+      if(data.DATAS.tableDescription){
+        $.each(data.DATAS.tableDescription, function(i, record){
+          $table.append($('<tr>')
+            .append($('<td>').append(record.tableName))
+            .append($('<td>').append(record.tableDescription))
+          )
+        })
+        $table.append($('<tr>')
+          .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
+        )
+      }
+      else{
+        $table.append($('<tr>')
+          .append($('<td style="text-align: center; vertical-align: middle;" colspan="2">').append("no record found"))
+        )
+      }
+
+      $table = $("#csvColumnLabelTable");
+      $table.find("tr:gt(0)").remove();
+      if(data.DATAS.columnLabel){
+        $.each(data.DATAS.columnLabel, function(i, record){
+          $table.append($('<tr>')
+            .append($('<td>').append(record.tableName))
+            .append($('<td>').append(record.columnName))
+            .append($('<td>').append(record.columnLabel))
+          )
+        })
+        $table.append($('<tr>')
+          .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
+        )
+      }
+      else{
+        $table.append($('<tr>')
+          .append($('<td style="text-align: center; vertical-align: middle;" colspan="3">').append("no record found"))
+        )
+      }
+
+      $table = $("#csvColumnDescriptionTable");
+      $table.find("tr:gt(0)").remove();
+      if(data.DATAS.columnDescription){
+        $.each(data.DATAS.columnDescription, function(i, record){
+          $table.append($('<tr>')
+            .append($('<td>').append(record.tableName))
+            .append($('<td>').append(record.columnName))
+            .append($('<td>').append(record.columnDescription))
+          )
+        })
+        $table.append($('<tr>')
+          .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
+        )
+      }
+      else{
+        $table.append($('<tr>')
+          .append($('<td style="text-align: center; vertical-align: middle;" colspan="3">').append("no record found"))
+        )
+      }
+
+ 		},
+ 		error: function(data) {
+      console.log(data);
+ 		}
+ 	});
+
+});
+
+$("#csvTableLabelFile").change(function(){
+  UploadCSV($(this), 'tableLabel.csv', $("#csvTableLabelTable"));
+});
+
+$("#csvTableDescriptionFile").change(function(){
+  UploadCSV($(this), 'tableDescription.csv', $("#csvTableDescriptionTable"));
+});
+
+$("#csvColumnLabelFile").change(function(){
+  UploadCSV($(this), 'columnLabel.csv', $("#csvColumnLabelTable"));
+});
+
+$("#csvColumnDescriptionFile").change(function(){
+  UploadCSV($(this), 'columnDescription.csv', $("#csvColumnDescriptionTable"));
+});
+
+function UploadCSV($el, fileName, $table){
+
+  var file = $el[0].files[0];
+  console.log(file);
+
+  var fd = new FormData();
+  fd.append('file', file, fileName);
+  console.log(fd);
+
+  $.ajax({
+    url: "UploadCSV",
+    type: "POST",
+    data: fd,
+    enctype: 'multipart/form-data',
+    dataType: 'application/text',
+    processData: false,  // tell jQuery not to process the data
+    contentType: false,   // tell jQuery not to set contentType
+    success: function(data) {
+      console.log(data);
+		},
+		error: function(data) {
+      console.log(data);
+      if(data.responseText){
+        var result = JSON.parse(data.responseText);
+        console.log(result);
+        if(result.STATUS == "OK"){
+          ShowAlert(result.MESSAGE, "alert-success", $("#csvLabelModalAlert"));
+          console.log(result.DATAS);
+          // $table.find('tbody tr').remove();
+          $table.find("tr:gt(0)").remove();
+
+          $.each(result.DATAS, function(i, record){
+            switch(fileName){
+                case 'tableLabel.csv':
+                  $table.append($('<tr>')
+                    .append($('<td>').append(record.tableName))
+                    .append($('<td>').append(record.tableLabel))
+                  )
+                  break;
+                case 'tableDescription.csv':
+                  $table.append($('<tr>')
+                    .append($('<td>').append(record.tableName))
+                    .append($('<td>').append(record.tableDescription))
+                  )
+                  break;
+                case 'columnLabel.csv':
+                  $table.append($('<tr>')
+                    .append($('<td>').append(record.tableName))
+                    .append($('<td>').append(record.columnName))
+                    .append($('<td>').append(record.columnLabel))
+                  )
+                  break;
+                case 'columnDescription.csv':
+                  $table.append($('<tr>')
+                  .append($('<td>').append(record.tableName))
+                  .append($('<td>').append(record.columnName))
+                  .append($('<td>').append(record.columnDescription))
+                  )
+                  break;
+            }
+          })
+          $table.append($('<tr>')
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+          )
+        }
+        else{
+          ShowAlert(result.MESSAGE + "<br>" + result.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
+          $table.find("tr:gt(0)").remove();
+          $table.append($('<tr>')
+            .append($('<td style="text-align: center; vertical-align: middle;" colspan="3">').append("no record found"))
+          )
+          
+        }
+      }
+		}
+  }).done(function( data ) {
+    console.log(data);
+  });
+
+  $el.val('');
+
+
+
+}
+
+
 $("#addSqlRel").click(function(){
   $('#relsQueryModal').modal('toggle');
 })
@@ -250,7 +456,20 @@ removeRel.addEventListener('click', function(event){
 }, false);
 
 runFKQuery.addEventListener('click', function(event){
-  var query = $("#FKQuery").val().trim();
+  var query = $("#FKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
+
+  console.log(query);
+  var type = 'relation';
+  var tables = $('#searchSelect').val();
+  if(CheckIfTableSelected()){
+    BuildTestQuery(query, type, tables);
+  }
+
+  event.preventDefault();
+}, false);
+
+runPKQuery.addEventListener('click', function(event){
+  var query = $("#PKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
 
   console.log(query);
   var type = 'relation';
@@ -263,7 +482,7 @@ runFKQuery.addEventListener('click', function(event){
 }, false);
 
 tableLabelQuery.addEventListener('click', function(event){
-  var query = $("#tableLabel").val();
+  var query = $("#tableLabel").val().replace(/[^\x20-\x7E]/gmi, "");
   var type = 'table';
   var tables = $('#searchSelect').val();
   if(CheckIfTableSelected()){
@@ -273,7 +492,7 @@ tableLabelQuery.addEventListener('click', function(event){
 }, false);
 
 tableDescriptionQuery.addEventListener('click', function(event){
-  var query = $("#tableDescription").val();
+  var query = $("#tableDescription").val().replace(/[^\x20-\x7E]/gmi, "");
   var type = 'table';
   var tables = $('#searchSelect').val();
   if(CheckIfTableSelected()){
@@ -283,7 +502,7 @@ tableDescriptionQuery.addEventListener('click', function(event){
 }, false);
 
 columnLabelQuery.addEventListener('click', function(event){
-  var query = $("#columnLabel").val();
+  var query = $("#columnLabel").val().replace(/[^\x20-\x7E]/gmi, "");
   var type = 'column';
   var tables = $('#searchSelect').val();
   if(CheckIfTableSelected()){
@@ -293,7 +512,7 @@ columnLabelQuery.addEventListener('click', function(event){
 }, false);
 
 columnDescriptionQuery.addEventListener('click', function(event){
-  var query = $("#columnDescription").val();
+  var query = $("#columnDescription").val().replace(/[^\x20-\x7E]/gmi, "");
   var type = 'column';
   var tables = $('#searchSelect').val();
   if(CheckIfTableSelected()){

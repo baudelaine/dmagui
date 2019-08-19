@@ -43,6 +43,7 @@
 					<ul class="dropdown-menu" id="langMenu">
 						<li><a href="#" id="addSqlLabel">Add SQL Labels</a></li>
 						<li><a href="#" id="addCsvLabel">Add CSV Labels</a></li>
+						<li><a href="#" id="removeLabel">Remove Labels</a></li>
 						<li role="separator" class="divider"></li>
 						<li><a href="#" id="addSqlRel">Add SQL Relations</a></li>
 						<li><a href="#" id="addCsvRel">Add CSV Relations</a></li>
@@ -208,7 +209,7 @@
 								<div class="collapse" id="tableLabelEG1">
 								  <div class="well well-sm">
 										SELECT MAXIMO.MAXTABLE.TABLENAME AS Table_Name, MAXIMO.MAXOBJECT.DESCRIPTION AS Table_Label FROM MAXIMO.MAXTABLE join MAXIMO.MAXOBJECT on MAXIMO.MAXTABLE.TABLENAME = MAXIMO.MAXOBJECT.OBJECTNAME where MAXTABLE.TABLENAME IN (?)
-								  </div>
+									</div>
 								</div>
 
 								<button type="button" id="tableLabelQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
@@ -326,6 +327,170 @@
 			</div>
 		</div>
 		<!-- queriesList modal -->
+
+
+		<!-- csvLabel modal -->
+		<div class="modal fade" id="csvLabelModal" tabindex="-1" role="dialog" aria-labelledby="csvLabelModalLabel" data-keyboard="false" data-backdrop="static">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h4 class="modal-title" id="csvLabelModalTitle">CSV for labels and descriptions</h4>
+					</div>
+					<div class="modal-body">
+						<div id="csvLabelModalAlert"></div>
+						<form>
+		          <div class="form-group">
+		            <label for="tableLabel" class="col-form-label">Table Label</label>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#csvTableLabelSyntax" aria-expanded="false" aria-controls="collapseExample">CSV format</a>
+								<div class="collapse" id="csvTableLabelSyntax">
+								  <div class="well well-sm">
+								    TABLE_NAME;TABLE_NAME
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#csvTableLabelEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
+								<div class="collapse" id="csvTableLabelEG">
+								  <div class="well well-sm">
+								    <strong>PROJECT;this is project table label</strong>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
+								  </div>
+								</div>
+
+								<button type="button" id="csvTableLabelUpload" class="btn btn-default btn-xs btn-file" data-toggle="tooltip" title="Upload CSV.">
+									<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
+									<input type="file" accept=".csv" id="csvTableLabelFile" name="csvTableLabelFile">
+								</button>
+								<table class="table table-striped table-bordered fontsize" id="csvTableLabelTable">
+									<tr>
+										<th>Table Name</th>
+										<th>Table Label</th>
+									</tr>
+									<tr>
+										<td style="text-align: center; vertical-align: middle;" colspan="2">no record found</td>
+									</tr>
+								</table>
+		          </div>
+
+							<div class="form-group">
+		            <label for="tableDescription" class="col-form-label">Table Description</label>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#csvTableDescriptionSyntax" aria-expanded="false" aria-controls="collapseExample">CSV format</a>
+								<div class="collapse" id="csvTableDescriptionSyntax">
+									<div class="well well-sm">
+										TABLE_NAME;TABLE_DESCRIPTION
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
+									</div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#cvsTableDescriptionEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
+								<div class="collapse" id="cvsTableDescriptionEG">
+								  <div class="well well-sm">
+										<strong>PROJECT;This is project table description</strong>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
+								  </div>
+								</div>
+
+								<button type="button" id="csvTableDescriptionUpload" class="btn btn-default btn-xs btn-file" data-toggle="tooltip" title="Upload CSV.">
+									<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
+									<input type="file" accept=".csv" id="csvTableDescriptionFile" name="csvTableDescriptionFile">
+								</button>
+								<table class="table table-striped table-bordered fontsize" id="csvTableDescriptionTable">
+									<tr>
+										<th>Table Name</th>
+										<th>Table Description</th>
+									</tr>
+									<tr>
+										<td style="text-align: center; vertical-align: middle;" colspan="2">no record found</td>
+									</tr>
+								</table>
+		          </div>
+
+							<div class="form-group">
+		            <label for="columnLabel" class="col-form-label">Column Label</label>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#csvColumnLabelSyntax" aria-expanded="false" aria-controls="collapseExample">CSV format</a>
+								<div class="collapse" id="csvColumnLabelSyntax">
+								  <div class="well well-sm">
+										TABLE_NAME;COLUMN_NAME;COLUMN_LABEL
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#csvColumnLabelEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
+								<div class="collapse" id="csvColumnLabelEG">
+								  <div class="well well-sm">
+										<strong>PROJECT;PROJNO;This is projno column label</strong>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
+								  </div>
+								</div>
+
+								<button type="button" id="csvColumnLabelUpload" class="btn btn-default btn-xs btn-file" data-toggle="tooltip" title="Upload CSV.">
+									<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
+									<input type="file" accept=".csv" id="csvColumnLabelFile" name="csvColumnLabelFile">
+								</button>
+		            <table class="table table-striped table-bordered fontsize" id="csvColumnLabelTable">
+									<tr>
+										<th>Table Name</th>
+										<th>Column Name</th>
+										<th>Column Label</th>
+									</tr>
+									<tr>
+										<td style="text-align: center; vertical-align: middle;" colspan="3">no record found</td>
+									</tr>
+								</table>
+		          </div>
+
+							<div class="form-group">
+		            <label for="columnDescription" class="col-form-label">Column Description</label>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#csvColumnDescriptionSyntax" aria-expanded="false" aria-controls="collapseExample">CSV format</a>
+								<div class="collapse" id="csvColumnDescriptionSyntax">
+								  <div class="well well-sm">
+										TABLE_NAME;COLUMN_NAME;COLUMN_DESCRIPTION
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#csvColumnDescriptionEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
+								<div class="collapse" id="csvColumnDescriptionEG">
+								  <div class="well well-sm">
+										<strong>PROJECT;PROJNO;This is projno column description</strong>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
+								  </div>
+								</div>
+
+								<button type="button" id="csvColumnDescriptionUpload" class="btn btn-default btn-xs btn-file" data-toggle="tooltip" title="Upload CSV.">
+									<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
+									<input type="file" accept=".csv" id="csvColumnDescriptionFile" name="csvColumnDescriptionFile">
+								</button>
+								<table class="table table-striped table-bordered fontsize" id="csvColumnDescriptionTable">
+									<tr>
+										<th>Table Name</th>
+										<th>Column Name</th>
+										<th>Column Description</th>
+									</tr>
+									<tr>
+										<td style="text-align: center; vertical-align: middle;" colspan="3">no record found</td>
+									</tr>
+								</table>
+		          </div>
+        		</form>
+					</div>
+					<div class="modal-footer">
+						<!-- <button type="button" onclick="SaveQueries()" class="btn btn-default" data-toggle="tooltip" title="Save queries to server."><span class="glyphicon glyphicon-save-file" aria-hidden="true"></span></button>
+						<button type="button" onclick="GetQueriesList()" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Open queries from server."><span class="glyphicon glyphicon-open-file" aria-hidden="true"></span></button> -->
+						<!-- <button type="button" class="btn btn-primary" onclick="GetLabels()"><span class="glyphicon glyphicon-ok" aria-hidden="true"></button>
+						<button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove" aria-hidden="true"></button> -->
+						<button type="button" class="btn btn-primary" onclick="GetLabels()">Execute</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- csvLabelsQueries modal -->
 
 		<!-- modelList modal -->
 		<div class="modal fade" id="modQueriesList" tabindex="-1" role="dialog" aria-labelledby="mymodQueriesList" data-keyboard="false" data-backdrop="static">

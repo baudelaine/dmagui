@@ -128,6 +128,19 @@ public class UploadCSVServlet extends HttpServlet {
 							data.put("columnName", line.split(";")[1]);
 							data.put("columnDescription", line.split(";")[2]);
 							break;
+						case "relation.csv":
+							if(line.split(";").length != 7) {
+								Files.deleteIfExists(csv);
+								throw new ArrayIndexOutOfBoundsException();
+							}
+							data.put("FK_NAME", line.split(";")[0]);
+							data.put("PK_NAME", line.split(";")[1]);
+							data.put("FKTABLE_NAME", line.split(";")[2]);
+							data.put("PKTABLE_NAME", line.split(";")[3]);
+							data.put("KEY_SEQ", line.split(";")[4]);
+							data.put("FKCOLUMN_NAME", line.split(";")[5]);
+							data.put("PKCOLUMN_NAME", line.split(";")[6]);
+							break;
 						default:
 					}
 					datas.add(data);

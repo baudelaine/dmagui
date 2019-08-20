@@ -345,7 +345,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#csvTableLabelSyntax" aria-expanded="false" aria-controls="collapseExample">CSV format</a>
 								<div class="collapse" id="csvTableLabelSyntax">
 								  <div class="well well-sm">
-								    TABLE_NAME;TABLE_NAME
+								    TABLE_NAME;TABLE_LABEL
 										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
 										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
 								  </div>
@@ -365,8 +365,8 @@
 								</button>
 								<table class="table table-striped table-bordered fontsize" id="csvTableLabelTable">
 									<tr>
-										<th>Table Name</th>
-										<th>Table Label</th>
+										<th>TABLE_NAME</th>
+										<th>TABLE_LABEL</th>
 									</tr>
 									<tr>
 										<td style="text-align: center; vertical-align: middle;" colspan="2">no record found</td>
@@ -399,8 +399,8 @@
 								</button>
 								<table class="table table-striped table-bordered fontsize" id="csvTableDescriptionTable">
 									<tr>
-										<th>Table Name</th>
-										<th>Table Description</th>
+										<th>TABLE_NAME</th>
+										<th>TABLE_DESCRIPTION</th>
 									</tr>
 									<tr>
 										<td style="text-align: center; vertical-align: middle;" colspan="2">no record found</td>
@@ -433,9 +433,9 @@
 								</button>
 		            <table class="table table-striped table-bordered fontsize" id="csvColumnLabelTable">
 									<tr>
-										<th>Table Name</th>
-										<th>Column Name</th>
-										<th>Column Label</th>
+										<th>TABLE_NAME</th>
+										<th>COLUMN_NAME</th>
+										<th>COLUMN_LABEL</th>
 									</tr>
 									<tr>
 										<td style="text-align: center; vertical-align: middle;" colspan="3">no record found</td>
@@ -468,9 +468,9 @@
 								</button>
 								<table class="table table-striped table-bordered fontsize" id="csvColumnDescriptionTable">
 									<tr>
-										<th>Table Name</th>
-										<th>Column Name</th>
-										<th>Column Description</th>
+										<th>TABLE_NAME</th>
+										<th>COLUMN_NAME</th>
+										<th>COLUMN_DESCRIPTION</th>
 									</tr>
 									<tr>
 										<td style="text-align: center; vertical-align: middle;" colspan="3">no record found</td>
@@ -491,6 +491,71 @@
 			</div>
 		</div>
 		<!-- csvLabelsQueries modal -->
+
+		<!-- csvRelation modal -->
+		<div class="modal fade" id="csvRelationModal" tabindex="-1" role="dialog" aria-labelledby="csvRelationModalLabel" data-keyboard="false" data-backdrop="static">
+			<div class="modal-dialog" style="width: 800px" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h4 class="modal-title" id="csvRelationModalTitle">CSV for relations</h4>
+					</div>
+					<div class="modal-body">
+						<div id="csvRelationModalAlert"></div>
+						<form>
+		          <div class="form-group">
+		            <label for="tableLabel" class="col-form-label">Relation</label>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#csvRelationSyntax" aria-expanded="false" aria-controls="collapseExample">CSV format</a>
+								<div class="collapse" id="csvRelationSyntax">
+								  <div class="well well-sm">
+								    FK_NAME;PK_NAME;FKTABLE_NAME;PKTABLE_NAME;KEY_SEQ;FKCOLUMN_NAME;PKCOLUMN_NAME
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
+								  </div>
+								</div>
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#csvRelationEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
+								<div class="collapse" id="csvRelationEG">
+								  <div class="well well-sm">
+								    <strong>FK_WORKORDER_ACTCI_94;PK_ACTCI_WORKORDER_94;WORKORDER;ACTCI;1;CINUM;ACTCINUM</strong>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
+										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Do <strong>not</strong> include header or column name in first row.</span>
+								  </div>
+								</div>
+
+								<button type="button" id="csvRelationUpload" class="btn btn-default btn-xs btn-file" data-toggle="tooltip" title="Upload CSV.">
+									<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
+									<input type="file" accept=".csv" id="csvRelationFile" name="csvRelationFile">
+								</button>
+								<table class="table table-striped table-bordered fontsize" id="csvRelationTable">
+									<tr>
+										<th>FK_NAME</th>
+										<th>PK_NAME</th>
+										<th>FKTABLE_NAME</th>
+										<th>PKTABLE_NAME</th>
+										<th>KEY_SEQ</th>
+										<th>FKCOLUMN_NAME</th>
+										<th>PKCOLUMN_NAME</th>
+									</tr>
+									<tr>
+										<td style="text-align: center; vertical-align: middle;" colspan="7">no record found</td>
+									</tr>
+								</table>
+		          </div>
+
+        		</form>
+					</div>
+					<div class="modal-footer">
+						<!-- <button type="button" onclick="SaveQueries()" class="btn btn-default" data-toggle="tooltip" title="Save queries to server."><span class="glyphicon glyphicon-save-file" aria-hidden="true"></span></button>
+						<button type="button" onclick="GetQueriesList()" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Open queries from server."><span class="glyphicon glyphicon-open-file" aria-hidden="true"></span></button> -->
+						<!-- <button type="button" class="btn btn-primary" onclick="GetLabels()"><span class="glyphicon glyphicon-ok" aria-hidden="true"></button>
+						<button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove" aria-hidden="true"></button> -->
+						<button type="button" class="btn btn-primary" onclick="GetLabels()">Execute</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- csvRelation modal -->
 
 		<!-- modelList modal -->
 		<div class="modal fade" id="modQueriesList" tabindex="-1" role="dialog" aria-labelledby="mymodQueriesList" data-keyboard="false" data-backdrop="static">

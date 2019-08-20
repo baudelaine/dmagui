@@ -66,6 +66,7 @@ public class GetCSVFirstRecordsServlet extends HttpServlet {
 			csvs.add(Paths.get(prj + "/tableDescription.csv"));
 			csvs.add(Paths.get(prj + "/columnLabel.csv"));
 			csvs.add(Paths.get(prj + "/columnDescription.csv"));
+			csvs.add(Paths.get(prj + "/relation.csv"));
 			
 			Map<String, List<Map<String, Object>>> datas = (Map<String, List<Map<String, Object>>>) new HashMap<String, List<Map<String, Object>>>();
 			
@@ -97,6 +98,15 @@ public class GetCSVFirstRecordsServlet extends HttpServlet {
 									record.put("tableName", line.split(";")[0]);
 									record.put("columnName", line.split(";")[1]);
 									record.put("columnDescription", line.split(";")[2]);
+									break;
+								case "relation":
+									record.put("FK_NAME", line.split(";")[0]);
+									record.put("PK_NAME", line.split(";")[1]);
+									record.put("FKTABLE_NAME", line.split(";")[2]);
+									record.put("PKTABLE_NAME", line.split(";")[3]);
+									record.put("KEY_SEQ", line.split(";")[4]);
+									record.put("FKCOLUMN_NAME", line.split(";")[5]);
+									record.put("PKCOLUMN_NAME", line.split(";")[6]);
 									break;
 								default:
 							}

@@ -6,7 +6,9 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -56,16 +58,23 @@ public class RemoveRelationQueryServlet extends HttpServlet {
 			Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
 			result.put("PRJ", prj.toString());
 
-			Path path = Paths.get(prj + "/queries/relations.json");
+			List<Path> paths = Arrays.asList(
+					Paths.get(prj + "/queries/relations.json"),
+					Paths.get(prj + "/relation.csv")
+					);
+					
 			
-			if(Files.exists(path)) {
-
-				Files.delete(path);
-				result.put("STATUS", "OK");
-			}
-			else {
-				result.put("STATUS", "KO");
-				result.put("MESSAGE", path.toString() + " not found.");
+			for(Path path: paths) {
+			
+				if(Files.exists(path)) {
+	
+					Files.delete(path);
+					result.put("STATUS", "OK");
+				}
+				else {
+					result.put("STATUS", "KO");
+					result.put("MESSAGE", path.toString() + " not found.");
+				}
 			}
 			
 			request.getSession().removeAttribute("FKQuery");

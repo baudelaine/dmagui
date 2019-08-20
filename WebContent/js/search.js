@@ -150,6 +150,58 @@ $("#addCsvLabel").click(function(){
   $('#csvLabelModal').modal('toggle');
 })
 
+$("#addCsvRel").click(function(){
+  $("#csvRelationModal").modal('toggle');
+})
+
+$('#csvRelationModal').on('shown.bs.modal', function() {
+  $.ajax({
+ 		type: 'POST',
+ 		url: "GetCSVFirstRecords",
+ 		dataType: 'json',
+
+ 		success: function(data) {
+      console.log(data);
+
+      var $table = $("#csvRelationTable");
+      $table.find("tr:gt(0)").remove();
+      if(data.DATAS){
+        if(data.DATAS.relation){
+          $.each(data.DATAS.relation, function(i, record){
+            $table.append($('<tr>')
+            .append($('<td>').append(record.FK_NAME))
+            .append($('<td>').append(record.PK_NAME))
+            .append($('<td>').append(record.FKTABLE_NAME))
+            .append($('<td>').append(record.PKTABLE_NAME))
+            .append($('<td>').append(record.KEY_SEQ))
+            .append($('<td>').append(record.FKCOLUMN_NAME))
+            .append($('<td>').append(record.PKCOLUMN_NAME))
+            )
+          })
+          $table.append($('<tr>')
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+          )
+        }
+      }
+      else{
+        $table.append($('<tr>')
+          .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
+        )
+      }
+ 		},
+ 		error: function(data) {
+      console.log(data);
+ 		}
+ 	});
+
+})
+
 $('#csvLabelModal').on('shown.bs.modal', function() {
   $.ajax({
  		type: 'POST',
@@ -212,6 +264,7 @@ $('#csvLabelModal').on('shown.bs.modal', function() {
         $table.append($('<tr>')
           .append($('<td>').append("..."))
           .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
         )
       }
       else{
@@ -231,6 +284,7 @@ $('#csvLabelModal').on('shown.bs.modal', function() {
           )
         })
         $table.append($('<tr>')
+          .append($('<td>').append("..."))
           .append($('<td>').append("..."))
           .append($('<td>').append("..."))
         )
@@ -265,6 +319,10 @@ $("#csvColumnDescriptionFile").change(function(){
   UploadCSV($(this), 'columnDescription.csv', $("#csvColumnDescriptionTable"));
 });
 
+$("#csvRelationFile").change(function(){
+  UploadCSV($(this), 'relation.csv', $("#csvRelationTable"));
+});
+
 function UploadCSV($el, fileName, $table){
 
   var file = $el[0].files[0];
@@ -291,7 +349,13 @@ function UploadCSV($el, fileName, $table){
         var result = JSON.parse(data.responseText);
         console.log(result);
         if(result.STATUS == "OK"){
-          ShowAlert(result.MESSAGE, "alert-success", $("#csvLabelModalAlert"));
+          switch(fileName){
+            case 'relation.csv':
+              ShowAlert(result.MESSAGE, "alert-success", $("#csvRelationModalAlert"));
+              break;
+            default:
+              ShowAlert(result.MESSAGE, "alert-success", $("#csvLabelModalAlert"));
+          }
           console.log(result.DATAS);
           // $table.find('tbody tr').remove();
           $table.find("tr:gt(0)").remove();
@@ -324,20 +388,61 @@ function UploadCSV($el, fileName, $table){
                   .append($('<td>').append(record.columnDescription))
                   )
                   break;
+                case 'relation.csv':
+                  $table.append($('<tr>')
+                  .append($('<td>').append(record.FK_NAME))
+                  .append($('<td>').append(record.PK_NAME))
+                  .append($('<td>').append(record.FKTABLE_NAME))
+                  .append($('<td>').append(record.PKTABLE_NAME))
+                  .append($('<td>').append(record.KEY_SEQ))
+                  .append($('<td>').append(record.FKCOLUMN_NAME))
+                  .append($('<td>').append(record.PKCOLUMN_NAME))
+                  )
+                  break;
             }
           })
-          $table.append($('<tr>')
-            .append($('<td>').append("..."))
-            .append($('<td>').append("..."))
-          )
+          switch(fileName){
+            case 'tableLabel.csv':
+            case 'tableDescription.csv':
+              $table.append($('<tr>')
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+              )
+              break;
+            case 'columnLabel.csv':
+            case 'columnDescription.csv':
+              $table.append($('<tr>')
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+              )
+              break;
+            case 'relation.csv':
+              $table.append($('<tr>')
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+              )
+              break;
+          }
         }
         else{
-          ShowAlert(result.MESSAGE + "<br>" + result.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
+          switch(fileName){
+            case 'relation.csv':
+              ShowAlert(result.MESSAGE + "<br>" + result.TROUBLESHOOTING, "alert-danger", $("#csvRelationModalAlert"));
+              break;
+            default:
+              ShowAlert(result.MESSAGE + "<br>" + result.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
+          }
           $table.find("tr:gt(0)").remove();
           $table.append($('<tr>')
-            .append($('<td style="text-align: center; vertical-align: middle;" colspan="3">').append("no record found"))
+            .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
           )
-          
+
         }
       }
 		}
@@ -346,8 +451,6 @@ function UploadCSV($el, fileName, $table){
   });
 
   $el.val('');
-
-
 
 }
 
@@ -420,7 +523,7 @@ removeRel.addEventListener('click', function(event){
 
   bootbox.confirm({
     title: "Removing relations.",
-    message: "Relations will be dropped.",
+    message: "Both SQL and CSV Relations will be dropped. Do you confirm ?",
     buttons: {
       cancel: {
           label: 'Cancel',
@@ -428,7 +531,7 @@ removeRel.addEventListener('click', function(event){
       },
       confirm: {
           label: 'Confirm',
-          className: 'btn btn-primary'
+          className: 'btn btn-warning'
       }
     },
     callback: function(result){
@@ -440,6 +543,8 @@ removeRel.addEventListener('click', function(event){
 
       		success: function(data) {
             console.log(data);
+            $("#FKQuery").val('');
+            $("#PKQuery").val('');
             showalert("RemoveRelationQuery()", "Removing relations successfully.", "alert-success", "bottom");
       		},
       		error: function(data) {

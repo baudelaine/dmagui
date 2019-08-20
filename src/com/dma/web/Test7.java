@@ -120,9 +120,9 @@ public class Test7 {
 			Statement stm = conn.createStatement();
 
 			// Query the table. The name of the table is the name of the file without ".csv"
-			ResultSet results = stm.executeQuery("SELECT * FROM relations");
+			ResultSet results = stm.executeQuery("SELECT * FROM relations where PKTABLE_NAME = 'PROJECT'");
 			while(results.next()) {
-				System.out.println(results.getString("PK_NAME"));
+				System.out.println(results.getString("FK_NAME"));
 			}
 			
 			

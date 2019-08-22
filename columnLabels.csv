@@ -1,3 +1,4 @@
+TABLE_NAME;COLUMN_NAME;COLUMN_LABEL
 ACT;ACTNO;Ce champs est le label fr de la colonne ACTNO de la table ACT
 ACT;ACTKWD;Ce champs est le label fr de la colonne ACTKWD de la table ACT
 ACT;ACTDESC;Ce champs est le label fr de la colonne ACTDESC de la table ACT

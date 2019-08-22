@@ -91,13 +91,18 @@ public class UploadCSVServlet extends HttpServlet {
 			
 			LineNumberReader reader = new LineNumberReader(new BufferedReader(new FileReader(csv.toFile())));
 			try{
-				for (String line; ((line = reader.readLine()) != null) && reader.getLineNumber() <= 2; ) {
+				for (String line; ((line = reader.readLine()) != null) && reader.getLineNumber() <= 4; ) {
 					Map<String, Object> data = new HashMap<String, Object>();
 					switch(csv.getFileName().toString()) {
 						case "tableLabel.csv":
 							if(line.split(";").length != 2) {
 								Files.deleteIfExists(csv);
 								throw new ArrayIndexOutOfBoundsException();
+							}
+							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;TABLE_LABEL")) {
+								Files.deleteIfExists(csv);
+								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+								throw new Exception("First row have to match column headers.");
 							}
 							data.put("tableName", line.split(";")[0]);
 							data.put("tableLabel", line.split(";")[1]);
@@ -107,6 +112,11 @@ public class UploadCSVServlet extends HttpServlet {
 								Files.deleteIfExists(csv);
 								throw new ArrayIndexOutOfBoundsException();
 							}
+							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;TABLE_DESCRIPTION")) {
+								Files.deleteIfExists(csv);
+								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+								throw new Exception("First row have to match column headers.");
+							}
 							data.put("tableName", line.split(";")[0]);
 							data.put("tableDescription", line.split(";")[1]);
 							break;
@@ -114,6 +124,11 @@ public class UploadCSVServlet extends HttpServlet {
 							if(line.split(";").length != 3) {
 								Files.deleteIfExists(csv);
 								throw new ArrayIndexOutOfBoundsException();
+							}
+							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_LABEL")) {
+								Files.deleteIfExists(csv);
+								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+								throw new Exception("First row have to match column headers.");
 							}
 							data.put("tableName", line.split(";")[0]);
 							data.put("columnName", line.split(";")[1]);
@@ -124,6 +139,11 @@ public class UploadCSVServlet extends HttpServlet {
 								Files.deleteIfExists(csv);
 								throw new ArrayIndexOutOfBoundsException();
 							}
+							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_DESCRIPTION")) {
+								Files.deleteIfExists(csv);
+								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+								throw new Exception("First row have to match column headers.");
+							}
 							data.put("tableName", line.split(";")[0]);
 							data.put("columnName", line.split(";")[1]);
 							data.put("columnDescription", line.split(";")[2]);
@@ -132,6 +152,11 @@ public class UploadCSVServlet extends HttpServlet {
 							if(line.split(";").length != 7) {
 								Files.deleteIfExists(csv);
 								throw new ArrayIndexOutOfBoundsException();
+							}
+							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("FK_NAME;PK_NAME;FKTABLE_NAME;PKTABLE_NAME;KEY_SEQ;FKCOLUMN_NAME;PKCOLUMN_NAME")) {
+								Files.deleteIfExists(csv);
+								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+								throw new Exception("First row have to match column headers.");
 							}
 							data.put("FK_NAME", line.split(";")[0]);
 							data.put("PK_NAME", line.split(";")[1]);
@@ -143,7 +168,10 @@ public class UploadCSVServlet extends HttpServlet {
 							break;
 						default:
 					}
-					datas.add(data);
+					if(reader.getLineNumber() > 1) {
+						datas.add(data);
+					}
+
 				}
 			}
 			finally{
@@ -154,7 +182,7 @@ public class UploadCSVServlet extends HttpServlet {
 			
 		}
 		
-		catch(java.lang.ArrayIndexOutOfBoundsException e) {
+		catch(ArrayIndexOutOfBoundsException e) {
 			result.put("STATUS", "KO");
 			result.put("EXCEPTION", e.getClass().getName());
 			result.put("MESSAGE", "Incorrect CSV format.");

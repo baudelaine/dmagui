@@ -1,3 +1,4 @@
+TABLE_NAME;COLUMN_NAME;COLUMN_DESCRIPTION
 ACT;ACTNO;Ce champs est la description fr de la colonne ACTNO de la table ACT
 ACT;ACTKWD;Ce champs est la description fr de la colonne ACTKWD de la table ACT
 ACT;ACTDESC;Ce champs est la description fr de la colonne ACTDESC de la table ACT

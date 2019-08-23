@@ -3,7 +3,6 @@ package com.dma.web;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -15,19 +14,17 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 /**
  * Servlet implementation class AppendSelectionsServlet
  */
-@WebServlet(name = "GetRelationQuery", urlPatterns = { "/GetRelationQuery" })
-public class GetRelationQueryServlet extends HttpServlet {
+@WebServlet(name = "GetCsvLabels", urlPatterns = { "/GetCsvLabels" })
+public class GetCsvLabelsServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public GetRelationQueryServlet() {
+    public GetCsvLabelsServlet() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -58,20 +55,20 @@ public class GetRelationQueryServlet extends HttpServlet {
 			Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
 			result.put("PRJ", prj.toString());
 			
-			Path path = Paths.get(prj + "/relation.json");
+			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
 			
-			if(Files.exists(path)) {
-
-				@SuppressWarnings("unchecked")
-				Map<String, String> query = (Map<String, String>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, String>>(){});
-				result.put("DATAS", query);
+			if(parms != null) {
+				result.put("DATAS", "Blablabla...");
 				result.put("STATUS", "OK");
 			}
 			else {
 				result.put("STATUS", "KO");
-				result.put("MESSAGE", path.toString() + " not found.");
+				result.put("ERROR", "Input parameters are not valid.");
+				throw new Exception();
 			}
 			
+			result.put("DATAS", "Blablabla...");
+			result.put("STATUS", "OK");
 			
 		}
 		

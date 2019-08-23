@@ -3,14 +3,20 @@ package com.dma.web;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Servlet implementation class AppendSelectionsServlet
@@ -33,33 +39,69 @@ public class RemoveDBMDLabelsServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 
-		Map<String, Object> datas = new HashMap<String, Object>();
+		Map<String, Object> result = new HashMap<String, Object>();
 
 		try {
 			
-			datas.put("FROM", this.getServletName());
+			result.put("CLIENT", request.getRemoteAddr() + ":" + request.getRemotePort());
+			result.put("SERVER", request.getLocalAddr() + ":" + request.getLocalPort());
 			
+			result.put("FROM", this.getServletName());
 			
-			datas.put("DATAS", "Blablabla...");
-			datas.put("STATUS", "OK");
+			String user = request.getUserPrincipal().getName();
+			result.put("USER", user);
+
+			result.put("JSESSIONID", request.getSession().getId());
+			
+			Path wks = Paths.get(getServletContext().getRealPath("/datas") + "/" + user);			
+			result.put("WKS", wks.toString());
+			
+			Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
+			result.put("PRJ", prj.toString());
+
+			Path path = Paths.get(prj + "/dbmd.json");
+			
+			System.out.println(path.getFileName().toString());
+			
+			if(Files.exists(path)){
+				@SuppressWarnings("unchecked")
+				Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, DBMDTable>>(){});
+				System.out.println(Tools.toJSON(dbmd));
 				
+				for(Entry<String, DBMDTable> e: dbmd.entrySet()) {
+					DBMDTable table = e.getValue();
+					table.setTable_description("");
+					table.setTable_remarks("");
+					Map<String, DBMDColumn> columns = table.getColumns();
+					for(Entry<String, DBMDColumn> f: columns.entrySet()){
+						DBMDColumn column = f.getValue();
+						column.setColumn_description("");
+						column.setColumn_remarks("");
+					}
+				}
+
+				result.put("DATAS", dbmd);
+				
+			}			
+			
+			result.put("STATUS", "OK");
 		}
 		
 		catch (Exception e) {
 			// TODO Auto-generated catch block
-			datas.put("STATUS", "KO");
-			datas.put("EXCEPTION", e.getClass().getName());
-			datas.put("MESSAGE", e.getMessage());
+			result.put("STATUS", "KO");
+			result.put("EXCEPTION", e.getClass().getName());
+			result.put("MESSAGE", e.getMessage());
 			StringWriter sw = new StringWriter();
 			e.printStackTrace(new PrintWriter(sw));
-			datas.put("STACKTRACE", sw.toString());
+			result.put("STACKTRACE", sw.toString());
 			e.printStackTrace(System.err);
 		}
 
 		finally{
 			response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
-			response.getWriter().write(Tools.toJSON(datas));
+			response.getWriter().write(Tools.toJSON(result));
 		}
 
 	}

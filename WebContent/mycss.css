@@ -5,6 +5,18 @@
 .gi-4x{font-size: 4em;}
 .gi-5x{font-size: 5em;}*/
 
+.modal-dialog,
+.modal-content {
+    /* 80% of window height */
+    height: 80%;
+}
+
+.modal-body {
+    /* 100% = dialog height, 120px = header + footer */
+    max-height: calc(100% - 120px);
+    overflow-y: scroll;
+}
+
 .flyover {
    left: 150%;
    overflow: hidden;

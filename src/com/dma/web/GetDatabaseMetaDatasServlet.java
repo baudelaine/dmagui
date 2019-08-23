@@ -70,8 +70,6 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 			
 			if(Files.exists(path)){
 				
-				System.out.println("Load Database Meta Datas from cache...");
-				
 				dbmd = (Map<String, DBMDTable>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, DBMDTable>>(){});				
 				result.put("DATAS", dbmd);
 				
@@ -96,10 +94,10 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 			    	int FKSeqCount = 0;
 			    	Set<String> FKSet = new HashSet<String>();
 			    	
-			    	Path rels = Paths.get(prj + "/relationsQuery.json");
+			    	Path rels = Paths.get(prj + "/relation.json");
 			    	
 			    	if(Files.exists(rels)) {
-						String relationsQuery = (String) Tools.fromJSON(rels.toFile()).get("relationsQuery");
+						String relationsQuery = (String) Tools.fromJSON(rels.toFile()).get("FKQuery");
 						relationsQuery = relationsQuery.replace(";", "");
 			    		stmt = con.prepareStatement(relationsQuery);
 			    		stmt.setString(1, table_name);
@@ -271,6 +269,7 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 				result.put("DATAS", dbmd);
 			    
 			}
+			result.put("STATUS", "OK");
 			
 		}
 		catch (Exception e) {

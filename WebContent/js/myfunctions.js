@@ -276,6 +276,9 @@ $(document)
   GetCurrentProject();
 
 })
+.on('hidden.bs.modal', '.modal', function () {
+    $('.modal:visible').length && $(document.body).addClass('modal-open');
+})
 .ajaxStart(function(){
     $("div#divLoading").addClass('show');
 		$("div#modDivLoading").addClass('show');

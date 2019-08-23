@@ -53,6 +53,9 @@ $(document)
   ChooseColumn($('#searchColumnSelect'));
   // GetDBMD($('#searchTable'));
 })
+.on('hidden.bs.modal', '.modal', function () {
+    $('.modal:visible').length && $(document.body).addClass('modal-open');
+})
 .ajaxStart(function(){
     $("div#divLoading").addClass('show');
 })
@@ -119,6 +122,9 @@ $('#dynamicModal').on('shown.bs.modal', function(){
 
 });
 
+$('#modQueriesList').on('hidden.bs.modal', function() {
+});
+
 $('#modQueriesList').on('shown.bs.modal', function() {
   $(this).find('.modal-body').empty();
   var list = '<div class="container-fluid"><div class="row"><form role="form"><div class="form-group">';
@@ -131,6 +137,8 @@ $('#modQueriesList').on('shown.bs.modal', function() {
   list += '</div></form><script>$("#searchlist").btsListFilter("#searchinput", {itemChild: "span", initial: false, casesensitive: false});</script>';
   $(this).find('.modal-body').append(list);
 });
+
+
 
 $('#queryModal').on('shown.bs.modal', function() {
   if($('#searchSelect').val().length == 0){
@@ -196,11 +204,13 @@ $('#csvRelationModal').on('shown.bs.modal', function() {
             .append($('<td>').append("..."))
             .append($('<td>').append("..."))
           )
+          $('#delCsvRelation').prop('disabled', false);
         }
         else{
           $table.append($('<tr>')
             .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
           )
+          $('#delCsvRelation').prop('disabled', true);
         }
       }
  		},
@@ -247,11 +257,13 @@ $('#csvLabelModal').on('shown.bs.modal', function() {
           .append($('<td>').append("..."))
           .append($('<td>').append("..."))
         )
+        $('#delCsvTableLabel').prop('disabled', false);
       }
       else{
         $table.append($('<tr>')
           .append($('<td style="text-align: center; vertical-align: middle;" colspan="2">').append("no record found"))
         )
+        $('#delCsvTableLabel').prop('disabled', true);
       }
 
       $table = $("#csvTableDescriptionTable");
@@ -267,11 +279,13 @@ $('#csvLabelModal').on('shown.bs.modal', function() {
           .append($('<td>').append("..."))
           .append($('<td>').append("..."))
         )
+        $('#delCsvTableDescription').prop('disabled', false);
       }
       else{
         $table.append($('<tr>')
           .append($('<td style="text-align: center; vertical-align: middle;" colspan="2">').append("no record found"))
         )
+        $('#delCsvTableDescription').prop('disabled', true);
       }
 
       $table = $("#csvColumnLabelTable");
@@ -289,11 +303,13 @@ $('#csvLabelModal').on('shown.bs.modal', function() {
           .append($('<td>').append("..."))
           .append($('<td>').append("..."))
         )
+        $('#delCsvColumnLabel').prop('disabled', false);
       }
       else{
         $table.append($('<tr>')
           .append($('<td style="text-align: center; vertical-align: middle;" colspan="3">').append("no record found"))
         )
+        $('#delCsvColumnLabel').prop('disabled', true);
       }
 
       $table = $("#csvColumnDescriptionTable");
@@ -311,11 +327,13 @@ $('#csvLabelModal').on('shown.bs.modal', function() {
           .append($('<td>').append("..."))
           .append($('<td>').append("..."))
         )
+        $('#delCsvColumnDescription').prop('disabled', false);
       }
       else{
         $table.append($('<tr>')
           .append($('<td style="text-align: center; vertical-align: middle;" colspan="3">').append("no record found"))
         )
+        $('#delCsvColumnDescription').prop('disabled', true);
       }
 
  		},
@@ -391,53 +409,25 @@ delCsvRelation.addEventListener('click', function(event){
   event.preventDefault();
 }, false);
 
-saveCsvRelation.addEventListener('click', function(event){
-  var files = [];
-  if(document.getElementById('csvRelationTable').rows[1].innerText.match('no record found')){
-    files.push('relation.csv');
-    deleteCsv(files);
-  }
-  else{
-    var msg = "Nothing to save.";
-    ShowAlert(msg, "alert-info", $("#csvRelationModalAlert"));
-  }
+$('#delCsvTableLabel').click(function(){
+  deleteCsv(['tableLabel.csv']);
+})
 
-  event.preventDefault();
-}, false);
+$('#delCsvTableDescription').click(function(){
+  deleteCsv(['tableDescription.csv']);
+})
 
-saveCsvLabel.addEventListener('click', function(event){
+$('#delCsvColumnLabel').click(function(){
+  deleteCsv(['columnLabel.csv']);
+})
 
-  $('#csvLabelModal .collapse').each(function () {
-      $(this).collapse('hide');
-  });
+$('#delCsvTableDescription').click(function(){
+  deleteCsv(['columnDescription.csv']);
+})
 
-  var files = [];
-  if(document.getElementById('csvTableLabelTable').rows[1].innerText.match('no record found')){
-    files.push('tableLabel.csv');
-  }
-
-  if(document.getElementById('csvTableDescriptionTable').rows[1].innerText.match('no record found')){
-    files.push('tableDescription.csv');
-  }
-
-  if(document.getElementById('csvColumnLabelTable').rows[1].innerText.match('no record found')){
-    files.push('columnLabel.csv');
-  }
-
-  if(document.getElementById('csvColumnDescriptionTable').rows[1].innerText.match('no record found')){
-    files.push('columnDescription.csv');
-  }
-
-  if(files.length > 0){
-    deleteCsv(files);
-  }
-  else{
-    var msg = "Nothing to save.";
-    ShowAlert(msg, "alert-info", $("#csvRelationModalAlert"));
-  }
-
-  event.preventDefault();
-}, false);
+$('#delCsvRelation').click(function(){
+  deleteCsv(['relation.csv']);
+})
 
 function deleteCsv(files){
 
@@ -456,6 +446,23 @@ function deleteCsv(files){
         var removed = "";
         if(data.REMOVED){
           removed = data.REMOVED.join("<br>");
+          switch(parms.files[0]){
+            case 'tableLabel.csv':
+              $('#delCsvTableLabel').prop('disabled', true);
+              break;
+            case 'tableDescription.csv':
+              $('#delCsvTableDescription').prop('disabled', true);
+              break;
+            case 'columnLabel.csv':
+              $('#delCsvColumnLabel').prop('disabled', true);
+              break;
+            case 'columnDescription.csv':
+              $('#delCsvColumnDescription').prop('disabled', true);
+              break;
+            case 'relation.csv':
+              $('#delCsvRelation').prop('disabled', true);
+              break;
+          }
         }
         var alert = 'alert-info';
         var msg = "No change to save.";
@@ -533,12 +540,14 @@ function UploadCSV($el, fileName, $table){
                     .append($('<td>').append(record.tableName))
                     .append($('<td>').append(record.tableLabel))
                   )
+                  $('#delCsvTableLabel').prop('disabled', false);
                   break;
                 case 'tableDescription.csv':
                   $table.append($('<tr>')
                     .append($('<td>').append(record.tableName))
                     .append($('<td>').append(record.tableDescription))
                   )
+                  $('#delCsvTableDescription').prop('disabled', false);
                   break;
                 case 'columnLabel.csv':
                   $table.append($('<tr>')
@@ -546,6 +555,7 @@ function UploadCSV($el, fileName, $table){
                     .append($('<td>').append(record.columnName))
                     .append($('<td>').append(record.columnLabel))
                   )
+                  $('#delCsvColumnLabel').prop('disabled', false);
                   break;
                 case 'columnDescription.csv':
                   $table.append($('<tr>')
@@ -553,6 +563,7 @@ function UploadCSV($el, fileName, $table){
                   .append($('<td>').append(record.columnName))
                   .append($('<td>').append(record.columnDescription))
                   )
+                  $('#delCsvColumnDescription').prop('disabled', false);
                   break;
                 case 'relation.csv':
                   $table.append($('<tr>')
@@ -564,6 +575,7 @@ function UploadCSV($el, fileName, $table){
                   .append($('<td>').append(record.FKCOLUMN_NAME))
                   .append($('<td>').append(record.PKCOLUMN_NAME))
                   )
+                  $('#delCsvRelation').prop('disabled', false);
                   break;
             }
           })
@@ -626,6 +638,7 @@ $("#addSqlRel").click(function(){
 })
 
 $('#relsQueryModal').on('shown.bs.modal', function() {
+
   if($('#searchSelect').val().length == 0){
     $('#searchSelect').selectpicker('selectAll');
   }
@@ -656,16 +669,18 @@ $('#relsQueryModal').on('hidden.bs.modal', function() {
     $('#relsQueryModal .collapse').each(function () {
         $(this).collapse('hide');
     });
+    $("#FKQuery").val('');
+    $("#PKQuery").val('');
 });
 
 function saveRelsQuery(){
-  var FKquery = $("#FKQuery").val().trim();
-  var PKquery = $("#PKQuery").val().trim();
-  if(FKquery.length == 0 && PKquery.length == 0){
-    ShowAlert("Nothing to save.", "alert-warning", $("#relsQueryModalAlert"));
-    return;
-  }
 
+  $('#relsQueryModal .collapse').each(function () {
+      $(this).collapse('hide');
+  });
+
+  var FKquery = $("#FKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
+  var PKquery = $("#PKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
   var parms = {"FKquery" : FKquery, "PKquery": PKquery};
   console.log(parms);
 
@@ -677,7 +692,7 @@ function saveRelsQuery(){
 
  		success: function(data) {
       console.log(data)
- 			ShowAlert(data.MESSAGE, "alert-success", $("#relsQueryModalAlert"));
+ 			ShowAlert(data.MESSAGE, "alert-" + data.ALERT, $("#relsQueryModalAlert"));
       $('#searchSelect').selectpicker('unSelectAll');
  		},
  		error: function(data) {
@@ -687,6 +702,50 @@ function saveRelsQuery(){
  	});
 
 }
+
+removeDBMDLabels.addEventListener('click', function(event){
+
+  bootbox.confirm({
+    title: "Removing labels From DBMD.",
+    message: "DBMD labels and descriptions will be dropped. Do you confirm ?",
+    buttons: {
+      cancel: {
+          label: 'Cancel',
+          className: 'btn btn-default'
+      },
+      confirm: {
+          label: 'Confirm',
+          className: 'btn btn-warning'
+      }
+    },
+    callback: function(result){
+      if(result){
+        $.ajax({
+      		type: 'POST',
+      		url: "RemoveDBMDLabels",
+      		dataType: 'json',
+
+      		success: function(data) {
+            if(data.STATUS == "OK"){
+              console.log(data);
+              dbmd = data.DATAS;
+              loadDBMD(dbmd);
+            }
+            else{
+              showalert(data.FROM, "Removing DBMD labels failed.<br>" + data.MESSAGE + "<br>" + data.EXCEPTION, "alert-danger", "bottom")
+            }
+      		},
+      		error: function(data) {
+            console.log(data);
+      		}
+      	});
+
+      }
+    }
+  });
+
+  event.preventDefault();
+}, false);
 
 removeRel.addEventListener('click', function(event){
 
@@ -938,6 +997,9 @@ function OpenQueries(id){
 
 function GetQueriesList(){
 
+  $('#queryModal .collapse').each(function () {
+      $(this).collapse('hide');
+  });
 
 	$.ajax({
 		type: 'POST',
@@ -953,16 +1015,20 @@ function GetQueriesList(){
       console.log(queriesList);
 			// showalert("GetQueriesList()", "Queries list get successfull.", "alert-success", "bottom");
       $('#modQueriesList').modal('toggle');
-
 		},
 		error: function(data) {
 			ShowAlert("Getting queries list failed.", "alert-danger", $("#queryModalAlert"));
 		}
 	});
 
+
 }
 
 function SaveQueries(){
+
+  $('#queryModal .collapse').each(function () {
+      $(this).collapse('hide');
+  });
 
   var backupName;
 
@@ -1047,7 +1113,47 @@ function GetLabelsQueries(){
 
 }
 
+function GetCsvLabels(){
+  $('#csvLabelModal .collapse').each(function () {
+      $(this).collapse('hide');
+  });
+
+  if(!CheckIfTableSelected()){
+    return;
+  }
+
+  var parms = {};
+  parms.tables = $('#searchSelect').val();
+
+  $.ajax({
+    type: 'POST',
+    url: "GetCsvLabels",
+    dataType: 'json',
+    data: JSON.stringify(parms),
+
+    success: function(labels) {
+      console.log(labels);
+      if(labels.STATUS == "KO"){
+        ShowAlert("ERROR: " + labels.MESSAGE + "<br>TROUBLESHOOTING: " + labels.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
+      }
+      else{
+        // dbmd = labels;
+        // loadDBMD(dbmd);
+        // console.log(dbmd);
+        $('#csvLabelModal').modal('toggle');
+      }
+
+    },
+    error: function(data) {
+      console.log(data);
+    }
+  });
+}
+
 function GetLabels(){
+  $('#queryModal .collapse').each(function () {
+      $(this).collapse('hide');
+  });
 
   if(!CheckIfTableSelected()){
     return;
@@ -1060,7 +1166,7 @@ function GetLabels(){
   parms.clQuery = $('#columnLabel').val();
   parms.cdQuery = $('#columnDescription').val();
 
-  // console.log("parms");
+  console.log(parms);
   // console.log(JSON.stringify(parms));
 
   $.ajax({

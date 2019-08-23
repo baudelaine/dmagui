@@ -129,9 +129,11 @@ public class ContextListener implements ServletContextListener {
     		    }
     		}    		
 
+    		Class.forName("org.relique.jdbc.csv.CsvDriver");    		
+    		
 			System.out.println("Context has been initialized...");
     			
-		} catch (NamingException e) {
+		} catch (NamingException | ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}    	

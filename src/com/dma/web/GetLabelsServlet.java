@@ -104,6 +104,11 @@ public class GetLabelsServlet extends HttpServlet {
 					rst.close();
 					stmt.close();					
 				}
+				else {
+					for(String table: tables) {
+						tlMap.put(table.toUpperCase(), "");
+					}
+				}
 				
 				String tdQuery = (String) parms.get("tdQuery");
 				System.out.println("tdQuery=" + tdQuery);
@@ -118,6 +123,12 @@ public class GetLabelsServlet extends HttpServlet {
 					rst.close();
 					stmt.close();					
 				}
+				else {
+					for(String table: tables) {
+						tdMap.put(table.toUpperCase(), "");
+					}
+				}
+				
 				
 				
 				for(String table: tables){
@@ -156,6 +167,13 @@ public class GetLabelsServlet extends HttpServlet {
 						
 						clMap.put(table.toUpperCase(), cols);
 					}
+					else {
+						Map<String, String> cols = new HashMap<String, String>();
+						for(String field: fields) {
+							cols.put(field, "");
+						}
+						clMap.put(table.toUpperCase(), cols);
+					}
 					
 					String cdQuery = (String) parms.get("cdQuery");
 					if(!cdQuery.isEmpty() && StringUtils.countMatches(cdQuery, "(?)") == 1 && StringUtils.countMatches(cdQuery, " ? ") == 1){
@@ -174,6 +192,14 @@ public class GetLabelsServlet extends HttpServlet {
 						
 						cdMap.put(table.toUpperCase(), cols);
 					}
+					else {
+						Map<String, String> cols = new HashMap<String, String>();
+						for(String field: fields) {
+							cols.put(field, "");
+						}
+						cdMap.put(table.toUpperCase(), cols);
+					}
+					
 					
 				}
 				

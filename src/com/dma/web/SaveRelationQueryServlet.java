@@ -59,14 +59,30 @@ public class SaveRelationQueryServlet extends HttpServlet {
 			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
 			
 			if(parms != null && parms.get("FKquery") != null && parms.get("PKquery") != null) {
-				
-				Path output = Paths.get(prj + "/queries/relations.json");
 
-				Files.write(output, Tools.toJSON(parms).getBytes());
+				Path output = Paths.get(prj + "/relation.json");
 				
-				request.getSession().setAttribute("FKQuery", parms.get("FKquery"));
+				if(((String) parms.get("FKquery")).isEmpty() && ((String) parms.get("PKquery")).isEmpty()) {
+					if(Files.exists(output)) {
+						Files.delete(output);
+						result.put("MESSAGE", output.toString() + " was removed");
+						result.put("ALERT", "success");
+					}
+					else {
+						result.put("MESSAGE", "No change to save");
+						result.put("ALERT", "info");
+					}
+				}
+				else {
+
+					Files.write(output, Tools.toJSON(parms).getBytes());
+					
+					request.getSession().setAttribute("FKQuery", parms.get("FKquery"));
+					
+					result.put("MESSAGE", "Relation queries successfully saved in " + output.toString());
+					result.put("ALERT", "success");
+				}
 				
-				result.put("MESSAGE", "Relation queries successfully saved in " + output.toString());
 				result.put("STATUS", "OK");
 			}
 			else {

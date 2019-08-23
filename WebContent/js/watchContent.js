@@ -48,12 +48,12 @@ function GetSQLQuery(parms){
           })
           $('#table').bootstrapTable('destroy');
           buildTable($('#table'), cols, datas.result);
-          $("#query").text(datas.query);
-          $("#schema").text(datas.schema);
         }
         else{
           showalert("ERROR: " + datas.EXCEPTION + "<br>" + datas.MESSAGE + "<br>" + datas.TROUBLESHOOTING, "alert-danger", "bottom");
         }
+        $("#query").text(datas.query);
+        $("#schema").text(datas.schema);
 
       },
       error: function(data) {

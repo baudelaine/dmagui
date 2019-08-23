@@ -91,7 +91,7 @@ public class UploadCSVServlet extends HttpServlet {
 			
 			LineNumberReader reader = new LineNumberReader(new BufferedReader(new FileReader(csv.toFile())));
 			try{
-				for (String line; ((line = reader.readLine()) != null) && reader.getLineNumber() <= 4; ) {
+				for (String line; ((line = reader.readLine()) != null) && reader.getLineNumber() <= 2; ) {
 					Map<String, Object> data = new HashMap<String, Object>();
 					switch(csv.getFileName().toString()) {
 						case "tableLabel.csv":

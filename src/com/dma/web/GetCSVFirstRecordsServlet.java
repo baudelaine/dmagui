@@ -78,7 +78,7 @@ public class GetCSVFirstRecordsServlet extends HttpServlet {
 						if(!datas.containsKey(key)) {
 							datas.put(key, new ArrayList<Map<String,Object>>());
 						}
-						for (String line; ((line = reader.readLine()) != null) && (reader.getLineNumber() <= 4); ) {
+						for (String line; ((line = reader.readLine()) != null) && (reader.getLineNumber() <= 2); ) {
 							Map<String, Object> record = new HashMap<String, Object>();
 							switch(key) {
 								case "tableLabel":

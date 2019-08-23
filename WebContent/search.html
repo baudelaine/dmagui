@@ -104,7 +104,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQueryAboutParameter" aria-expanded="false" aria-controls="collapseExample">About parameter(s)</a>
 								<div class="collapse" id="relsQueryAboutParameter">
 								  <div class="well well-sm">
-								    ? stand for each table available in database.
+								    ? stand for any table.
 								  </div>
 								</div>
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQueryFKEG0" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
@@ -121,6 +121,7 @@
 								  </div>
 								</div>
 								<button type="button" id="runFKQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+								<button type="button" class="btn btn-default btn-xs" id="eraseFKQuery" data-toggle="tooltip" data-placement="top" title="Erase query."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
 								<textarea class="form-control" id="FKQuery" rows="8"></textarea>
 		          </div>
         		</form>
@@ -137,7 +138,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQueryAboutParameter" aria-expanded="false" aria-controls="collapseExample">About parameter(s)</a>
 								<div class="collapse" id="relsQueryAboutParameter">
 								  <div class="well well-sm">
-								    ? stand for each table available in database.
+								    ? stand for any table.
 								  </div>
 								</div>
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#relsQueryPKEG0" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
@@ -154,6 +155,7 @@
 								  </div>
 								</div>
 								<button type="button" id="runPKQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+								<button type="button" class="btn btn-default btn-xs" id="erasePKQuery" data-toggle="tooltip" data-placement="top" title="Erase query."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
 								<textarea class="form-control" id="PKQuery" rows="8"></textarea>
 		          </div>
         		</form>
@@ -184,6 +186,7 @@
 						<div id="queryModalAlert"></div>
 						<form>
 		          <div class="form-group">
+								<div id="tableLabelAlert"></div>
 		            <label for="tableLabel" class="col-form-label">Table Label</label>
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelSyntax" aria-expanded="false" aria-controls="collapseExample">SQL syntax</a>
 								<div class="collapse" id="tableLabelSyntax">
@@ -194,7 +197,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelAboutParameter" aria-expanded="false" aria-controls="collapseExample">About parameter(s)</a>
 								<div class="collapse" id="tableLabelAboutParameter">
 								  <div class="well well-sm">
-								    (?) stand for table(s) selected in 'Choose table(s)'.
+								    (?) stand for a list of tables.
 								  </div>
 								</div>
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
@@ -212,10 +215,19 @@
 									</div>
 								</div>
 
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableLabelEG2" aria-expanded="false" aria-controls="collapseExample">e.g. LV</a>
+								<div class="collapse" id="tableLabelEG2">
+								  <div class="well well-sm">
+										SELECT systable.tableid AS Table_Name, singular AS Table_Label FROM systable join sdc on sdc.tableid = systable.tableid where systable.tableid IN (?)									</div>
+								</div>
+
 								<button type="button" id="tableLabelQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
-		            <textarea class="form-control" id="tableLabel" rows="4"></textarea>
+								<button type="button" class="btn btn-default btn-xs" id="eraseTableLabelQuery" data-toggle="tooltip" data-placement="top" title="Erase query."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
+								<textarea class="form-control" id="tableLabel" rows="4"></textarea>
 		          </div>
+
 							<div class="form-group">
+								<div id="tableDescriptionAlert"></div>
 		            <label for="tableDescription" class="col-form-label">Table Description</label>
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableDescriptionSyntax" aria-expanded="false" aria-controls="collapseExample">SQL syntax</a>
 								<div class="collapse" id="tableDescriptionSyntax">
@@ -226,7 +238,7 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableDescriptionAboutParameter" aria-expanded="false" aria-controls="collapseExample">About parameter(s)</a>
 								<div class="collapse" id="tableDescriptionAboutParameter">
 								  <div class="well well-sm">
-								    (?) stand for table(s) selected in 'Choose table(s)'.
+								    (?) stand for a list of tables.
 								  </div>
 								</div>
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableDescriptionEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
@@ -244,10 +256,20 @@
 								  </div>
 								</div>
 
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#tableDescriptionEG2" aria-expanded="false" aria-controls="collapseExample">e.g. LV</a>
+								<div class="collapse" id="tableDescriptionEG2">
+								  <div class="well well-sm">
+										SELECT systable.tableid AS Table_Name, tabledoc AS Table_Description FROM systable join sdc on sdc.tableid = systable.tableid where systable.tableid IN (?)
+									</div>
+								</div>
+
 								<button type="button" id="tableDescriptionQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+								<button type="button" class="btn btn-default btn-xs" id="eraseTableDescriptionQuery" data-toggle="tooltip" data-placement="top" title="Erase query."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
 		            <textarea class="form-control" id="tableDescription" rows="4"></textarea>
 		          </div>
+
 							<div class="form-group">
+								<div id="columnLabelAlert"></div>
 		            <label for="columnLabel" class="col-form-label">Column Label</label>
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnLabelSyntax" aria-expanded="false" aria-controls="collapseExample">SQL syntax</a>
 								<div class="collapse" id="columnLabelSyntax">
@@ -258,8 +280,8 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnLabelAboutParameter" aria-expanded="false" aria-controls="collapseExample">About parameter(s)</a>
 								<div class="collapse" id="columnLabelAboutParameter">
 								  <div class="well well-sm">
-										? stand for each table selected in 'Choose table(s)'.<br>
-								    (?) stand for all columns from each table(s) selected in 'Choose table(s)'.
+										? stand for any table.<br>
+								    (?) stand for all fields of a table.
 								  </div>
 								</div>
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnLabelEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
@@ -277,10 +299,20 @@
 								  </div>
 								</div>
 
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnLabelEG2" aria-expanded="false" aria-controls="collapseExample">e.g. LV</a>
+								<div class="collapse" id="columnLabelEG2">
+								  <div class="well well-sm">
+										SELECT tableid AS Table_Name, columnid AS Column_Name, columnlabel AS Column_Label FROM syscolumn where tableid = ? and columnid IN (?)
+								  </div>
+								</div>
+
 								<button type="button" id="columnLabelQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+								<button type="button" class="btn btn-default btn-xs" id="eraseColumnLabelQuery" data-toggle="tooltip" data-placement="top" title="Erase query."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
 		            <textarea class="form-control" id="columnLabel" rows="4"></textarea>
 		          </div>
+
 							<div class="form-group">
+								<div id="columnDescriptionAlert"></div>
 		            <label for="columnDescription" class="col-form-label">Column Description</label>
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnDescriptionSyntax" aria-expanded="false" aria-controls="collapseExample">SQL syntax</a>
 								<div class="collapse" id="columnDescriptionSyntax">
@@ -291,8 +323,8 @@
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnDescriptionAboutParameter" aria-expanded="false" aria-controls="collapseExample">About parameter(s)</a>
 								<div class="collapse" id="columnDescriptionAboutParameter">
 								  <div class="well well-sm">
-										? stand for each table selected in 'Choose table(s)'.<br>
-								    (?) stand for all columns from each table(s) selected in 'Choose table(s)'.
+										? stand for any table.<br>
+								    (?) stand for all fields of a table.
 								  </div>
 								</div>
 								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnDescriptionEG" aria-expanded="false" aria-controls="collapseExample">e.g.</a>
@@ -310,18 +342,26 @@
 								  </div>
 								</div>
 
+								<a class="btn btn-primary btn-xs" role="button" data-toggle="collapse" href="#columnDescriptionEG2" aria-expanded="false" aria-controls="collapseExample">e.g. LV</a>
+								<div class="collapse" id="columnDescriptionEG2">
+								  <div class="well well-sm">
+										SELECT tableid AS Table_Name, columnid AS Column_Name, columndoc AS Column_Description FROM syscolumn where tableid = ? and columnid IN (?)
+								  </div>
+								</div>
+
 								<button type="button" id="columnDescriptionQuery" class="btn btn-default btn-xs" data-toggle="tooltip" title="Run query."><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+								<button type="button" class="btn btn-default btn-xs" id="eraseColumnDescriptionQuery" data-toggle="tooltip" data-placement="top" title="Erase query."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
 		            <textarea class="form-control" id="columnDescription" rows="4"></textarea>
 		          </div>
         		</form>
 					</div>
 					<div class="modal-footer">
-						<button type="button" onclick="SaveQueries()" class="btn btn-default" data-toggle="tooltip" title="Save queries to server."><span class="glyphicon glyphicon-save-file" aria-hidden="true"></span></button>
-						<button type="button" onclick="GetQueriesList()" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Open queries from server."><span class="glyphicon glyphicon-open-file" aria-hidden="true"></span></button>
+						<button type="button" onclick="SaveQueries()" class="btn btn-primary" data-toggle="tooltip" title="Save queries to server.">Save</button>
+						<button type="button" onclick="GetQueriesList()" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Open queries from server.">Restore</button>
 						<!-- <button type="button" class="btn btn-primary" onclick="GetLabels()"><span class="glyphicon glyphicon-ok" aria-hidden="true"></button>
 						<button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove" aria-hidden="true"></button> -->
 						<button type="button" class="btn btn-primary" onclick="GetLabels()">Execute</button>
-						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal">Exit</button>
 					</div>
 				</div>
 			</div>
@@ -364,6 +404,7 @@
 									<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
 									<input type="file" accept=".csv" id="csvTableLabelFile" name="csvTableLabelFile">
 								</button>
+								<button type="button" class="btn btn-default btn-xs" id="delCsvTableLabel" data-toggle="tooltip" data-placement="top" title="Delete CSV."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
 								<table class="table table-striped table-bordered fontsize" id="csvTableLabelTable">
 									<tr>
 										<th>TABLE_NAME</th>
@@ -399,6 +440,7 @@
 									<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
 									<input type="file" accept=".csv" id="csvTableDescriptionFile" name="csvTableDescriptionFile">
 								</button>
+								<button type="button" class="btn btn-default btn-xs" id="delCsvTableDescription" data-toggle="tooltip" data-placement="top" title="Delete CSV."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
 								<table class="table table-striped table-bordered fontsize" id="csvTableDescriptionTable">
 									<tr>
 										<th>TABLE_NAME</th>
@@ -434,6 +476,7 @@
 									<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
 									<input type="file" accept=".csv" id="csvColumnLabelFile" name="csvColumnLabelFile">
 								</button>
+								<button type="button" class="btn btn-default btn-xs" id="delCsvColumnLabel" data-toggle="tooltip" data-placement="top" title="Delete CSV."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
 		            <table class="table table-striped table-bordered fontsize" id="csvColumnLabelTable">
 									<tr>
 										<th>TABLE_NAME</th>
@@ -470,6 +513,7 @@
 									<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
 									<input type="file" accept=".csv" id="csvColumnDescriptionFile" name="csvColumnDescriptionFile">
 								</button>
+								<button type="button" class="btn btn-default btn-xs" id="delCsvColumnDescription" data-toggle="tooltip" data-placement="top" title="Delete CSV."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
 								<table class="table table-striped table-bordered fontsize" id="csvColumnDescriptionTable">
 									<tr>
 										<th>TABLE_NAME</th>
@@ -488,8 +532,9 @@
 						<button type="button" onclick="GetQueriesList()" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Open queries from server."><span class="glyphicon glyphicon-open-file" aria-hidden="true"></span></button> -->
 						<!-- <button type="button" class="btn btn-primary" onclick="GetLabels()"><span class="glyphicon glyphicon-ok" aria-hidden="true"></button>
 						<button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove" aria-hidden="true"></button> -->
+						<button type="button" class="btn btn-primary" id="saveCsvLabel">Save</button>
 						<button type="button" class="btn btn-primary" onclick="GetLabels()">Execute</button>
-						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal">Exit</button>
 					</div>
 				</div>
 			</div>
@@ -521,7 +566,7 @@
 								<div class="collapse" id="csvRelationEG">
 								  <div class="well well-sm">
 										<strong>FK_NAME;PK_NAME;FKTABLE_NAME;PKTABLE_NAME;KEY_SEQ;FKCOLUMN_NAME;PKCOLUMN_NAME</strong><br>
-								    <strong>RDE;PK_EMPLOYEE:DEPARTMENT;EMPLOYEE;1;MGRNO;EMPNO</strong>
+								    <strong>RDE;PK_EMPLOYEE;DEPARTMENT;EMPLOYEE;1;MGRNO;EMPNO</strong>
 										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"> Column separator as to be semicolon e.g. <strong>;</strong></span>
 										<br><span class="glyphicon glyphicon-alert" aria-hidden="true"><strong> First row is column headers.</strong></span>
 								  </div>
@@ -531,6 +576,7 @@
 									<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
 									<input type="file" accept=".csv" id="csvRelationFile" name="csvRelationFile">
 								</button>
+								<button type="button" class="btn btn-default btn-xs" id="delCsvRelation" data-toggle="tooltip" data-placement="top" title="Delete CSV."><span class="glyphicon glyphicon-erase" aria-hidden="true"></button>
 								<table class="table table-striped table-bordered fontsize" id="csvRelationTable">
 									<tr>
 										<th>FK_NAME</th>
@@ -550,12 +596,8 @@
         		</form>
 					</div>
 					<div class="modal-footer">
-						<!-- <button type="button" onclick="SaveQueries()" class="btn btn-default" data-toggle="tooltip" title="Save queries to server."><span class="glyphicon glyphicon-save-file" aria-hidden="true"></span></button>
-						<button type="button" onclick="GetQueriesList()" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Open queries from server."><span class="glyphicon glyphicon-open-file" aria-hidden="true"></span></button> -->
-						<!-- <button type="button" class="btn btn-primary" onclick="GetLabels()"><span class="glyphicon glyphicon-ok" aria-hidden="true"></button>
-						<button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove" aria-hidden="true"></button> -->
-						<button type="button" class="btn btn-primary" onclick="GetLabels()">Execute</button>
-						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-primary" id="saveCsvRelation">Save</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal">Exit</button>
 					</div>
 				</div>
 			</div>

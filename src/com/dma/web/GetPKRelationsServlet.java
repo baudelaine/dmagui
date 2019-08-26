@@ -81,7 +81,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 		boolean withRecCount = false;
 		boolean relationCount = false;
 
-		Map<String, Object> dbmd = null;
+		Map<String, DBMDTable> dbmd = null;
 		
 		Connection con = null;
 		DatabaseMetaData metaData = null;
@@ -98,7 +98,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 			language = project.languages.get(0);
 			relationCount = project.isRelationCount();
 			
-			dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
+			dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
 			withRecCount = (Boolean) request.getServletContext().getAttribute("withRecCount");
 			tableAliases = (Map<String, String>) request.getSession().getAttribute("tableAliases");
 			metaData = con.getMetaData();
@@ -224,11 +224,11 @@ public class GetPKRelationsServlet extends HttpServlet {
 			    		if(rst0 != null){rst0.close();}
 			        	
 			    		if(dbmd != null){
-			    			Map<String, Object> o = (Map<String, Object>) dbmd.get(fktable_name);
-			    			if(o != null){
-			    				label = (String) o.get("table_remarks");
+			    			DBMDTable dbmdTable = dbmd.get(fktable_name);
+			    			if(dbmdTable != null){
+			    				label = dbmdTable.getTable_remarks();
 				    			relation.setLabel(label);
-				    			desc = (String) o.get("table_description");
+				    			desc = dbmdTable.getTable_description();
 				    			relation.setDescription(desc);
 				           		if(!language.isEmpty()) {
 				           			relation.getLabels().put(language, label);
@@ -253,7 +253,6 @@ public class GetPKRelationsServlet extends HttpServlet {
 		        	
 		        	Relation relation = map.get(_id);
 		        	if(!relation.getSeqs().isEmpty()){
-			        	System.out.println("+++ update relation +++");
 		        		Seq seq = new Seq();
 			        	seq.setTable_name(pktable_name);
 			        	seq.setPktable_name(fktable_name);

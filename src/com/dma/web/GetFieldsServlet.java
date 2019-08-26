@@ -1,10 +1,15 @@
 package com.dma.web;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,111 +42,148 @@ public class GetFieldsServlet extends HttpServlet {
 	@SuppressWarnings("unchecked")
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
+		Map<String, Object> result = new HashMap<String, Object>();
 		Connection con = null;
 		ResultSet rst = null;
-		List<Field> result = new ArrayList<Field>();
+		List<Field> fields = new ArrayList<Field>();
 		String schema = "";
-		Map<String, Object> dbmd = null;
+		Map<String, DBMDTable> dbmd = null;
 		String language = "";
 
 		try {
 			
-			String table = request.getParameter("table");
-			con = (Connection) request.getSession().getAttribute("con");
-			schema = (String) request.getSession().getAttribute("schema");
-			dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
-			Project project = (Project) request.getSession().getAttribute("currentProject");
-			language = project.languages.get(0);
+			result.put("CLIENT", request.getRemoteAddr() + ":" + request.getRemotePort());
+			result.put("SERVER", request.getLocalAddr() + ":" + request.getLocalPort());
 			
+			result.put("FROM", this.getServletName());
 			
-		    DatabaseMetaData metaData = con.getMetaData();
-		    
-		    rst = metaData.getPrimaryKeys(con.getCatalog(), schema, table);
-		    Set<String> pks = new HashSet<String>();
-		    
-		    while (rst.next()) {
-		    	pks.add(rst.getString("COLUMN_NAME"));
-		    }
+			String user = request.getUserPrincipal().getName();
+			result.put("USER", user);
 
-	        if(rst != null){rst.close();}
+			result.put("JSESSIONID", request.getSession().getId());
+			
+			Path wks = Paths.get(getServletContext().getRealPath("/datas") + "/" + user);			
+			result.put("WKS", wks.toString());
+			
+			Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
+			result.put("PRJ", prj.toString());
+			
+			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
+			
+			if(parms != null && parms.get("table") != null) {
 
-		    rst = metaData.getIndexInfo(con.getCatalog(), schema, table, false, true);
-		    Set<String> indexes = new HashSet<String>();
-		    
-		    while (rst.next()) {
-		    	indexes.add(rst.getString("COLUMN_NAME"));
-		    }
+				String table = (String) parms.get("table");
+				con = (Connection) request.getSession().getAttribute("con");
+				schema = (String) request.getSession().getAttribute("schema");
+				dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
+				Project project = (Project) request.getSession().getAttribute("currentProject");
+				language = project.languages.get(0);
+				
+			    DatabaseMetaData metaData = con.getMetaData();
+			    
+			    rst = metaData.getPrimaryKeys(con.getCatalog(), schema, table);
+			    Set<String> pks = new HashSet<String>();
+			    
+			    while (rst.next()) {
+			    	pks.add(rst.getString("COLUMN_NAME"));
+			    }
 
-	        if(rst != null){rst.close();}
+		        if(rst != null){rst.close();}
+
+			    rst = metaData.getIndexInfo(con.getCatalog(), schema, table, false, true);
+			    Set<String> indexes = new HashSet<String>();
+			    
+			    while (rst.next()) {
+			    	indexes.add(rst.getString("COLUMN_NAME"));
+			    }
+
+		        if(rst != null){rst.close();}
+		        
+		        rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
+		        
+		        Map<String, DBMDColumn> dbmdColumns = null;
+		        if(dbmd != null){
+					DBMDTable dbmdTable = dbmd.get(table);
+					dbmdColumns = dbmdTable.getColumns();
+		        }
+		        
+		        while (rst.next()) {
+		        	String field_name = rst.getString("COLUMN_NAME");
+		        	String field_type = rst.getString("TYPE_NAME");
+		        	String field_remarks = rst.getString("REMARKS");
+		        	String field_desc = "";
+		        	
+		    		if(field_remarks == null) {
+		    			field_remarks = "";
+		    		}
+		    		else {
+		    	    	if(field_remarks.length() > 50) {
+		    		    	field_desc = field_remarks;
+		    	    		field_remarks = field_remarks.substring(1, 50);
+		    	    	}
+		    		}
+		        	
+		        	Field field = new Field();
+		        	field.setField_name(field_name);
+		        	field.setField_type(field_type);
+		        	field.setLabel(field_remarks);
+		        	field.setDescription(field_desc);
+	        		if(!language.isEmpty()) {
+	        			field.getLabels().put(language, field_remarks);
+	        			field.getDescriptions().put(language, field_desc);
+	        		}
+		        	field.set_id(field_name + field_type);
+		        	if(pks.contains(rst.getString("COLUMN_NAME"))){
+		    			field.setPk(true);
+		    		}
+		        	if(indexes.contains(rst.getString("COLUMN_NAME"))){
+		        		field.setIndexed(true);
+		        	}
+		        	if(dbmdColumns != null){
+		    			DBMDColumn dbmdColumn = dbmdColumns.get(field_name);
+		    			if(dbmdColumns != null){
+		    				String label = dbmdColumn.getColumn_remarks();
+			    			field.setLabel(label);
+			    			String desc = dbmdColumn.getColumn_description();
+			    			field.setDescription(desc);
+			           		if(!language.isEmpty()) {
+			        			field.getLabels().put(language, label);
+			        			field.getDescriptions().put(language, desc);
+			        		}	    			
+		    			}
+		    		}
+		        	
+		        	fields.add(field);
+		        }
+			    
+		        if(rst != null){rst.close();}				
+		        
+		        result.put("DATAS", fields);
+				result.put("STATUS", "OK");
+			}
+			else {
+				result.put("STATUS", "KO");
+				result.put("ERROR", "Input parameters are not valid.");
+				throw new Exception();
+			}			
 	        
-	        rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
-	        
-	        Map<String, Object> table_labels = null;
-	        Map<String, Object> columns = null;
-	        if(dbmd != null){
-				table_labels = (Map<String, Object>) dbmd.get(table);
-				columns = (Map<String, Object>) table_labels.get("columns");
-	        }
-	        
-	        while (rst.next()) {
-	        	String field_name = rst.getString("COLUMN_NAME");
-	        	String field_type = rst.getString("TYPE_NAME");
-	        	String field_remarks = rst.getString("REMARKS");
-	        	String field_desc = "";
-	        	
-	    		if(field_remarks == null) {
-	    			field_remarks = "";
-	    		}
-	    		else {
-	    	    	if(field_remarks.length() > 50) {
-	    		    	field_desc = field_remarks;
-	    	    		field_remarks = field_remarks.substring(1, 50);
-	    	    	}
-	    		}
-	        	
-	        	Field field = new Field();
-	        	field.setField_name(field_name);
-	        	field.setField_type(field_type);
-	        	field.setLabel(field_remarks);
-	        	field.setDescription(field_desc);
-        		if(!language.isEmpty()) {
-        			field.getLabels().put(language, field_remarks);
-        			field.getDescriptions().put(language, field_desc);
-        		}
-	        	field.set_id(field_name + field_type);
-	        	if(pks.contains(rst.getString("COLUMN_NAME"))){
-	    			field.setPk(true);
-	    		}
-	        	if(indexes.contains(rst.getString("COLUMN_NAME"))){
-	        		field.setIndexed(true);
-	        	}
-	        	if(columns != null){
-	    			Map<String, Object> column = (Map<String, Object>) columns.get(field_name); 
-	    			if(column != null){
-	    				String label = (String) column.get("column_remarks");
-		    			field.setLabel(label);
-		    			String desc = (String) column.get("column_description");
-		    			field.setDescription(desc);
-		           		if(!language.isEmpty()) {
-		        			field.getLabels().put(language, label);
-		        			field.getDescriptions().put(language, desc);
-		        		}	    			
-	    			}
-	    		}
-	        	
-	        	result.add(field);
-	        }
-		    
-	        if(rst != null){rst.close();}
-	        
-		    response.setContentType("application/json");
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			result.put("STATUS", "KO");
+			result.put("EXCEPTION", e.getClass().getName());
+			result.put("MESSAGE", e.getMessage());
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			result.put("STACKTRACE", sw.toString());
+			e.printStackTrace(System.err);
+		}
+
+		finally{
+			response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
 			response.getWriter().write(Tools.toJSON(result));
-			
 		}
-		catch (Exception e){
-			e.printStackTrace(System.err);
-		}		
 		
 	}
 

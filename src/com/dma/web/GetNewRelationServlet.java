@@ -1,9 +1,14 @@
 package com.dma.web;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -32,91 +37,132 @@ public class GetNewRelationServlet extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
-		Relation result = null;
+		Relation relation = null;
 		Connection con = null;
 		DatabaseMetaData metaData = null;
 		String schema = "";
+		Map<String, Object> result = new HashMap<String, Object>();
 		
 
 		try {
-			String table = request.getParameter("table");
-			@SuppressWarnings("unchecked")
-			Map<String, Object> dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
 			
-			con = (Connection) request.getSession().getAttribute("con");
-			schema = (String) request.getSession().getAttribute("schema");
+			result.put("CLIENT", request.getRemoteAddr() + ":" + request.getRemotePort());
+			result.put("SERVER", request.getLocalAddr() + ":" + request.getLocalPort());
 			
+			result.put("FROM", this.getServletName());
 			
-			Project project = (Project) request.getSession().getAttribute("currentProject");
-			String language = project.languages.get(0);			
-	        result = new Relation();
-	        
-        	String[] types = {"TABLE"};
-        	metaData = con.getMetaData();
-    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, table, types);
-    		String label = "";
-    		String desc = "";
-    		while (rst0.next()) {
-    			label = rst0.getString("REMARKS");
-    	    	result.setLabel(label);
-    	    	
-    	    	if(label == null) {
-    	    		label = "";
-    	    		result.setLabel(label);
-    	    		result.setDescription(desc);
-    				if(!language.isEmpty()) {
-    					result.getLabels().put(language, label);
-    					result.getDescriptions().put(language, desc);
-    				}
-    	    		
-    	    	}
-    	    	else {
-    		    	if(label.length() <= 50) {
-    		    		result.setLabel(label);
-    		    		result.setDescription(desc);
-    					if(!language.isEmpty()) {
-    						result.getLabels().put(language, label);
-    						result.getDescriptions().put(language, desc);
-    					}
-    		    		
-    		    	}
-    		    	else {
-    		    		result.setDescription(label);
-    		    		result.setLabel(label.substring(0, 50));
-    					if(!language.isEmpty()) {
-    						result.getLabels().put(language, label.substring(0, 50));
-    						result.getDescriptions().put(language, label);
-    					}
-    		    	}
-    	    	}
-    			
-    	    }
-    		if(rst0 != null){rst0.close();}
-	        
-			if(dbmd != null){
+			String user = request.getUserPrincipal().getName();
+			result.put("USER", user);
+
+			result.put("JSESSIONID", request.getSession().getId());
+			
+			Path wks = Paths.get(getServletContext().getRealPath("/datas") + "/" + user);			
+			result.put("WKS", wks.toString());
+			
+			Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
+			result.put("PRJ", prj.toString());
+			
+			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
+			
+			if(parms != null && parms.get("table") != null) {
+
+				String table = (String) parms.get("table");
 				@SuppressWarnings("unchecked")
-				Map<String, Object> o = (Map<String, Object>) dbmd.get(table);
-				if(o != null){
-					label = (String) o.get("table_remarks"); 
-					desc = (String) o.get("table_description");
-					result.setLabel(label);
-					result.setDescription(desc);
-					
-					if(!language.isEmpty()) {
-						result.getLabels().put(language, label);
-						result.getDescriptions().put(language, desc);
+				Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
+				
+				con = (Connection) request.getSession().getAttribute("con");
+				schema = (String) request.getSession().getAttribute("schema");
+				
+				
+				Project project = (Project) request.getSession().getAttribute("currentProject");
+				String language = project.languages.get(0);			
+				relation = new Relation();
+		        
+	        	String[] types = {"TABLE"};
+	        	metaData = con.getMetaData();
+	    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, table, types);
+	    		String label = "";
+	    		String desc = "";
+	    		while (rst0.next()) {
+	    			label = rst0.getString("REMARKS");
+	    			relation.setLabel(label);
+	    	    	
+	    	    	if(label == null) {
+	    	    		label = "";
+	    	    		relation.setLabel(label);
+	    	    		relation.setDescription(desc);
+	    				if(!language.isEmpty()) {
+	    					relation.getLabels().put(language, label);
+	    					relation.getDescriptions().put(language, desc);
+	    				}
+	    	    		
+	    	    	}
+	    	    	else {
+	    		    	if(label.length() <= 50) {
+	    		    		relation.setLabel(label);
+	    		    		relation.setDescription(desc);
+	    					if(!language.isEmpty()) {
+	    						relation.getLabels().put(language, label);
+	    						relation.getDescriptions().put(language, desc);
+	    					}
+	    		    		
+	    		    	}
+	    		    	else {
+	    		    		relation.setDescription(label);
+	    		    		relation.setLabel(label.substring(0, 50));
+	    					if(!language.isEmpty()) {
+	    						relation.getLabels().put(language, label.substring(0, 50));
+	    						relation.getDescriptions().put(language, label);
+	    					}
+	    		    	}
+	    	    	}
+	    			
+	    	    }
+	    		if(rst0 != null){rst0.close();}
+		        
+				if(dbmd != null){
+					DBMDTable dbmdTable = dbmd.get(table);
+					if(dbmdTable != null){
+						label = dbmdTable.getTable_remarks(); 
+						desc = dbmdTable.getTable_description();
+						relation.setLabel(label);
+						relation.setDescription(desc);
+						
+						if(!language.isEmpty()) {
+							relation.getLabels().put(language, label);
+							relation.getDescriptions().put(language, desc);
+						}
 					}
 				}
+				
+				result.put("DATAS", relation);
+				result.put("STATUS", "OK");
 			}
+			else {
+				result.put("STATUS", "KO");
+				result.put("ERROR", "Input parameters are not valid.");
+				throw new Exception();
+			}			
+			
+			
 	        
-		    response.setContentType("application/json");
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			result.put("STATUS", "KO");
+			result.put("EXCEPTION", e.getClass().getName());
+			result.put("MESSAGE", e.getMessage());
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			result.put("STACKTRACE", sw.toString());
+			e.printStackTrace(System.err);
+		}
+
+		finally{
+			response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
 			response.getWriter().write(Tools.toJSON(result));
-			
 		}
-		catch (Exception e){
-			e.printStackTrace(System.err);
-		}		
 		
 	}
 

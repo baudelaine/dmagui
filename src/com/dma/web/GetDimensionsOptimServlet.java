@@ -121,12 +121,12 @@ public class GetDimensionsOptimServlet extends HttpServlet {
 				}
 
 
-				Map<String, Object> dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
+				Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
 				
 		        if(dbmd != null){
 
-					Map<String, Object> table_labels = null;
-			        Map<String, Object> columns = null;
+			        DBMDTable dbmdTable = new DBMDTable();
+			        Map<String, DBMDColumn> dbmdColumns = new HashMap<String, DBMDColumn>();
 	
 					for(Entry<String, Dimension> dimension: dimensions.entrySet()) {
 					
@@ -135,20 +135,18 @@ public class GetDimensionsOptimServlet extends HttpServlet {
 						
 							String table = (String) order.get("table");
 							
-							table_labels = (Map<String, Object>) dbmd.get(table);
-							columns = (Map<String, Object>) table_labels.get("columns");
+							dbmdTable = dbmd.get(table);
+							dbmdColumns = dbmdTable.getColumns();
 					        
-							for (Entry<String, Object> column: columns.entrySet()) {
-								String colName = column.getKey();
+							for (Entry<String, DBMDColumn> dbmdColumn: dbmdColumns.entrySet()) {
+								String colName = dbmdColumn.getValue().getColumn_name();
 								String fieldName = (String) order.get("order");
 								int i = StringUtils.split(fieldName, ".").length;
 								if(i > 0) {
 									fieldName = StringUtils.split(fieldName, ".")[i -1];
 								}
-								System.out.println(colName + " -> " + fieldName);
 								if(colName.equalsIgnoreCase(fieldName)) {
-							    	Map<String, Object> colObj = (Map<String, Object>) column.getValue();
-							    	String label = (String) colObj.get("column_remarks");
+							    	String label = dbmdColumn.getValue().getColumn_remarks();
 									if(label == null) {
 						    			order.put("label", "");
 									}
@@ -160,9 +158,10 @@ public class GetDimensionsOptimServlet extends HttpServlet {
 							    			order.put("label", label);
 								    	}
 									}
-									boolean isPK = (boolean) colObj.get("column_isPrimaryKey");
+									boolean isPK = dbmdColumn.getValue().isColumn_isPrimaryKey();;
+									
 					    			order.put("isPK", isPK);
-									boolean isIdx = (boolean) colObj.get("column_isIndexed");
+									boolean isIdx = dbmdColumn.getValue().isColumn_isIndexed();
 					    			order.put("isIdx", isIdx);
 								}
 								
@@ -175,11 +174,11 @@ public class GetDimensionsOptimServlet extends HttpServlet {
 						
 							String table = (String) bk.get("table");
 							
-							table_labels = (Map<String, Object>) dbmd.get(table);
-							columns = (Map<String, Object>) table_labels.get("columns");
+							dbmdTable = dbmd.get(table);
+							dbmdColumns = dbmdTable.getColumns();
 					        
-							for (Entry<String, Object> column: columns.entrySet()) {
-								String colName = column.getKey();
+							for (Entry<String, DBMDColumn> dbmdColumn: dbmdColumns.entrySet()) {
+								String colName = dbmdColumn.getValue().getColumn_name();
 								String fieldName = (String) bk.get("bk");
 								int i = StringUtils.split(fieldName, ".").length;
 								if(i > 0) {
@@ -187,8 +186,7 @@ public class GetDimensionsOptimServlet extends HttpServlet {
 								}
 								System.out.println(colName + " -> " + fieldName);
 								if(colName.equalsIgnoreCase(fieldName)) {
-									Map<String, Object> colObj = (Map<String, Object>) column.getValue();
-									String label = (String) colObj.get("column_remarks");
+									String label = dbmdColumn.getValue().getColumn_remarks();
 									if(label == null) {
 										bk.put("label", "");
 									}
@@ -201,9 +199,9 @@ public class GetDimensionsOptimServlet extends HttpServlet {
 								    	}
 									}
 									
-									boolean isPK = (boolean) colObj.get("column_isPrimaryKey");
+									boolean isPK = dbmdColumn.getValue().isColumn_isPrimaryKey();
 					    			bk.put("isPK", isPK);
-									boolean isIdx = (boolean) colObj.get("column_isIndexed");
+									boolean isIdx = dbmdColumn.getValue().isColumn_isIndexed();
 					    			bk.put("isIdx", isIdx);
 									
 								}

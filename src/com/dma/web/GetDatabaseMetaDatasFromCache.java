@@ -1,8 +1,8 @@
 package com.dma.web;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,8 +16,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Servlet implementation class GetTablesServlet
@@ -41,32 +39,58 @@ public class GetDatabaseMetaDatasFromCache extends HttpServlet {
 		Map<String, Object> result = new HashMap<String, Object>();
 		try {
 			
-			Path path = Paths.get((String) request.getSession().getAttribute("projectPath") + "/dbmd.json");
+			result.put("CLIENT", request.getRemoteAddr() + ":" + request.getRemotePort());
+			result.put("SERVER", request.getLocalAddr() + ":" + request.getLocalPort());
+			
+			result.put("FROM", this.getServletName());
+			
+			String user = request.getUserPrincipal().getName();
+			result.put("USER", user);
+
+			result.put("JSESSIONID", request.getSession().getId());
+			
+			Path wks = Paths.get(getServletContext().getRealPath("/datas") + "/" + user);			
+			result.put("WKS", wks.toString());
+			
+			Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
+			result.put("PRJ", prj.toString());
+			
+			Path path = Paths.get(prj + "/dbmd.json");
 			
 			if(Files.exists(path)){
 				
 				System.out.println("Load Database Meta Datas from cache...");
 				
-				BufferedReader br = new BufferedReader(new FileReader(path.toFile()));
-				
-				ObjectMapper mapper = new ObjectMapper();
-		        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-				result = mapper.readValue(br, new TypeReference<Map<String, Object>>(){});
+				@SuppressWarnings("unchecked")
+				Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, DBMDTable>>(){});
 
-				request.getSession().setAttribute("dbmd", result);
+				request.getSession().setAttribute("dbmd", dbmd);
 				
-				if(br != null){br.close();}
+				result.put("STATUS", "OK");
+				result.put("DATAS", dbmd);
 			}
-			    
-			response.setContentType("application/json");
-			response.setCharacterEncoding("UTF-8");
-			response.getWriter().write(Tools.toJSON(result));
+			else {
+				throw new Exception(path.toString() + " not found.");
+			}
 				
 			
 		}
-		catch (Exception e){
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			result.put("STATUS", "KO");
+			result.put("EXCEPTION", e.getClass().getName());
+			result.put("MESSAGE", e.getMessage());
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			result.put("STACKTRACE", sw.toString());
 			e.printStackTrace(System.err);
-		}		
+		}
+
+		finally{
+			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
+			response.getWriter().write(Tools.toJSON(result));
+		}
 		
 	}
 

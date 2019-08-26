@@ -42,6 +42,14 @@ public class Test5 {
 			
 		}
 		
+		path = Paths.get("/home/dma/dma/p0/relation.json");
+    	if(Files.exists(path)) {
+			@SuppressWarnings("unchecked")
+			Map<String, String> queries = (Map<String, String>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, String>>(){});
+			if(queries != null) {
+				System.out.println("FKQuery=" + queries.get("FKQuery"));
+			}
+    	}		
 		
 	}
 

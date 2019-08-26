@@ -679,9 +679,9 @@ function saveRelsQuery(){
       $(this).collapse('hide');
   });
 
-  var FKquery = $("#FKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
-  var PKquery = $("#PKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
-  var parms = {"FKquery" : FKquery, "PKquery": PKquery};
+  var FKQuery = $("#FKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
+  var PKQuery = $("#PKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
+  var parms = {"FKQuery" : FKQuery, "PKQuery": PKQuery};
   console.log(parms);
 
  	$.ajax({
@@ -1124,6 +1124,7 @@ function GetCsvLabels(){
 
   var parms = {};
   parms.tables = $('#searchSelect').val();
+  console.log(JSON.stringify(parms));
 
   $.ajax({
     type: 'POST',
@@ -1181,7 +1182,7 @@ function GetLabels(){
         ShowAlert("ERROR: " + labels.MESSAGE + "<br>TROUBLESHOOTING: " + labels.TROUBLESHOOTING, "alert-danger", $("#queryModalAlert"));
       }
       else{
-        dbmd = labels;
+        dbmd = labels.DATAS;
 
         // var tables = Object.keys(labels);
         // var dbmd = JSON.parse(localStorage.getItem('dbmd'));
@@ -1199,7 +1200,8 @@ function GetLabels(){
         //   }
         // })
         //
-        loadDBMD(dbmd);
+        console.log(Object.values(dbmd));
+        loadDBMD(Object.values(dbmd));
         // console.log(dbmd);
         $('#queryModal').modal('toggle');
       }
@@ -1263,32 +1265,35 @@ function checkDBMD(){
     async: true,
     success: function(data) {
       console.log(data);
-      if(Object.keys(data).length > 0){
-        dbmd = data;
-        loadDBMD(dbmd);
+      if(data.DATAS && data.DATAS != null && !jQuery.isEmptyObject(data.DATAS)){
+        if(Object.keys(data.DATAS).length > 0){
+          dbmd = Object.values(data.DATAS);
+          loadDBMD(dbmd);
+        }
       }
       else{
-        bootbox.confirm({
-          title: "No database metadata found in cache.",
-          message: "You have to load database metadata to use this tool. This could take few minutes.",
-          buttons: {
-            cancel: {
-                label: 'Cancel',
-                className: 'btn btn-default'
-            },
-            confirm: {
-                label: 'Confirm',
-                className: 'btn btn-primary'
-            }
-          },
-          callback: function (result) {
-              console.log(result);
-              if(result){
-                  GetDBMD($('#searchTable'));
+          bootbox.confirm({
+            title: "No database metadata found in cache.",
+            message: "You have to load database metadata to use this tool. This could take few minutes.",
+            buttons: {
+              cancel: {
+                  label: 'Cancel',
+                  className: 'btn btn-default'
+              },
+              confirm: {
+                  label: 'Confirm',
+                  className: 'btn btn-primary'
               }
-          }
-        });
+            },
+            callback: function (result) {
+                console.log(result);
+                if(result){
+                    GetDBMD($('#searchTable'));
+                }
+            }
+          });
       }
+
     },
     error: function(data) {
       console.log(data);
@@ -1308,6 +1313,24 @@ function GetDBMD(table) {
         success: function(data) {
           // dbmd = data;
           console.log(data);
+          bootbox.confirm({
+            title: "Save DBMD.",
+            message: "Do you want to save DBMD ?",
+            buttons: {
+              cancel: {
+                  label: 'Cancel',
+                  className: 'btn btn-default'
+              },
+              confirm: {
+                  label: 'Save',
+                  className: 'btn btn-primary'
+              }
+            },
+            callback: function (result) {
+                console.log(result);
+                SaveDBMD();
+            }
+          });
         }
       })
     )
@@ -1366,6 +1389,7 @@ function SaveDBMD(){
 
       success: function(data) {
         showalert("SaveDBMD()", "Database metadata saved successfully.", "alert-success", "bottom");
+
       },
       error: function(data) {
         // showalert("SaveDBMD()", "Saving database metadata failed.", "alert-danger", "bottom");

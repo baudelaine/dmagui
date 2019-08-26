@@ -57,8 +57,11 @@ public class GetCsvLabelsServlet extends HttpServlet {
 			
 			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
 			
-			if(parms != null) {
-				result.put("DATAS", "Blablabla...");
+			if(parms != null && parms.get("tables") != null) {
+				
+				
+				
+				result.put("DATAS", result);
 				result.put("STATUS", "OK");
 			}
 			else {
@@ -66,9 +69,6 @@ public class GetCsvLabelsServlet extends HttpServlet {
 				result.put("ERROR", "Input parameters are not valid.");
 				throw new Exception();
 			}
-			
-			result.put("DATAS", "Blablabla...");
-			result.put("STATUS", "OK");
 			
 		}
 		

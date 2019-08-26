@@ -1,16 +1,12 @@
 package com.dma.web;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -52,18 +48,20 @@ public class SaveDBMDServlet extends HttpServlet {
 			BufferedWriter bw = new BufferedWriter(new FileWriter(path.toFile()));
 		
 			@SuppressWarnings("unchecked")
-			Map<String, Object> dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
+			Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
 	
 			bw.write(Tools.toJSON(dbmd));
 			bw.flush();
 			bw.close();		
+			
+			request.getSession().setAttribute("dbmd", dbmd);
 			
 			result.put("STATUS", "OK");
 		}
 		catch(Exception e) {
 			result.put("STATUS", "KO");
 		}
-		    
+		
 		response.setContentType("application/json");
 		response.setCharacterEncoding("UTF-8");
 		response.getWriter().write(Tools.toJSON(result));			

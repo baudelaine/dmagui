@@ -58,11 +58,11 @@ public class SaveRelationQueryServlet extends HttpServlet {
 			
 			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
 			
-			if(parms != null && parms.get("FKquery") != null && parms.get("PKquery") != null) {
+			if(parms != null && parms.get("FKQuery") != null && parms.get("PKQuery") != null) {
 
 				Path output = Paths.get(prj + "/relation.json");
 				
-				if(((String) parms.get("FKquery")).isEmpty() && ((String) parms.get("PKquery")).isEmpty()) {
+				if(((String) parms.get("FKQuery")).isEmpty() && ((String) parms.get("PKQuery")).isEmpty()) {
 					if(Files.exists(output)) {
 						Files.delete(output);
 						result.put("MESSAGE", output.toString() + " was removed");
@@ -76,8 +76,6 @@ public class SaveRelationQueryServlet extends HttpServlet {
 				else {
 
 					Files.write(output, Tools.toJSON(parms).getBytes());
-					
-					request.getSession().setAttribute("FKQuery", parms.get("FKquery"));
 					
 					result.put("MESSAGE", "Relation queries successfully saved in " + output.toString());
 					result.put("ALERT", "success");

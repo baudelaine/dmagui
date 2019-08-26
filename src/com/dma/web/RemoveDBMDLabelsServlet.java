@@ -61,8 +61,6 @@ public class RemoveDBMDLabelsServlet extends HttpServlet {
 
 			Path path = Paths.get(prj + "/dbmd.json");
 			
-			System.out.println(path.getFileName().toString());
-			
 			if(Files.exists(path)){
 				@SuppressWarnings("unchecked")
 				Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, DBMDTable>>(){});

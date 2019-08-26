@@ -97,14 +97,18 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 			    	Path rels = Paths.get(prj + "/relation.json");
 			    	
 			    	if(Files.exists(rels)) {
-						String relationsQuery = (String) Tools.fromJSON(rels.toFile()).get("FKQuery");
-						relationsQuery = relationsQuery.replace(";", "");
-			    		stmt = con.prepareStatement(relationsQuery);
-			    		stmt.setString(1, table_name);
-			    		rst = stmt.executeQuery();
+						String FKQuery = (String) Tools.fromJSON(rels.toFile()).get("FKQuery");
+						if(FKQuery != null) {
+							FKQuery = FKQuery.replace(";", "");
+				    		stmt = con.prepareStatement(FKQuery);
+				    		stmt.setString(1, table_name);
+				    		rst = stmt.executeQuery();
+				    		result.put("FKS", "FKQuery");
+						}
 			    	}
-			    	else {
+			    	if( rst == null) {
 				    	rst = metaData.getImportedKeys(con.getCatalog(), schema, table_name);
+			    		result.put("FKS", "DB");
 			    	}
 			    	while(rst.next()){
 			    		String FKName = rst.getString("FK_NAME");
@@ -117,14 +121,18 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 			    	int PKSeqCount = 0;
 			    	Set<String> PKSet = new HashSet<String>();
 			    	if(Files.exists(rels)) {
-						String relationsQuery = (String) Tools.fromJSON(rels.toFile()).get("relationsQuery");
-						relationsQuery = relationsQuery.replace(";", "");
-			    		stmt = con.prepareStatement(relationsQuery);
-			    		stmt.setString(1, table_name);
-			    		rst = stmt.executeQuery();
+						String PKQuery = (String) Tools.fromJSON(rels.toFile()).get("PKQuery");
+						if(PKQuery != null) {
+							PKQuery = PKQuery.replace(";", "");
+				    		stmt = con.prepareStatement(PKQuery);
+				    		stmt.setString(1, table_name);
+				    		rst = stmt.executeQuery();
+				    		result.put("PKS", "PKQuery");
+						}
 			    	}
-			    	else {
+			    	if( rst == null) {
 			    		rst = metaData.getExportedKeys(con.getCatalog(), schema, table_name);
+			    		result.put("PKS", "DB");
 			    	}
 			    	while(rst.next()){
 			    		String PKName = rst.getString("FK_NAME");

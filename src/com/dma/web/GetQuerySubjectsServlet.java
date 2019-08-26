@@ -54,7 +54,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	boolean relationCount = false;
 	boolean importLabel = false;
 	long qs_recCount = 0L;
-	Map<String, Object> dbmd = null;
+	Map<String, DBMDTable> dbmd = null;
 	Map<String, String> tableAliases = null;
 	String relationsQuery = "";
        
@@ -111,7 +111,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 			relationCount = project.isRelationCount();
 			con = (Connection) request.getSession().getAttribute("con");
 			schema = (String) request.getSession().getAttribute("schema");
-			dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
+			dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
 			tableAliases = (Map<String, String>) request.getSession().getAttribute("tableAliases");
 			metaData = con.getMetaData();
 			
@@ -244,12 +244,11 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		if(importLabel) {
 		
 			if(dbmd != null){
-				@SuppressWarnings("unchecked")
-				Map<String, Object> o = (Map<String, Object>) dbmd.get(table);
-				if(o != null){
-					label = (String) o.get("table_remarks"); 
+				DBMDTable dbmdTable = dbmd.get(table);
+				if(dbmdTable != null){
+					label = dbmdTable.getTable_remarks();
 					result.setLabel(label);
-					desc = (String) o.get("table_description");
+					desc = dbmdTable.getTable_description();
 					result.setDescription(desc);
 					if(!language.isEmpty()) {
 						result.getLabels().put(language, label);
@@ -263,7 +262,6 @@ public class GetQuerySubjectsServlet extends HttpServlet {
         
 	}
 	
-	@SuppressWarnings("unchecked")
 	protected List<Field> getFields() throws SQLException{
 		
 //		Map<String, Field> result = new HashMap<String, Field>();
@@ -301,9 +299,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
     		ResultSet rst1 = null;
             try{
 	            rst1 = stmt.executeQuery(query);
-            	System.out.println(query); 
 	            if (!rst1.next()) {    
-	                System.out.println("No data"); 
 	                emptyColumns.add(colName);
 	            } 		            
             }
@@ -325,13 +321,13 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		
         rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
         
-        Map<String, Object> table_labels = null;
-        Map<String, Object> columns = null;
+        Map<String, DBMDColumn> dbmdColumns = null;
         if(importLabel) {
 	        if(dbmd != null){
-				table_labels = (Map<String, Object>) dbmd.get(table);
-				if(table_labels != null){
-					columns = (Map<String, Object>) table_labels.get("columns");
+	        	@SuppressWarnings("unused")
+				DBMDTable dbmdTable = dbmd.get(table);
+				if(dbmdTable != null){
+					dbmdColumns = dbmdTable.getColumns();
 				}
 	        }
         }
@@ -388,12 +384,12 @@ public class GetQuerySubjectsServlet extends HttpServlet {
     			field.setIndexed(true);
     		}
 
-        	if(columns != null){
-    			Map<String, Object> column = (Map<String, Object>) columns.get(field_name);
-    			if(column != null){
-    				String label = (String) column.get("column_remarks");
+        	if(dbmdColumns != null){
+    			DBMDColumn dbmdColumn = dbmdColumns.get(field_name);
+    			if(dbmdColumn != null){
+    				String label = (String) dbmdColumn.getColumn_remarks();
 	    			field.setLabel(label);
-	    			String desc = (String) column.get("column_description");
+	    			String desc = (String) dbmdColumn.getColumn_description();
 	    			field.setDescription(desc);
 	           		if(!language.isEmpty()) {
 	        			field.getLabels().put(language, label);
@@ -525,12 +521,11 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	        	
 	    		if(importLabel) {
 		    		if(dbmd != null){
-		    			@SuppressWarnings("unchecked")
-		    			Map<String, Object> o = (Map<String, Object>) dbmd.get(pktable_name);
-		    			if(o != null){
-		    				String label = (String) o.get("table_remarks");
+		    			DBMDTable dbmdTable = dbmd.get(pktable_name);
+		    			if(dbmdTable != null){
+		    				String label = dbmdTable.getTable_remarks();
 			    			relation.setLabel(label);
-			    			String desc = (String) o.get("table_description");
+			    			String desc = dbmdTable.getTable_description();
 			    			relation.setDescription(desc);
 			           		if(!language.isEmpty()) {
 			           			relation.getLabels().put(language, label);

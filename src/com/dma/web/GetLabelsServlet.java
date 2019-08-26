@@ -50,7 +50,7 @@ public class GetLabelsServlet extends HttpServlet {
 		// TODO Auto-generated method stub
 		Connection con = null;
 		Map<String, Object> results = new HashMap<String, Object>();
-		Map<String, Object> dbmd = new HashMap<String, Object>();
+		Map<String, DBMDTable> dbmd = new HashMap<String, DBMDTable>();
 		String schema = null;
 		String dbEngine = null;
 		PreparedStatement stmt = null;
@@ -65,11 +65,10 @@ public class GetLabelsServlet extends HttpServlet {
 	        Map<String, Object>	parms = new HashMap<String, Object>();
 	        parms = mapper.readValue(br, new TypeReference<Map<String, Object>>(){});
 		        
-	        dbmd = (Map<String, Object>) request.getSession().getAttribute("dbmd");
+	        dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
 			con = (Connection) request.getSession().getAttribute("con");
 			schema = (String) request.getSession().getAttribute("schema");
 			dbEngine = (String) request.getSession().getAttribute("dbEngine");
-//			con.createStatement().execute("set schema " + schema);
 
 			if((dbEngine).equalsIgnoreCase("ORA")){
 				con.createStatement().execute("ALTER SESSION SET NLS_SORT=BINARY_CI");
@@ -80,17 +79,13 @@ public class GetLabelsServlet extends HttpServlet {
 			
 			if(tables.size() > 0){
 			
-				Map<String, Object> tlMap = new HashMap<String, Object>();
-				Map<String, Object> tdMap = new HashMap<String, Object>();
-				Map<String, Object> clMap = new HashMap<String, Object>();
+				Map<String, String> tlMap = new HashMap<String, String>();
+				Map<String, String> tdMap = new HashMap<String, String>();
+				Map<String, Map<String, String>> clMap = new HashMap<String, Map<String, String>>();
 				Map<String, Object> cdMap = new HashMap<String, Object>();
 				
 				String tableInClause = "('" + StringUtils.join(tables.iterator(), "','") + "')";
 				
-//				if(dbEngine.equalsIgnoreCase("ORA")){
-//					tableInClause = tableInClause.toLowerCase();
-//				}
-	
 				String tlQuery = (String) parms.get("tlQuery");
 				System.out.println("tlQuery=" + tlQuery);
 				if(!tlQuery.isEmpty() && StringUtils.countMatches(tlQuery, "(?)") == 1){
@@ -132,7 +127,6 @@ public class GetLabelsServlet extends HttpServlet {
 				
 				
 				for(String table: tables){
-//					System.out.println("table=" + table);
 
 					List<String> fields = new ArrayList<String>();
 					
@@ -144,16 +138,12 @@ public class GetLabelsServlet extends HttpServlet {
 					rst.close();
 
 					String columnInClause = "('" + StringUtils.join(fields.iterator(), "','") + "')";
-//					if(dbEngine.equalsIgnoreCase("ORA")){
-//						columnInClause = columnInClause.toLowerCase();
-//						table = table.toLowerCase();
-//					}
 					
 					String clQuery = (String) parms.get("clQuery");
 					if(!clQuery.isEmpty() && StringUtils.countMatches(clQuery, "(?)") == 1 && StringUtils.countMatches(clQuery, " ? ") == 1){
 						clQuery = StringUtils.replace(clQuery, "(?)", columnInClause);
 						
-						Map<String, Object> cols = new HashMap<String, Object>();
+						Map<String, String> cols = new HashMap<String, String>();
 						
 						stmt = con.prepareStatement(clQuery);
 						stmt.setString(1, table);
@@ -203,57 +193,63 @@ public class GetLabelsServlet extends HttpServlet {
 					
 				}
 				
-				System.out.println("tlMap=" + tlMap);
-				System.out.println("tdMap=" + tdMap);
-				System.out.println("clMap=" + clMap);
-				System.out.println("cdMap=" + cdMap);
-				
-				Map<String, Object> result = null;
 				for(String table: tables){
-					
-					if(dbmd == null){
-						result = new HashMap<String, Object>();
+					DBMDTable dbmdTable = new DBMDTable();
+					if(dbmd != null && dbmd.containsKey(table)) {
+						dbmdTable = dbmd.get(table);
 					}
-					else{
-						result = (Map<String, Object>) dbmd.get(table);
-					}
-					if(result == null) {result = new HashMap<String, Object>();}
-					result.put("table_name", table);
-					result.put("table_remarks", tlMap.get(table));
-					result.put("table_description", tdMap.get(table));
-					
-					Map<String, Object> columns = (Map<String, Object>) result.get("columns");
-					if(columns == null){
-						columns = new HashMap<String, Object>();
+					dbmdTable.setTable_remarks(tlMap.get(table));
+					dbmdTable.setTable_description(tdMap.get(table));
+
+					Map<String, DBMDColumn> dbmdColumns = new HashMap<String, DBMDColumn>();
+					if(dbmd != null && dbmd.containsKey(table)) {
+						dbmdColumns = dbmdTable.getColumns();
 					}
 					
-					Map<String, Object> cls = (Map<String, Object>) clMap.get(table);
+					
+					Map<String, String> cls = (Map<String, String>) clMap.get(table);
+					
 					if(cls != null){
-						for(Entry<String, Object> cl: cls.entrySet()){
+						for(Entry<String, String> cl: cls.entrySet()){
 							String column_name = cl.getKey();
-							Object column_remarks = cl.getValue();
-							if(!columns.containsKey(cl.getKey())){
-								columns.put(cl.getKey(), new HashMap<String, Object>());
+							String column_remarks = cl.getValue();	
+							if(!dbmdColumns.containsKey(column_name)) {
+								dbmdColumns.put(column_name, new DBMDColumn());
+								dbmdColumns.get(column_name).setColumn_name(column_name);
 							}
-							((Map<String, Object>) columns.get(column_name)).put("column_remarks", column_remarks);
+							dbmdColumns.get(column_name).setColumn_remarks(column_remarks);
 						}
 					}
 
-					Map<String, Object> cds = (Map<String, Object>) cdMap.get(table);
+					Map<String, String> cds = (Map<String, String>) cdMap.get(table);
+					
 					if(cds != null){
-						for(Entry<String, Object> cd: cds.entrySet()){
+						for(Entry<String, String> cd: cds.entrySet()){
 							String column_name = cd.getKey();
-							Object column_description = cd.getValue();
-							if(!columns.containsKey(cd.getKey())){
-								columns.put(cd.getKey(), new HashMap<String, Object>());
+							String column_description = cd.getValue();	
+							if(!dbmdColumns.containsKey(column_name)) {
+								dbmdColumns.put(column_name, new DBMDColumn());
+								dbmdColumns.get(column_name).setColumn_name(column_name);
 							}
-							((Map<String, Object>) columns.get(column_name)).put("column_description", column_description);
+							dbmdColumns.get(column_name).setColumn_description(column_description);
 						}
 					}
+
+					dbmdTable.setColumns(dbmdColumns);
 					
-					result.put("columns", columns);
-					results.put(table, result);
+					dbmd.put(table, dbmdTable);
+					
 				}
+				
+				results.put("STATUS", "OK");
+				results.put("DATAS", dbmd);
+				request.getSession().setAttribute("dbmd", dbmd);
+				
+			}
+			else {
+				results.put("STATUS", "OK");
+				results.put("DATAS", dbmd);
+				results.put("MESSAGE", "No table given in parms.");
 				
 			}
 			
@@ -270,7 +266,6 @@ public class GetLabelsServlet extends HttpServlet {
             e.printStackTrace(System.err);		}
 		
 		finally {
-			request.getSession().setAttribute("dbmd", results);
 		    response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
 			response.getWriter().write(Tools.toJSON(results));

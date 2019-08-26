@@ -1132,31 +1132,15 @@ function getDimensions(dimensionSet, selectedQs){
     dataType: 'json',
     data: JSON.stringify(parms),
     success: function(data) {
-      // console.log(data);
-      // console.log(selectedQs);
-      // console.log("blablabla!!!!!!!");
+      console.log(data);
       Gdimensions = data.DATA;
       var emptyOption = '<option class="fontsize" value="" data-subtext="' + '' + '"></option>';
-      // console.log(data.DATA);
 
       if(data.DATA != null && data.DATA){
         if(Object.keys(data.DATA).length > 0){
-          // console.log("blablabla!!!");
           $.each(Object.values(data.DATA), function(i, dimension){
             var dimensionOption = '<option class="fontsize" value="' + dimension.name + '" data-subtext="' + '' + '">' + dimension.name + '</option>';
             $('#selectDimension').append(dimensionOption);
-            // $.each(dimension.bks, function(i, bk){
-            //   if(bk.selectedQs == selectedQs){
-            //     var bkOption = '<option class="fontsize" value="' + bk.qsFinalName + ' -- ' + bk.bk + '" data-subtext="' + bk.qsFinalName + '">' + bk.bk + '</option>';
-            //     $('#selectBK').append(bkOption);
-            //   }
-            // });
-            // $.each(dimension.orders, function(i, order){
-            //   var orderOption = '<option class="fontsize" value="' + order.qsFinalName + ' -- ' + order.order + '" data-subtext="' + order.qsFinalName + '">' + order.order + '</option>';
-            //   $('#selectOrder').append(orderOption);
-            //
-            // });
-
           })
         }
       }
@@ -1164,15 +1148,7 @@ function getDimensions(dimensionSet, selectedQs){
       $('#selectDimension').append(emptyOption);
       $('#selectDimension').selectpicker('val', "");
       $('#selectDimension').selectpicker('refresh');
-
-      // $('#selectBK').append(emptyOption);
-      // $('#selectBK').selectpicker('val', "");
-      // $('#selectBK').selectpicker('refresh');
-      //
-      // $('#selectOrder').append(emptyOption);
-      // $('#selectOrder').selectpicker('val', "");
-      // $('#selectOrder').selectpicker('refresh');
-
+      
     },
     error: function(data) {
       console.log(data);
@@ -1671,17 +1647,18 @@ function modAddRelation(){
     return;
   }
 
-  var parms = "table=" + pkTabMatches[0];
+  var parms = {"table": pkTabMatches[0]};
 
   $.ajax({
       type: 'POST',
       url: "GetNewRelation",
       dataType: 'json',
-      data: parms,
+      data: JSON.stringify(parms),
 
       success: function(data){
         console.log(data);
-          var relation = data;
+        if(data.STATUS == "OK"){
+          var relation = data.DATAS;
 
           $.each(colMatches, function(i, obj){
             var seq = {};
@@ -1714,6 +1691,10 @@ function modAddRelation(){
           relation.recCountPercent = $("#recCountPercent").text();
 
           modWriteRelation(relation);
+        }
+        else{
+          ShowAlert("Error when getting new relation from server.", "alert-warning", $("#newRowModalAlert"));
+        }
       },
       error: function(data) {
           console.log(data);
@@ -3478,9 +3459,9 @@ function ChooseTable(table, sort) {
     async: true,
     success: function(data) {
       console.log(data);
-      if(data && !jQuery.isEmptyObject(data)){
-        if(Object.keys(data).length > 0){
-          dbmd = data;
+      if(data.DATAS && !jQuery.isEmptyObject(data.DATAS)){
+        if(Object.keys(data.DATAS).length > 0){
+          dbmd = data.DATAS;
           var tables = Object.values(dbmd);
 
           console.log(tables);
@@ -3610,16 +3591,19 @@ function ChooseField(table, id){
     }
   });
 
+  var parms = {"table": id};
+  console.log(parms);
+
   if( table.has('option').length == 0 ) {
     $.ajax({
         type: 'POST',
         url: "GetFields",
         dataType: 'json',
-        data: "table=" + id,
+        data: JSON.stringify(parms),
 
         success: function(data) {
           console.log(data);
-            $.each(data, function(index, detail){
+            $.each(data.DATAS, function(index, detail){
               var icon = "";
               if(detail.pk){
                 icon = "<i class='glyphicon glyphicon-star'></i>";
@@ -4784,6 +4768,10 @@ $("#addTableAlias").click(function(){
 
 $("#sortTables").click(function(){
   SortOnStats();
+})
+
+$("#refreshTableDBMD").click(function(){
+  ChooseTable($tableList);
 })
 
 $("#expandQS").click(function(){

@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,6 +16,7 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.ServletException;
@@ -94,42 +96,83 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 			    	int FKSeqCount = 0;
 			    	Set<String> FKSet = new HashSet<String>();
 			    	
-			    	Path rels = Paths.get(prj + "/relation.json");
+//			    	Path rels = Paths.get(prj + "/relation.json");
+//			    	
+//			    	if(Files.exists(rels)) {
+//						String FKQuery = (String) Tools.fromJSON(rels.toFile()).get("FKQuery");
+//						if(FKQuery != null) {
+//							FKQuery = FKQuery.replace(";", "");
+//				    		stmt = con.prepareStatement(FKQuery);
+//				    		stmt.setString(1, table_name);
+//				    		rst = stmt.executeQuery();
+//				    		result.put("FKS", "FKQuery");
+//						}
+//			    	}
+//			    	if( rst == null) {
+//				    	rst = metaData.getImportedKeys(con.getCatalog(), schema, table_name);
+//			    		result.put("FKS", "DB");
+//			    	}
+
+			    	Connection csvCon = null;
+			    	String FKQuery = (String) request.getSession().getAttribute("FKQuery");
+					if(Files.exists(Paths.get(prj + "/relation.csv"))) {
+						Properties props = new java.util.Properties();
+						props.put("separator",";");
+						csvCon = DriverManager.getConnection("jdbc:relique:csv:" + prj.toString(), props);
+						String sql = "SELECT * FROM relation where FKTABLE_NAME = '" + table_name + "'";
+						stmt = csvCon.prepareStatement(sql);
+						rst = stmt.executeQuery();
+						result.put("FKS", "CSV");
+					}
+					else if(FKQuery != null && !FKQuery.isEmpty()) {
+						stmt = con.prepareStatement(FKQuery);
+						stmt.setString(1, table_name);
+			    		rst = stmt.executeQuery();
+						result.put("FKS", "SQL");
+			    	}
+					else {
+						rst = metaData.getImportedKeys(con.getCatalog(), schema, table_name);
+						result.put("FKS", "DB");
+					}
 			    	
-			    	if(Files.exists(rels)) {
-						String FKQuery = (String) Tools.fromJSON(rels.toFile()).get("FKQuery");
-						if(FKQuery != null) {
-							FKQuery = FKQuery.replace(";", "");
-				    		stmt = con.prepareStatement(FKQuery);
-				    		stmt.setString(1, table_name);
-				    		rst = stmt.executeQuery();
-				    		result.put("FKS", "FKQuery");
-						}
-			    	}
-			    	if( rst == null) {
-				    	rst = metaData.getImportedKeys(con.getCatalog(), schema, table_name);
-			    		result.put("FKS", "DB");
-			    	}
 			    	while(rst.next()){
 			    		String FKName = rst.getString("FK_NAME");
 			    		FKSet.add(FKName);
 			    		FKSeqCount++;
 			    	}
-		            if(rst != null){rst.close();}
-		    		if(stmt != null){stmt.close();}
+		            if(rst != null) {
+		            	rst.close();
+		            	rst = null;
+		            }
+		    		if(stmt != null) {
+		    			stmt.close();
+		    			stmt = null;
+		    		}
+		    		if(csvCon != null) {
+		    			csvCon.close();
+		    			csvCon = null;
+		    		}
 
 			    	int PKSeqCount = 0;
 			    	Set<String> PKSet = new HashSet<String>();
-			    	if(Files.exists(rels)) {
-						String PKQuery = (String) Tools.fromJSON(rels.toFile()).get("PKQuery");
-						if(PKQuery != null) {
-							PKQuery = PKQuery.replace(";", "");
-				    		stmt = con.prepareStatement(PKQuery);
-				    		stmt.setString(1, table_name);
-				    		rst = stmt.executeQuery();
-				    		result.put("PKS", "PKQuery");
-						}
+
+			    	String PKQuery = (String) request.getSession().getAttribute("PKQuery");
+					if(Files.exists(Paths.get(prj + "/relation.csv"))) {
+						Properties props = new java.util.Properties();
+						props.put("separator",";");
+						csvCon = DriverManager.getConnection("jdbc:relique:csv:" + prj.toString(), props);
+						String sql = "SELECT * FROM relation where PKTABLE_NAME = '" + table_name + "'";
+						stmt = csvCon.prepareStatement(sql);
+						rst = stmt.executeQuery();
+						result.put("PKS", "CSV");
+					}
+					else if(PKQuery != null && !PKQuery.isEmpty()) {
+						stmt = con.prepareStatement(PKQuery);
+						stmt.setString(1, table_name);
+			    		rst = stmt.executeQuery();
+						result.put("PKS", "SQL");
 			    	}
+			    	
 			    	if( rst == null) {
 			    		rst = metaData.getExportedKeys(con.getCatalog(), schema, table_name);
 			    		result.put("PKS", "DB");
@@ -139,8 +182,18 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 			    		PKSet.add(PKName);
 			    		PKSeqCount++;
 			    	}
-		            if(rst != null){rst.close();}
-		    		if(stmt != null){stmt.close();}
+		            if(rst != null) {
+		            	rst.close();
+		            	rst = null;
+		            }
+		    		if(stmt != null) {
+		    			stmt.close();
+		    			stmt = null;
+		    		}
+		    		if(csvCon != null) {
+		    			csvCon.close();
+		    			csvCon = null;
+		    		}
 
 				    rst = metaData.getPrimaryKeys(con.getCatalog(), schema, table_name);
 				    Set<String> pks = new HashSet<String>();

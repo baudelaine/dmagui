@@ -693,88 +693,6 @@ window.aboveEvents = {
 
 };
 
-tableLabelQuery.addEventListener(
-  'click', function(event){
-    var query = $("#tableLabel").val();
-    var type = 'table';
-    var tables = new Set();
-
-    if($datasTable.bootstrapTable("getData").length > 0){
-      var qss = $datasTable.bootstrapTable("getData");
-      $.each(qss, function(i, qs){
-        tables.add(qs.table_name);
-      })
-    }
-    tables = Array.from(tables);
-
-    console.log(tables);
-    if(tables.length == 0){
-      ShowAlert("Import at least one Query Subject to test.", "alert-warning", $("#queryModalAlert"));
-    }
-    else{
-      BuildTestQuery(query, type, tables);
-    }
-    event.preventDefault();
-  },
-false);
-
-tableDescriptionQuery.addEventListener(
-  'click', function(event){
-  var query = $("#tableDescription").val();
-  var type = 'table';
-  var tables = new Set();
-
-  if($datasTable.bootstrapTable("getData").length > 0){
-    var qss = $datasTable.bootstrapTable("getData");
-    $.each(qss, function(i, qs){
-      tables.add(qs.table_name);
-    })
-  }
-  tables = Array.from(tables);
-
-  BuildTestQuery(query, type, tables);
-  event.preventDefault();
-  },
-false);
-
-columnLabelQuery.addEventListener(
-  'click', function(event){
-    var query = $("#columnLabel").val();
-    var type = 'column';
-    var tables = new Set();
-
-    if($datasTable.bootstrapTable("getData").length > 0){
-      var qss = $datasTable.bootstrapTable("getData");
-      $.each(qss, function(i, qs){
-        tables.add(qs.table_name);
-      })
-    }
-    tables = Array.from(tables);
-
-    BuildTestQuery(query, type, tables);
-    event.preventDefault();
-  },
-false);
-
-columnDescriptionQuery.addEventListener(
-  'click', function(event){
-    var query = $("#columnDescription").val();
-    var type = 'column';
-    var tables = new Set();
-
-    if($datasTable.bootstrapTable("getData").length > 0){
-      var qss = $datasTable.bootstrapTable("getData");
-      $.each(qss, function(i, qs){
-        tables.add(qs.table_name);
-      })
-    }
-    tables = Array.from(tables);
-
-    BuildTestQuery(query, type, tables);
-    event.preventDefault();
-  },
-false);
-
 function BuildTestQuery(query, type, tables){
 
   var parms = {query: query, type: type, tables: tables};
@@ -1148,7 +1066,7 @@ function getDimensions(dimensionSet, selectedQs){
       $('#selectDimension').append(emptyOption);
       $('#selectDimension').selectpicker('val', "");
       $('#selectDimension').selectpicker('refresh');
-      
+
     },
     error: function(data) {
       console.log(data);
@@ -3166,13 +3084,13 @@ function GetPKRelations(table_name, table_alias, type){
     success: function(data) {
 			console.log(data);
       if(data.DATAS){
-  			if (data.length == 0) {
-  				showalert("GetPKRelations()", table_name + " has no PK.", "alert-info", "bottom");
+  			if (data.DATAS.length == 0) {
+  				showalert("Relation(s) retrieved from " + data.MODE + ".<br>" + table_name + " has no PK.", "", "alert-info", "bottom");
   				return;
   			}
       }
 
-      if(data.STATUS == "OK" && data.DATAS){
+      if(data.STATUS == "OK" && data.DATAS.length > 0){
         if($activeSubDatasTable != undefined){
 
           var index;
@@ -3190,6 +3108,7 @@ function GetPKRelations(table_name, table_alias, type){
 
           $datasTable.bootstrapTable("collapseRow", index);
           $datasTable.bootstrapTable("expandRow", index);
+          showalert(data.DATAS.length + " PK relation(s) successfully retrieved from " + data.MODE + ".", "", "alert-success", "bottom");
 
         }
       }
@@ -3274,12 +3193,6 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
 
     success: function(data) {
 			console.log(data);
-      if(data.DATAS){
-  			if (data.DATAS.relations.length == 0) {
-  				showalert("GetQuerySubjects()", table_name + " has no key.", "alert-info", "bottom");
-  				// return;
-  			}
-      }
       if(data.STATUS == "OK"){
         var newQS = [];
         newQS.push(data.DATAS);
@@ -3297,6 +3210,12 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
           }
         })
         $("#qsSelect").selectpicker('refresh');
+        if (data.DATAS.relations.length == 0) {
+          showalert("Relation(s) retrieved from " + data.MODE + ".<br>" + table_name + " has no key.", "", "alert-info", "bottom");
+        }
+        else{
+          showalert(data.DATAS.relations.length + " relation(s) successfully retrieved from " + data.MODE + ".", "", "alert-success", "bottom");
+        }
       }
       else{
         if(index){
@@ -3322,17 +3241,11 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
           $datasTable.bootstrapTable('expandRow', index);
         }
 
-        showalert("GetQuerySubjects()", 'Operation failed.<br>' + data.EXCEPTION + "<br>" + data.MESSAGE + '<br><br><strong><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> ' + data.TROUBLESHOOTING + "</strong>", "alert-danger", "bottom");
+        showalert(data.FROM, 'Operation failed.<br>' + data.EXCEPTION + "<br>" + data.MESSAGE + '<br><br><strong><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> ' + data.TROUBLESHOOTING + "</strong>", "alert-danger", "bottom");
       }
 
   	},
       error: function(data) {
-          console.log(data);
-          console.log(index);
-          console.log(table_alias);
-          console.log(type);
-          console.log($datasTable.bootstrapTable("getData"));
-
           if(index){
             $.each($datasTable.bootstrapTable("getData")[index].relations, function(i, rel){
               if(rel.pktable_alias.match(table_alias)){
@@ -3357,7 +3270,6 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
           }
 
           showalert("GetQuerySubjects()", "Operation failed.", "alert-danger", "bottom");
-
 
     }
 
@@ -4302,7 +4214,11 @@ function GetQueriesList(){
 
 }
 
-function GetLabels(){
+function GetCsvLabelsMultiLang(){
+
+  $('#csvLabelModal .collapse').each(function () {
+      $(this).collapse('hide');
+  });
 
   var tablesSet = new Set();
   $datasTable.bootstrapTable("filterBy", {});
@@ -4314,8 +4230,145 @@ function GetLabels(){
     })
   })
 
+  var tables = getArrayFromSet(tablesSet);
+
+  if(tables.length == 0){
+    ShowAlert("Import at least one Query Subject to test.", "alert-warning", $("#csvLabelModalAlert"));
+    return;
+  }
+
   var parms = {};
-  parms.tables = getArrayFromSet(tablesSet);
+  parms.tables = tables;
+  console.log(parms);
+
+  $.ajax({
+    type: 'POST',
+    url: "GetCsvLabels",
+    dataType: 'json',
+    data: JSON.stringify(parms),
+
+    success: function(labels) {
+      console.log(labels);
+      labels = labels.DATAS;
+      if(labels.STATUS == "KO"){
+        ShowAlert("ERROR: " + labels.MESSAGE + "<br>TROUBLESHOOTING: " + labels.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
+      }
+      else{
+        var currentLanguage = $('#langSelect').find("option:selected").val();
+        $.each($datasTable.bootstrapTable('getData'), function(i, qs){
+          if(labels[qs.table_name]){
+            if(!qs.labels[currentLanguage] || qs.labels[currentLanguage] == ""){
+              if(labels[qs.table_name].table_remarks){
+                qs.labels[currentLanguage] = labels[qs.table_name].table_remarks;
+              }
+              else{
+                qs.labels[currentLanguage] = "";
+              }
+            }
+            if(!qs.descriptions[currentLanguage] || qs.descriptions[currentLanguage] == ""){
+              if(labels[qs.table_name].table_description){
+                qs.descriptions[currentLanguage] = labels[qs.table_name].table_description;
+              }
+              else{
+                qs.descriptions[currentLanguage] = "";
+              }
+            }
+            if(!qs.label || qs.label == ""){
+              qs.label = qs.labels[currentLanguage];
+            }
+            if(!qs.description || qs.description == ""){
+              qs.description = qs.descriptions[currentLanguage];
+            }
+            $.each(qs.fields, function(j, field){
+              if(labels[qs.table_name].columns[field.field_name]){
+                if(!field.labels[currentLanguage] || field.labels[currentLanguage] == ""){
+                  if(labels[qs.table_name].columns[field.field_name].column_remarks){
+                    field.labels[currentLanguage] = labels[qs.table_name].columns[field.field_name].column_remarks;
+                  }
+                  else{
+                    field.labels[currentLanguage] = "";
+                  }
+                }
+                if(!field.descriptions[currentLanguage] || field.descriptions[currentLanguage] == ""){
+                  if(labels[qs.table_name].columns[field.field_name].column_description){
+                    field.descriptions[currentLanguage] = labels[qs.table_name].columns[field.field_name].column_description;
+                  }
+                  else{
+                    field.descriptions[currentLanguage] = "";
+                  }
+                }
+                if(!field.label || field.label == ""){
+                  field.label = field.labels[currentLanguage];
+                }
+                if(!field.description || field.description == ""){
+                  field.description = field.descriptions[currentLanguage];
+                }
+              }
+            })
+            $.each(qs.relations, function(j, relation){
+              if(labels[relation.pktable_name]){
+                if(!relation.labels[currentLanguage] || relation.labels[currentLanguage] == ""){
+                  if(labels[relation.pktable_name].table_remarks){
+                    relation.labels[currentLanguage] = labels[relation.pktable_name].table_remarks;
+                  }
+                  else{
+                    relation.labels[currentLanguage] = "";
+                  }
+                }
+                if(!relation.descriptions[currentLanguage] || relation.descriptions[currentLanguage] == ""){
+                  if(labels[relation.pktable_name].table_description){
+                    relation.descriptions[currentLanguage] = labels[relation.pktable_name].table_description;
+                  }
+                  else{
+                    relation.descriptions[currentLanguage] = "";
+                  }
+                }
+                if(!relation.label || relation.label == ""){
+                  relation.label = relation.labels[currentLanguage];
+                }
+                if(!relation.description || relation.description == ""){
+                  relation.description = relation.descriptions[currentLanguage];
+                }
+              }
+            })
+          }
+        })
+        $('#csvLabelModal').modal('toggle');
+        $refTab.tab('show');
+        $qsTab.tab('show');
+      }
+
+    },
+    error: function(data) {
+      console.log(data);
+    }
+  });
+
+
+
+}
+
+function GetLabelsMultiLang(){
+
+  var tablesSet = new Set();
+  $datasTable.bootstrapTable("filterBy", {});
+  $.each($datasTable.bootstrapTable('getData'), function(i, qs){
+    console.log(qs)
+    tablesSet.add(qs.table_name);
+    $.each(qs.relations, function(j, relation){
+      tablesSet.add(relation.pktable_name);
+    })
+  })
+
+  var tables = getArrayFromSet(tablesSet);
+
+  if(tables.length == 0){
+    ShowAlert("Import at least one Query Subject to test.", "alert-warning", $("#queryModalAlert"));
+    return;
+  }
+
+  var parms = {};
+  parms.tables = tables;
   parms.tlQuery = $('#tableLabel').val();
   parms.tdQuery = $('#tableDescription').val();
   parms.clQuery = $('#columnLabel').val();
@@ -4331,6 +4384,7 @@ function GetLabels(){
 
     success: function(labels) {
       console.log(labels);
+      labels = labels.DATAS;
       if(labels.STATUS == "KO"){
         ShowAlert("ERROR: " + labels.MESSAGE + "<br>TROUBLESHOOTING: " + labels.TROUBLESHOOTING, "alert-danger", $("#queryModalAlert"));
       }
@@ -5076,3 +5130,778 @@ $("#removeHier").click(function(){
     }
   });
 })
+
+$('#queryModal').on('shown.bs.modal', function() {
+});
+
+$('#queryModal').on('hidden.bs.modal', function() {
+    $('#queryModal .collapse').each(function () {
+        $(this).collapse('hide');
+    });
+});
+
+// START
+
+$("#addSqlLabel").click(function(){
+  $('#queryModal').modal('toggle');
+})
+
+$("#addCsvLabel").click(function(){
+  $('#csvLabelModal').modal('toggle');
+})
+
+$("#addCsvRel").click(function(){
+  $("#csvRelationModal").modal('toggle');
+})
+
+$('#csvRelationModal').on('hidden.bs.modal', function() {
+  $('#csvRelationModal .collapse').each(function () {
+      $(this).collapse('hide');
+  });
+})
+
+$('#csvRelationModal').on('shown.bs.modal', function() {
+  $.ajax({
+ 		type: 'POST',
+ 		url: "GetCSVFirstRecords",
+ 		dataType: 'json',
+
+ 		success: function(data) {
+      console.log(data);
+
+      var $table = $("#csvRelationTable");
+      $table.find("tr:gt(0)").remove();
+      if(data.DATAS){
+        if(data.DATAS.relation){
+          $.each(data.DATAS.relation, function(i, record){
+            $table.append($('<tr>')
+            .append($('<td>').append(record.FK_NAME))
+            .append($('<td>').append(record.PK_NAME))
+            .append($('<td>').append(record.FKTABLE_NAME))
+            .append($('<td>').append(record.PKTABLE_NAME))
+            .append($('<td>').append(record.KEY_SEQ))
+            .append($('<td>').append(record.FKCOLUMN_NAME))
+            .append($('<td>').append(record.PKCOLUMN_NAME))
+            )
+          })
+          $table.append($('<tr>')
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+            .append($('<td>').append("..."))
+          )
+          $('#delCsvRelation').prop('disabled', false);
+        }
+        else{
+          $table.append($('<tr>')
+            .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
+          )
+          $('#delCsvRelation').prop('disabled', true);
+        }
+      }
+ 		},
+ 		error: function(data) {
+      console.log(data);
+ 		}
+ 	});
+
+})
+
+$('#csvLabelModal').on('hidden.bs.modal', function() {
+    $('#searchSelect').selectpicker('deselectAll');
+    $('#csvLabelModal .collapse').each(function () {
+        $(this).collapse('hide');
+    });
+
+});
+
+
+$('#csvLabelModal').on('shown.bs.modal', function() {
+
+  $.ajax({
+ 		type: 'POST',
+ 		url: "GetCSVFirstRecords",
+ 		dataType: 'json',
+
+ 		success: function(data) {
+      console.log(data);
+
+      var $table = $("#csvTableLabelTable");
+      $table.find("tr:gt(0)").remove();
+      if(data.DATAS.tableLabel){
+        $.each(data.DATAS.tableLabel, function(i, record){
+          $table.append($('<tr>')
+            .append($('<td>').append(record.tableName))
+            .append($('<td>').append(record.tableLabel))
+          )
+        })
+        $table.append($('<tr>')
+          .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
+        )
+        $('#delCsvTableLabel').prop('disabled', false);
+      }
+      else{
+        $table.append($('<tr>')
+          .append($('<td style="text-align: center; vertical-align: middle;" colspan="2">').append("no record found"))
+        )
+        $('#delCsvTableLabel').prop('disabled', true);
+      }
+
+      $table = $("#csvTableDescriptionTable");
+      $table.find("tr:gt(0)").remove();
+      if(data.DATAS.tableDescription){
+        $.each(data.DATAS.tableDescription, function(i, record){
+          $table.append($('<tr>')
+            .append($('<td>').append(record.tableName))
+            .append($('<td>').append(record.tableDescription))
+          )
+        })
+        $table.append($('<tr>')
+          .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
+        )
+        $('#delCsvTableDescription').prop('disabled', false);
+      }
+      else{
+        $table.append($('<tr>')
+          .append($('<td style="text-align: center; vertical-align: middle;" colspan="2">').append("no record found"))
+        )
+        $('#delCsvTableDescription').prop('disabled', true);
+      }
+
+      $table = $("#csvColumnLabelTable");
+      $table.find("tr:gt(0)").remove();
+      if(data.DATAS.columnLabel){
+        $.each(data.DATAS.columnLabel, function(i, record){
+          $table.append($('<tr>')
+            .append($('<td>').append(record.tableName))
+            .append($('<td>').append(record.columnName))
+            .append($('<td>').append(record.columnLabel))
+          )
+        })
+        $table.append($('<tr>')
+          .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
+        )
+        $('#delCsvColumnLabel').prop('disabled', false);
+      }
+      else{
+        $table.append($('<tr>')
+          .append($('<td style="text-align: center; vertical-align: middle;" colspan="3">').append("no record found"))
+        )
+        $('#delCsvColumnLabel').prop('disabled', true);
+      }
+
+      $table = $("#csvColumnDescriptionTable");
+      $table.find("tr:gt(0)").remove();
+      if(data.DATAS.columnDescription){
+        $.each(data.DATAS.columnDescription, function(i, record){
+          $table.append($('<tr>')
+            .append($('<td>').append(record.tableName))
+            .append($('<td>').append(record.columnName))
+            .append($('<td>').append(record.columnDescription))
+          )
+        })
+        $table.append($('<tr>')
+          .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
+          .append($('<td>').append("..."))
+        )
+        $('#delCsvColumnDescription').prop('disabled', false);
+      }
+      else{
+        $table.append($('<tr>')
+          .append($('<td style="text-align: center; vertical-align: middle;" colspan="3">').append("no record found"))
+        )
+        $('#delCsvColumnDescription').prop('disabled', true);
+      }
+
+ 		},
+ 		error: function(data) {
+      console.log(data);
+ 		}
+ 	});
+
+});
+
+$("#csvTableLabelFile").change(function(){
+  UploadCSV($(this), 'tableLabel.csv', $("#csvTableLabelTable"));
+});
+
+$("#csvTableDescriptionFile").change(function(){
+  UploadCSV($(this), 'tableDescription.csv', $("#csvTableDescriptionTable"));
+});
+
+$("#csvColumnLabelFile").change(function(){
+  UploadCSV($(this), 'columnLabel.csv', $("#csvColumnLabelTable"));
+});
+
+$("#csvColumnDescriptionFile").change(function(){
+  UploadCSV($(this), 'columnDescription.csv', $("#csvColumnDescriptionTable"));
+});
+
+$("#csvRelationFile").change(function(){
+  UploadCSV($(this), 'relation.csv', $("#csvRelationTable"));
+});
+
+delCsvTableLabel.addEventListener('click', function(event){
+  var $table = $("#csvTableLabelTable");
+  $table.find("tr:gt(0)").remove();
+  $table.append($('<tr>')
+    .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
+  )
+  event.preventDefault();
+}, false);
+
+delCsvTableDescription.addEventListener('click', function(event){
+  var $table = $("#csvTableDescriptionTable");
+  $table.find("tr:gt(0)").remove();
+  $table.append($('<tr>')
+    .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
+  )
+  event.preventDefault();
+}, false);
+
+delCsvColumnLabel.addEventListener('click', function(event){
+  var $table = $("#csvColumnLabelTable");
+  $table.find("tr:gt(0)").remove();
+  $table.append($('<tr>')
+    .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
+  )
+  event.preventDefault();
+}, false);
+
+delCsvColumnDescription.addEventListener('click', function(event){
+  var $table = $("#csvColumnDescriptionTable");
+  $table.find("tr:gt(0)").remove();
+  $table.append($('<tr>')
+    .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
+  )
+  event.preventDefault();
+}, false);
+
+delCsvRelation.addEventListener('click', function(event){
+  var $table = $("#csvRelationTable");
+  $table.find("tr:gt(0)").remove();
+  $table.append($('<tr>')
+    .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
+  )
+  event.preventDefault();
+}, false);
+
+$('#delCsvTableLabel').click(function(){
+  deleteCsv(['tableLabel.csv']);
+})
+
+$('#delCsvTableDescription').click(function(){
+  deleteCsv(['tableDescription.csv']);
+})
+
+$('#delCsvColumnLabel').click(function(){
+  deleteCsv(['columnLabel.csv']);
+})
+
+$('#delCsvTableDescription').click(function(){
+  deleteCsv(['columnDescription.csv']);
+})
+
+$('#delCsvRelation').click(function(){
+  deleteCsv(['relation.csv']);
+})
+
+function deleteCsv(files){
+
+  var parms = {"files": files};
+  console.log(parms);
+
+  $.ajax({
+ 		type: 'POST',
+ 		url: "DeleteCSV",
+ 		dataType: 'json',
+    data: JSON.stringify(parms),
+
+ 		success: function(data) {
+      console.log(data)
+      if(data.STATUS == 'OK'){
+        var removed = "";
+        if(data.REMOVED){
+          removed = data.REMOVED.join("<br>");
+          switch(parms.files[0]){
+            case 'tableLabel.csv':
+              $('#delCsvTableLabel').prop('disabled', true);
+              break;
+            case 'tableDescription.csv':
+              $('#delCsvTableDescription').prop('disabled', true);
+              break;
+            case 'columnLabel.csv':
+              $('#delCsvColumnLabel').prop('disabled', true);
+              break;
+            case 'columnDescription.csv':
+              $('#delCsvColumnDescription').prop('disabled', true);
+              break;
+            case 'relation.csv':
+              $('#delCsvRelation').prop('disabled', true);
+              break;
+          }
+        }
+        var alert = 'alert-info';
+        var msg = "No change to save.";
+        if(removed.trim().length > 1){
+          alert = 'alert-success'
+          msg = "Changed saved successfully.<br>Following file(s) removed:<br>" + removed;
+        }
+        switch(parms.files[0]){
+          case 'relation.csv':
+            ShowAlert(msg, alert, $("#csvRelationModalAlert"));
+            break;
+          default:
+            ShowAlert(msg, alert, $("#csvLabelModalAlert"));
+        }
+      }
+      else{
+        switch(parms.files[0]){
+          case 'relation.csv':
+            ShowAlert(msg, alert, $("#csvRelationModalAlert"));
+            ShowAlert(data.MESSAGE, "alert-danger", $("#csvRelationModalAlert"));
+            break;
+          default:
+            ShowAlert(data.MESSAGE, "alert-danger", $("#csvLabelModalAlert"));
+        }
+      }
+
+ 		},
+ 		error: function(data) {
+      console.log(data)
+ 		}
+ 	});
+}
+
+function UploadCSV($el, fileName, $table){
+
+  var file = $el[0].files[0];
+  console.log(file);
+
+  var fd = new FormData();
+  fd.append('file', file, fileName);
+  console.log(fd);
+
+  $.ajax({
+    url: "UploadCSV",
+    type: "POST",
+    data: fd,
+    enctype: 'multipart/form-data',
+    dataType: 'application/text',
+    processData: false,  // tell jQuery not to process the data
+    contentType: false,   // tell jQuery not to set contentType
+    success: function(data) {
+      console.log(data);
+		},
+		error: function(data) {
+      console.log(data);
+      if(data.responseText){
+        var result = JSON.parse(data.responseText);
+        console.log(result);
+        if(result.STATUS == "OK"){
+          switch(fileName){
+            case 'relation.csv':
+              ShowAlert(result.MESSAGE, "alert-success", $("#csvRelationModalAlert"));
+              break;
+            default:
+              ShowAlert(result.MESSAGE, "alert-success", $("#csvLabelModalAlert"));
+          }
+          console.log(result.DATAS);
+          // $table.find('tbody tr').remove();
+          $table.find("tr:gt(0)").remove();
+
+          $.each(result.DATAS, function(i, record){
+            switch(fileName){
+                case 'tableLabel.csv':
+                  $table.append($('<tr>')
+                    .append($('<td>').append(record.tableName))
+                    .append($('<td>').append(record.tableLabel))
+                  )
+                  $('#delCsvTableLabel').prop('disabled', false);
+                  break;
+                case 'tableDescription.csv':
+                  $table.append($('<tr>')
+                    .append($('<td>').append(record.tableName))
+                    .append($('<td>').append(record.tableDescription))
+                  )
+                  $('#delCsvTableDescription').prop('disabled', false);
+                  break;
+                case 'columnLabel.csv':
+                  $table.append($('<tr>')
+                    .append($('<td>').append(record.tableName))
+                    .append($('<td>').append(record.columnName))
+                    .append($('<td>').append(record.columnLabel))
+                  )
+                  $('#delCsvColumnLabel').prop('disabled', false);
+                  break;
+                case 'columnDescription.csv':
+                  $table.append($('<tr>')
+                  .append($('<td>').append(record.tableName))
+                  .append($('<td>').append(record.columnName))
+                  .append($('<td>').append(record.columnDescription))
+                  )
+                  $('#delCsvColumnDescription').prop('disabled', false);
+                  break;
+                case 'relation.csv':
+                  $table.append($('<tr>')
+                  .append($('<td>').append(record.FK_NAME))
+                  .append($('<td>').append(record.PK_NAME))
+                  .append($('<td>').append(record.FKTABLE_NAME))
+                  .append($('<td>').append(record.PKTABLE_NAME))
+                  .append($('<td>').append(record.KEY_SEQ))
+                  .append($('<td>').append(record.FKCOLUMN_NAME))
+                  .append($('<td>').append(record.PKCOLUMN_NAME))
+                  )
+                  $('#delCsvRelation').prop('disabled', false);
+                  break;
+            }
+          })
+          switch(fileName){
+            case 'tableLabel.csv':
+            case 'tableDescription.csv':
+              $table.append($('<tr>')
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+              )
+              break;
+            case 'columnLabel.csv':
+            case 'columnDescription.csv':
+              $table.append($('<tr>')
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+              )
+              break;
+            case 'relation.csv':
+              $table.append($('<tr>')
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+                .append($('<td>').append("..."))
+              )
+              break;
+          }
+        }
+        else{
+          switch(fileName){
+            case 'relation.csv':
+              ShowAlert(result.MESSAGE + "<br>" + result.TROUBLESHOOTING, "alert-danger", $("#csvRelationModalAlert"));
+              break;
+            default:
+              ShowAlert(result.MESSAGE + "<br>" + result.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
+          }
+          $table.find("tr:gt(0)").remove();
+          $table.append($('<tr>')
+            .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
+          )
+
+        }
+      }
+		}
+  }).done(function( data ) {
+    console.log(data);
+  });
+
+  $el.val('');
+
+}
+
+
+$("#addSqlRel").click(function(){
+  $('#relsQueryModal').modal('toggle');
+})
+
+$('#relsQueryModal').on('shown.bs.modal', function() {
+
+  $.ajax({
+ 		type: 'POST',
+ 		url: "GetRelationQuery",
+ 		dataType: 'json',
+
+ 		success: function(data) {
+      console.log(data)
+      if(data.DATAS){
+        $("#FKQuery").val(data.DATAS.FKQuery);
+        $("#PKQuery").val(data.DATAS.PKQuery);
+      }
+ 		},
+ 		error: function(data) {
+      console.log(data)
+ 			ShowAlert("Getting relations queries failed.", "alert-danger", $("#relsQueryModalAlert"));
+ 		}
+ 	});
+
+
+});
+
+$('#relsQueryModal').on('hidden.bs.modal', function() {
+    $('#searchSelect').selectpicker('deselectAll');
+    $('#relsQueryModal .collapse').each(function () {
+        $(this).collapse('hide');
+    });
+    $("#FKQuery").val('');
+    $("#PKQuery").val('');
+});
+
+function saveRelsQuery(){
+
+  $('#relsQueryModal .collapse').each(function () {
+      $(this).collapse('hide');
+  });
+
+  var FKQuery = $("#FKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
+  var PKQuery = $("#PKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
+  var parms = {"FKQuery" : FKQuery, "PKQuery": PKQuery};
+  console.log(parms);
+
+ 	$.ajax({
+ 		type: 'POST',
+ 		url: "SaveRelationQuery",
+ 		dataType: 'json',
+ 		data: JSON.stringify(parms),
+
+ 		success: function(data) {
+      console.log(data)
+ 			ShowAlert(data.MESSAGE, "alert-" + data.ALERT, $("#relsQueryModalAlert"));
+      $('#searchSelect').selectpicker('unSelectAll');
+ 		},
+ 		error: function(data) {
+      console.log(data)
+ 			ShowAlert("Saving Query failed.", "alert-danger", $("#relsQueryModalAlert"));
+ 		}
+ 	});
+
+}
+
+saveRel.addEventListener('click', function(event){
+  window.location.href = "SaveRelation";
+  
+  event.preventDefault();
+}, false);
+
+removeRel.addEventListener('click', function(event){
+
+  bootbox.confirm({
+    title: "Removing relations.",
+    message: "Both SQL and CSV Relations will be dropped. Do you confirm ?",
+    buttons: {
+      cancel: {
+          label: 'Cancel',
+          className: 'btn btn-default'
+      },
+      confirm: {
+          label: 'Confirm',
+          className: 'btn btn-warning'
+      }
+    },
+    callback: function(result){
+      if(result){
+        $.ajax({
+      		type: 'POST',
+      		url: "RemoveRelationQuery",
+      		dataType: 'json',
+
+      		success: function(data) {
+            console.log(data);
+            $("#FKQuery").val('');
+            $("#PKQuery").val('');
+            showalert("RemoveRelationQuery()", "Removing relations successfully.", "alert-success", "bottom");
+      		},
+      		error: function(data) {
+            console.log(data);
+      			showalert("RemoveRelationQuery()", "Removing relations query failed.", "alert-danger", "bottom");
+      		}
+      	});
+
+      }
+    }
+  });
+
+  event.preventDefault();
+}, false);
+
+runFKQuery.addEventListener('click', function(event){
+  var query = $("#FKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
+
+  if(query.trim().length == 0){
+    ShowAlert("Query is empty.", "alert-warning", $("#relsQueryModalAlert"));
+    return;
+  }
+  var type = 'relation';
+
+  var tables = [];
+  $('#tables option').each(function(){
+    tables.push($(this).val());
+  })
+
+  BuildTestQuery(query, type, tables);
+
+  event.preventDefault();
+}, false);
+
+eraseFKQuery.addEventListener('click', function(event){
+  $("#FKQuery").val('');
+  event.preventDefault();
+}, false);
+
+runPKQuery.addEventListener('click', function(event){
+  var query = $("#PKQuery").val().replace(/[^\x20-\x7E]/gmi, "");
+  if(query.trim().length == 0){
+    ShowAlert("Query is empty.", "alert-warning", $("#relsQueryModalAlert"));
+    return;
+  }
+  var type = 'relation';
+
+  var tables = [];
+  $('#tables option').each(function(){
+    tables.push($(this).val());
+  })
+
+  BuildTestQuery(query, type, tables);
+
+  event.preventDefault();
+}, false);
+
+erasePKQuery.addEventListener('click', function(event){
+  $("#PKQuery").val('');
+  event.preventDefault();
+}, false);
+
+tableLabelQuery.addEventListener('click', function(event){
+  var query = $("#tableLabel").val().replace(/[^\x20-\x7E]/gmi, "");
+  if(query.trim().length == 0){
+    ShowAlert("Query is empty.", "alert-warning", $("#tableLabelAlert"));
+    return;
+  }
+  var type = 'table';
+
+  var tables = new Set();
+  if($datasTable.bootstrapTable("getData").length > 0){
+    var qss = $datasTable.bootstrapTable("getData");
+    $.each(qss, function(i, qs){
+      tables.add(qs.table_name);
+    })
+  }
+  tables = Array.from(tables);
+
+  if(tables.length == 0){
+    ShowAlert("Import at least one Query Subject to test.", "alert-warning", $("#tableLabelAlert"));
+  }
+  else{
+    BuildTestQuery(query, type, tables);
+  }
+
+  event.preventDefault();
+}, false);
+
+eraseTableLabelQuery.addEventListener('click', function(event){
+  $("#tableLabel").val('');
+  event.preventDefault();
+}, false);
+
+// A MODIFIER dans myfunction.js
+tableDescriptionQuery.addEventListener('click', function(event){
+  var query = $("#tableDescription").val().replace(/[^\x20-\x7E]/gmi, "");
+  if(query.trim().length == 0){
+    ShowAlert("Query is empty.", "alert-warning", $("#tableDescriptionAlert"));
+    return;
+  }
+  var type = 'table';
+
+  var tables = new Set();
+  if($datasTable.bootstrapTable("getData").length > 0){
+    var qss = $datasTable.bootstrapTable("getData");
+    $.each(qss, function(i, qs){
+      tables.add(qs.table_name);
+    })
+  }
+  tables = Array.from(tables);
+
+  if(tables.length == 0){
+    ShowAlert("Import at least one Query Subject to test.", "alert-warning", $("#tableDescriptionAlert"));
+  }
+  else{
+    BuildTestQuery(query, type, tables);
+  }
+  event.preventDefault();
+}, false);
+
+eraseTableDescriptionQuery.addEventListener('click', function(event){
+  $("#tableDescription").val('');
+  event.preventDefault();
+}, false);
+
+columnLabelQuery.addEventListener('click', function(event){
+  var query = $("#columnLabel").val().replace(/[^\x20-\x7E]/gmi, "");
+  if(query.trim().length == 0){
+    ShowAlert("Query is empty.", "alert-warning", $("#columnLabelAlert"));
+    return;
+  }
+  var type = 'column';
+  var tables = new Set();
+  if($datasTable.bootstrapTable("getData").length > 0){
+    var qss = $datasTable.bootstrapTable("getData");
+    $.each(qss, function(i, qs){
+      tables.add(qs.table_name);
+    })
+  }
+  tables = Array.from(tables);
+
+  if(tables.length == 0){
+    ShowAlert("Import at least one Query Subject to test.", "alert-warning", $("#columnLabelAlert"));
+  }
+  else{
+    BuildTestQuery(query, type, tables);
+  }
+  event.preventDefault();
+}, false);
+
+eraseColumnLabelQuery.addEventListener('click', function(event){
+  $("#columnLabel").val('');
+  event.preventDefault();
+}, false);
+
+columnDescriptionQuery.addEventListener('click', function(event){
+  var query = $("#columnDescription").val().replace(/[^\x20-\x7E]/gmi, "");
+  if(query.trim().length == 0){
+    ShowAlert("Query is empty.", "alert-warning", $("#columnDescriptionAlert"));
+    return;
+  }
+  var type = 'column';
+  var tables = new Set();
+  if($datasTable.bootstrapTable("getData").length > 0){
+    var qss = $datasTable.bootstrapTable("getData");
+    $.each(qss, function(i, qs){
+      tables.add(qs.table_name);
+    })
+  }
+  tables = Array.from(tables);
+
+  if(tables.length == 0){
+    ShowAlert("Import at least one Query Subject to test.", "alert-warning", $("#columnDescriptionAlert"));
+  }
+  else{
+    BuildTestQuery(query, type, tables);
+  }
+  event.preventDefault();
+}, false);
+
+eraseColumnDescriptionQuery.addEventListener('click', function(event){
+  $("#columnDescription").val('');
+  event.preventDefault();
+}, false);
+
+
+
+// END

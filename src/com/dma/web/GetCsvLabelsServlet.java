@@ -3,16 +3,28 @@ package com.dma.web;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Map.Entry;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Servlet implementation class AppendSelectionsServlet
@@ -57,12 +69,147 @@ public class GetCsvLabelsServlet extends HttpServlet {
 			
 			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
 			
+			@SuppressWarnings("unchecked")
+			Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
+			
 			if(parms != null && parms.get("tables") != null) {
 				
+				@SuppressWarnings("unchecked")
+				List<String> tables = (List<String>) parms.get("tables");
 				
+				if(tables.size() > 0){
 				
-				result.put("DATAS", result);
-				result.put("STATUS", "OK");
+					Map<String, String> tlMap = new HashMap<String, String>();
+					Map<String, String> tdMap = new HashMap<String, String>();
+					Map<String, Map<String, String>> clMap = new HashMap<String, Map<String, String>>();
+					Map<String, Map<String, String>> cdMap = new HashMap<String, Map<String, String>>();
+					
+					String tableInClause = "('" + StringUtils.join(tables.iterator(), "','") + "')";
+				
+					Properties props = new java.util.Properties();
+					props.put("separator",";");
+					Connection csvCon = DriverManager.getConnection("jdbc:relique:csv:" + prj.toString(), props);
+					Statement csvStmt = csvCon.createStatement();
+					ResultSet csvRst = null;
+			
+					if(Files.exists(Paths.get(prj + "/tableLabel.csv"))){
+						csvRst = csvStmt.executeQuery("SELECT * FROM tableLabel where TABLE_NAME in " + tableInClause);
+						while(csvRst.next()){
+							tlMap.put(csvRst.getString("Table_Name").toUpperCase(), csvRst.getString("Table_Label"));
+						}
+						csvRst.close();
+					}
+					
+					if(Files.exists(Paths.get(prj + "/tableDescription.csv"))){
+						csvRst = csvStmt.executeQuery("SELECT * FROM tableDescription where TABLE_NAME in " + tableInClause);
+						while(csvRst.next()){
+							tdMap.put(csvRst.getString("Table_Name").toUpperCase(), csvRst.getString("Table_Description"));
+						}
+						csvRst.close();
+					}
+					
+					for(String table: tables) {
+						
+						List<String> fields = new ArrayList<String>();
+						
+						Connection con = (Connection) request.getSession().getAttribute("con");
+						String schema = (String) request.getSession().getAttribute("schema");
+						DatabaseMetaData metaData = con.getMetaData();
+						ResultSet rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
+						while(rst.next()){
+							fields.add(rst.getString("COLUMN_NAME"));
+						}
+						rst.close();
+			
+						String columnInClause = "('" + StringUtils.join(fields.iterator(), "','") + "')";
+			
+						if(Files.exists(Paths.get(prj + "/columnLabel.csv"))){
+							Map<String, String> cols = new HashMap<String, String>();
+							String sql = "SELECT * FROM columnLabel where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
+							System.out.println(sql);
+							csvRst = csvStmt.executeQuery(sql);
+							while(csvRst.next()){
+								cols.put(csvRst.getString("Column_Name").toUpperCase(), csvRst.getString("Column_Label"));
+							}
+							csvRst.close();
+							clMap.put(table.toUpperCase(), cols);
+						}
+						
+						if(Files.exists(Paths.get(prj + "/columnDescription.csv"))){
+							Map<String, String> cols = new HashMap<String, String>();
+							csvRst = csvStmt.executeQuery("SELECT * FROM columnDescription where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause);
+							while(csvRst.next()){
+								cols.put(csvRst.getString("Column_Name").toUpperCase(), csvRst.getString("Column_Description"));
+							}
+							csvRst.close();
+							cdMap.put(table.toUpperCase(), cols);
+						}
+						
+					}
+					
+					csvStmt.close();
+					if(csvCon != null){csvCon.close();}
+					
+					for(String table: tables){
+						DBMDTable dbmdTable = new DBMDTable();
+						if(dbmd != null && dbmd.containsKey(table)) {
+							dbmdTable = dbmd.get(table);
+						}
+						dbmdTable.setTable_remarks(tlMap.get(table));
+						dbmdTable.setTable_description(tdMap.get(table));
+	
+						Map<String, DBMDColumn> dbmdColumns = new HashMap<String, DBMDColumn>();
+						if(dbmd != null && dbmd.containsKey(table)) {
+							dbmdColumns = dbmdTable.getColumns();
+						}
+						
+						Map<String, String> cls = (Map<String, String>) clMap.get(table);
+						
+						if(cls != null){
+							for(Entry<String, String> cl: cls.entrySet()){
+								String column_name = cl.getKey();
+								String column_remarks = cl.getValue();	
+								if(!dbmdColumns.containsKey(column_name)) {
+									dbmdColumns.put(column_name, new DBMDColumn());
+									dbmdColumns.get(column_name).setColumn_name(column_name);
+								}
+								dbmdColumns.get(column_name).setColumn_remarks(column_remarks);
+							}
+						}
+	
+						Map<String, String> cds = (Map<String, String>) cdMap.get(table);
+						
+						if(cds != null){
+							for(Entry<String, String> cd: cds.entrySet()){
+								String column_name = cd.getKey();
+								String column_description = cd.getValue();	
+								if(!dbmdColumns.containsKey(column_name)) {
+									dbmdColumns.put(column_name, new DBMDColumn());
+									dbmdColumns.get(column_name).setColumn_name(column_name);
+								}
+								dbmdColumns.get(column_name).setColumn_description(column_description);
+							}
+						}
+	
+						dbmdTable.setColumns(dbmdColumns);
+						if(dbmd == null) {
+							dbmd = new HashMap<String, DBMDTable>();
+						}
+						dbmd.put(table, dbmdTable);
+						
+					}
+					
+					result.put("STATUS", "OK");
+					result.put("DATAS", dbmd);
+					request.getSession().setAttribute("dbmd", dbmd);
+					
+				}
+				else {
+					result.put("STATUS", "OK");
+					result.put("MESSAGE", "No table given in parms.");
+					
+				}
+				
 			}
 			else {
 				result.put("STATUS", "KO");

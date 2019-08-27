@@ -1,5 +1,9 @@
 package com.dma.web;
 
+import java.io.FileNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -15,6 +19,8 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.sql.DataSource;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Application Lifecycle Listener implementation class SessionAttributeListener
@@ -47,6 +53,20 @@ public class SessionAttributeListener implements HttpSessionAttributeListener {
     	
     	if(arg0.getName().equalsIgnoreCase("projectPath")){
     		System.out.println("SessionId " + s.getId() + " projectPath is set to " + s.getAttribute("projectPath"));
+    		Path path = Paths.get(((String) s.getAttribute("projectPath")) + "/relation.json" );  
+    		if(Files.exists(path)) {
+    			try {
+					@SuppressWarnings("unchecked")
+					Map<String, String> queries = (Map<String, String>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, String>>(){});
+					if(queries != null) {
+						s.setAttribute("FKQuery", queries.get("FKQuery"));
+						s.setAttribute("PKQuery", queries.get("PKQuery"));
+					}
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+    		}
     	}
     	
     	if(arg0.getName().equalsIgnoreCase("currentProject")){
@@ -67,7 +87,7 @@ public class SessionAttributeListener implements HttpSessionAttributeListener {
     		
         	Map<String, QuerySubject> query_subjects = new HashMap<String, QuerySubject>();
         	s.setAttribute("query_subjects", query_subjects);
-
+        	
         	String query = "";
         	try{
 	    		switch(dbEngine.toUpperCase()){

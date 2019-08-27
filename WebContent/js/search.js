@@ -153,6 +153,8 @@ $('#queryModal').on('hidden.bs.modal', function() {
     });
 });
 
+// START
+
 $("#addSqlLabel").click(function(){
   $('#queryModal').modal('toggle');
 })
@@ -651,8 +653,8 @@ $('#relsQueryModal').on('shown.bs.modal', function() {
  		success: function(data) {
       console.log(data)
       if(data.DATAS){
-        $("#FKQuery").val(data.DATAS.FKquery);
-        $("#PKQuery").val(data.DATAS.PKquery);
+        $("#FKQuery").val(data.DATAS.FKQuery);
+        $("#PKQuery").val(data.DATAS.PKQuery);
       }
  		},
  		error: function(data) {
@@ -837,6 +839,17 @@ tableLabelQuery.addEventListener('click', function(event){
   }
   var type = 'table';
   var tables = $('#searchSelect').val();
+
+  // var tables = new Set();
+  //
+  // if($datasTable.bootstrapTable("getData").length > 0){
+  //   var qss = $datasTable.bootstrapTable("getData");
+  //   $.each(qss, function(i, qs){
+  //     tables.add(qs.table_name);
+  //   })
+  // }
+  // tables = Array.from(tables);
+
   if(CheckIfTableSelected()){
     BuildTestQuery(query, type, tables);
   }
@@ -848,6 +861,7 @@ eraseTableLabelQuery.addEventListener('click', function(event){
   event.preventDefault();
 }, false);
 
+// A MODIFIER dans myfunction.js
 tableDescriptionQuery.addEventListener('click', function(event){
   var query = $("#tableDescription").val().replace(/[^\x20-\x7E]/gmi, "");
   if(query.trim().length == 0){
@@ -856,6 +870,18 @@ tableDescriptionQuery.addEventListener('click', function(event){
   }
   var type = 'table';
   var tables = $('#searchSelect').val();
+
+  // var tables = new Set();
+  //
+  // if($datasTable.bootstrapTable("getData").length > 0){
+  //   var qss = $datasTable.bootstrapTable("getData");
+  //   $.each(qss, function(i, qs){
+  //     tables.add(qs.table_name);
+  //   })
+  // }
+  // tables = Array.from(tables);
+
+
   if(CheckIfTableSelected()){
     BuildTestQuery(query, type, tables);
   }
@@ -875,6 +901,17 @@ columnLabelQuery.addEventListener('click', function(event){
   }
   var type = 'column';
   var tables = $('#searchSelect').val();
+
+  // var tables = new Set();
+  //
+  // if($datasTable.bootstrapTable("getData").length > 0){
+  //   var qss = $datasTable.bootstrapTable("getData");
+  //   $.each(qss, function(i, qs){
+  //     tables.add(qs.table_name);
+  //   })
+  // }
+  // tables = Array.from(tables);
+
   if(CheckIfTableSelected()){
     BuildTestQuery(query, type, tables);
   }
@@ -894,6 +931,17 @@ columnDescriptionQuery.addEventListener('click', function(event){
   }
   var type = 'column';
   var tables = $('#searchSelect').val();
+
+  // var tables = new Set();
+  //
+  // if($datasTable.bootstrapTable("getData").length > 0){
+  //   var qss = $datasTable.bootstrapTable("getData");
+  //   $.each(qss, function(i, qs){
+  //     tables.add(qs.table_name);
+  //   })
+  // }
+  // tables = Array.from(tables);
+
   if(CheckIfTableSelected()){
     BuildTestQuery(query, type, tables);
   }
@@ -904,6 +952,8 @@ eraseColumnDescriptionQuery.addEventListener('click', function(event){
   $("#columnDescription").val('');
   event.preventDefault();
 }, false);
+
+// END
 
 function openDynamicModal(){
   $('#dynamicModal').modal('toggle');
@@ -1138,9 +1188,10 @@ function GetCsvLabels(){
         ShowAlert("ERROR: " + labels.MESSAGE + "<br>TROUBLESHOOTING: " + labels.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
       }
       else{
-        // dbmd = labels;
-        // loadDBMD(dbmd);
-        // console.log(dbmd);
+        dbmd = labels.DATAS;
+        console.log(Object.values(dbmd));
+        loadDBMD(Object.values(dbmd));
+
         $('#csvLabelModal').modal('toggle');
       }
 
@@ -1183,23 +1234,6 @@ function GetLabels(){
       }
       else{
         dbmd = labels.DATAS;
-
-        // var tables = Object.keys(labels);
-        // var dbmd = JSON.parse(localStorage.getItem('dbmd'));
-        //
-        // $.each(tables, function(i, table){
-        //   if(dbmd[table]){
-        //     dbmd[table].table_remarks = labels[table].table_remarks;
-        //     dbmd[table].table_description = labels[table].table_description;
-        //     $.each(labels[table].columns, function(j, column){
-        //       if(dbmd[table].columns[j]){
-        //         dbmd[table].columns[j].column_remarks = column.column_remarks;
-        //         dbmd[table].columns[j].column_description = column.column_description;
-        //       }
-        //     })
-        //   }
-        // })
-        //
         console.log(Object.values(dbmd));
         loadDBMD(Object.values(dbmd));
         // console.log(dbmd);
@@ -1386,6 +1420,7 @@ function SaveDBMD(){
       type: 'POST',
       url: "SaveDBMD",
       dataType: 'json',
+      data: JSON.stringify(dbmd),
 
       success: function(data) {
         showalert("SaveDBMD()", "Database metadata saved successfully.", "alert-success", "bottom");

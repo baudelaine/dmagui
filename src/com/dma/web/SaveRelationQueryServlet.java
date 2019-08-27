@@ -63,6 +63,8 @@ public class SaveRelationQueryServlet extends HttpServlet {
 				Path output = Paths.get(prj + "/relation.json");
 				
 				if(((String) parms.get("FKQuery")).isEmpty() && ((String) parms.get("PKQuery")).isEmpty()) {
+					request.getSession().setAttribute("FKQuery", "");
+					request.getSession().setAttribute("PKQuery", "");
 					if(Files.exists(output)) {
 						Files.delete(output);
 						result.put("MESSAGE", output.toString() + " was removed");
@@ -74,6 +76,8 @@ public class SaveRelationQueryServlet extends HttpServlet {
 					}
 				}
 				else {
+					request.getSession().setAttribute("FKQuery", parms.get("FKQuery"));
+					request.getSession().setAttribute("PKQuery", parms.get("PKQuery"));
 
 					Files.write(output, Tools.toJSON(parms).getBytes());
 					

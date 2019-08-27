@@ -1,9 +1,8 @@
 package com.dma.web;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -12,24 +11,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 /**
- * Servlet implementation class GetImportedKeysServlet
+ * Servlet implementation class AppendSelectionsServlet
  */
-@WebServlet("/SaveDBMD")
-public class SaveDBMDServlet extends HttpServlet {
+@WebServlet(name = "Test0", urlPatterns = { "/Test0" })
+public class Test0Servlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-       
+
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public SaveDBMDServlet() {
+    public Test0Servlet() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -41,9 +39,9 @@ public class SaveDBMDServlet extends HttpServlet {
 		// TODO Auto-generated method stub
 
 		Map<String, Object> result = new HashMap<String, Object>();
-		
-		try {
 
+		try {
+			
 			result.put("CLIENT", request.getRemoteAddr() + ":" + request.getRemotePort());
 			result.put("SERVER", request.getLocalAddr() + ":" + request.getLocalPort());
 			
@@ -54,42 +52,22 @@ public class SaveDBMDServlet extends HttpServlet {
 
 			result.put("JSESSIONID", request.getSession().getId());
 			
-			Path wks = Paths.get(getServletContext().getRealPath("/datas") + "/" + user);			
-			result.put("WKS", wks.toString());
-			
-			Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
-			result.put("PRJ", prj.toString());
-			
-			@SuppressWarnings("unchecked")
-			Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) Tools.fromJSON(request.getInputStream(), new TypeReference<Map<String, DBMDTable>>(){});
-			
-			if(dbmd != null) {
-				
-				Path path = Paths.get(prj + "/dbmd.json");
-				
-				File file = path.toFile();
-				if(!file.exists()){file.createNewFile();}
-				file.setReadable(true, false);
-				
-				BufferedWriter bw = new BufferedWriter(new FileWriter(path.toFile()));
-			
-				bw.write(Tools.toJSON(dbmd));
-				bw.flush();
-				bw.close();		
-				
-				request.getSession().setAttribute("dbmd", dbmd);
-				
-				result.put("STATUS", "OK");
-				
+			StringBuffer sb = new StringBuffer("whatever string you like");
+			InputStream in = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
+			ServletOutputStream out = response.getOutputStream();
+
+			byte[] outputByte = new byte[4096];
+			//copy binary content to output stream
+			while(in.read(outputByte, 0, 4096) != -1)
+			{
+				out.write(outputByte, 0, 4096);
 			}
-			else {
-				result.put("STATUS", "KO");
-				result.put("ERROR", "Input parameters are not valid.");
-				throw new Exception();
-			}			
-			
+			in.close();
+			out.flush();
+			out.close();
 			
 		}
+		
 		catch (Exception e) {
 			// TODO Auto-generated catch block
 			result.put("STATUS", "KO");
@@ -118,4 +96,3 @@ public class SaveDBMDServlet extends HttpServlet {
 	}
 
 }
-

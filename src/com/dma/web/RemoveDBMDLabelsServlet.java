@@ -79,6 +79,7 @@ public class RemoveDBMDLabelsServlet extends HttpServlet {
 				}
 
 				result.put("DATAS", dbmd);
+				request.getSession().setAttribute("dbmd", dbmd);
 				
 			}			
 			

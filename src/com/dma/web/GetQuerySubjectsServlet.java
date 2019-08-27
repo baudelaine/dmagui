@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.ServletException;
@@ -30,8 +32,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Servlet implementation class GetImportedKeysServlet
@@ -56,7 +56,9 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	long qs_recCount = 0L;
 	Map<String, DBMDTable> dbmd = null;
 	Map<String, String> tableAliases = null;
-	String relationsQuery = "";
+	String FKQuery = "";
+	Path prj = null;
+	String relationMode = "DB";
        
     /**
      * @see HttpServlet#HttpServlet()
@@ -88,7 +90,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		Path wks = Paths.get(getServletContext().getRealPath("/datas") + "/" + user);			
 		result.put("WKS", wks.toString());
 		
-		Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
+		prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
 		result.put("PRJ", prj.toString());
 		
 		table = request.getParameter("table");
@@ -97,12 +99,6 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		linker_id = request.getParameter("linker_id");
 		importLabel = Boolean.parseBoolean(request.getParameter("importLabel"));
 		
-		System.out.println("table=" + table);
-		System.out.println("alias=" + alias);
-		System.out.println("type=" + type);
-		System.out.println("linker_id=" + linker_id);
-		System.out.println("importLabel=" + importLabel);
-
 		try{
 			
 			withRecCount = (Boolean) request.getServletContext().getAttribute("withRecCount");
@@ -119,23 +115,11 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 			
 			querySubject.setFields(getFields());
 			
-			relationsQuery = (String) request.getSession().getAttribute("relationsQuery");
-			
-			if(relationsQuery == null) {
-			
-				Path path = Paths.get(prj + "/queries/relations.json");
-				
-				if(Files.exists(path)) {
-	
-					Map<String, String> query = (Map<String, String>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, String>>(){});
-					relationsQuery = query.get("FKquery");
-					request.getSession().setAttribute("FKQuery", relationsQuery);
-				}
-				
-			}
+			FKQuery = (String) request.getSession().getAttribute("FKQuery");
 			
 			querySubject.addRelations(getForeignKeys());
-				
+
+			result.put("MODE", relationMode);
 			result.put("DATAS", querySubject);
 			result.put("STATUS", "OK");
 			
@@ -420,16 +404,28 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		
 		Map<String, Relation> map = new HashMap<String, Relation>();
 		
+		Connection csvCon = null;
 		PreparedStatement stmt = null;
 		ResultSet rst = null;
 		
-		if(relationsQuery != null && !relationsQuery.isEmpty()) {
-			stmt = con.prepareStatement(relationsQuery);
+		if(Files.exists(Paths.get(prj + "/relation.csv"))) {
+			Properties props = new java.util.Properties();
+			props.put("separator",";");
+			csvCon = DriverManager.getConnection("jdbc:relique:csv:" + prj.toString(), props);
+			String sql = "SELECT * FROM relation where FKTABLE_NAME = '" + table + "'";
+			stmt = csvCon.prepareStatement(sql);
+			rst = stmt.executeQuery();
+			relationMode = "CSV";
+		}
+		else if(FKQuery != null && !FKQuery.isEmpty()) {
+			stmt = con.prepareStatement(FKQuery);
 			stmt.setString(1, table);
     		rst = stmt.executeQuery();
+			relationMode = "SQL";
     	}
 		else {
 			rst = metaData.getImportedKeys(con.getCatalog(), schema, table);
+			relationMode = "DB";
 		}
 	    
 	    while (rst.next()) {
@@ -573,6 +569,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	    }
 	    if(rst != null) {rst.close();}
 	    if(stmt != null) {stmt.close();}
+	    if(csvCon != null) {csvCon.close();}
 	    
 	    if(relationCount){
 	    	for(Entry<String, Relation> relation: map.entrySet()){

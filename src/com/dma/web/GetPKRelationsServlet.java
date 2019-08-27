@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,6 +21,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.ServletException;
@@ -27,8 +29,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * Servlet implementation class GetTablesServlet
@@ -105,31 +105,30 @@ public class GetPKRelationsServlet extends HttpServlet {
 			
 		    Map<String, Relation> map = new HashMap<String, Relation>();
 		    
-			String relationsQuery = (String) request.getSession().getAttribute("relationsQuery");
-			
-			if(relationsQuery == null) {
-			
-				Path path = Paths.get(prj + "/queries/relations.json");
-				
-				if(Files.exists(path)) {
-	
-					Map<String, String> query = (Map<String, String>) Tools.fromJSON(path.toFile(), new TypeReference<Map<String, String>>(){});
-					relationsQuery = query.get("PKquery");
-					request.getSession().setAttribute("PKQuery", relationsQuery);
-				}
-				
-			}
+			String PKQuery = (String) request.getSession().getAttribute("PKQuery");
 		    
+			Connection csvCon = null;
 			PreparedStatement stmt = null;
 			ResultSet rst = null;
 			
-			if(relationsQuery != null && !relationsQuery.isEmpty()) {
-				stmt = con.prepareStatement(relationsQuery);
+			if(Files.exists(Paths.get(prj + "/relation.csv"))) {
+				Properties props = new java.util.Properties();
+				props.put("separator",";");
+				csvCon = DriverManager.getConnection("jdbc:relique:csv:" + prj.toString(), props);
+				String sql = "SELECT * FROM relation where PKTABLE_NAME = '" + table + "'";
+				stmt = csvCon.prepareStatement(sql);
+				rst = stmt.executeQuery();
+				result.put("MODE", "CSV");
+			}
+			else if(PKQuery != null && !PKQuery.isEmpty()) {
+				stmt = con.prepareStatement(PKQuery);
 				stmt.setString(1, table);
 	    		rst = stmt.executeQuery();
+				result.put("MODE", "SQL");
 	    	}
 			else {
 				rst = metaData.getExportedKeys(con.getCatalog(), schema, table);
+				result.put("MODE", "DB");
 			}
 		    
 		    while (rst.next()) {
@@ -278,6 +277,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 		    
 		    if(rst != null){rst.close();}
 		    if (stmt != null) { stmt.close();}
+		    if (csvCon != null) { csvCon.close();}
 		    
 		    if(withRecCount){
 		    	

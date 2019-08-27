@@ -1,9 +1,11 @@
 package com.dma.web;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -12,20 +14,16 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-public class Test7 {
+public class Test9 {
 
-	public static void main(String[] args){
+	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-
 		Connection con = null;
 		PreparedStatement stmt = null;
 		ResultSet rst = null;
@@ -65,11 +63,19 @@ public class Test7 {
 			if(rst != null) {rst.close();}
 			
 			List<String> keys = new ArrayList<String>();
-			Path path = Paths.get("/opt/wks/dmagui/relations.csv");
+			Path path = Paths.get("/opt/wks/dmagui/tmp");
 			FileWriter fw = new FileWriter(path.toFile());
+			
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			BufferedOutputStream buf = new BufferedOutputStream(bos);
+			
+			
 			String newLine = System.getProperty("line.separator");
 			String header = "FK_NAME;PK_NAME;FKTABLE_NAME;PKTABLE_NAME;KEY_SEQ;FKCOLUMN_NAME;PKCOLUMN_NAME";
-			fw.write(header + newLine);
+			
+			bos.write((header + newLine).getBytes());
+			
+//			fw.write(header + newLine);
 
 			for(String table: tables){
 				rst = metaData.getImportedKeys(con.getCatalog(), schema, table);
@@ -87,11 +93,18 @@ public class Test7 {
 					String pktable_name = rst.getString("PKTABLE_NAME");
 					if(!aliases.contains(pktable_name)) {
 						keys.add(key.toString());
-						fw.write(key.toString());
+//						fw.write(key.toString());
+						bos.write(key.toString().getBytes());
 					}
 				}
 				rst.close();
+				buf.flush();
+				
 			}
+			buf.flush();
+			int size = bos.toByteArray().length;
+			Files.write(path, bos.toByteArray());
+			
 			if(rst != null){
 				rst.close();
 			}
@@ -106,36 +119,16 @@ public class Test7 {
 			}
 			
 			System.out.println(Tools.toJSON(keys));
-
-			path = Paths.get("/home/dma/dma/p0/relation.csv");
-			
-			// Load the driver.
-			Class.forName("org.relique.jdbc.csv.CsvDriver");
-
-			// Create a connection using the directory containing the file(s)
-			Properties props = new java.util.Properties();
-			props.put("separator",";");
-//			props.put("suppressHeaders","true"); 
-			Connection conn = DriverManager.getConnection("jdbc:relique:csv:" + path.getParent().toString(), props);
-
-			// Create a Statement object to execute the query with.
-			String sql = "SELECT * FROM relation where FKTABLE_NAME = 'PROJECT'";
-			PreparedStatement stm = conn.prepareStatement(sql);
-
-			// Query the table. The name of the table is the name of the file without ".csv"
-			ResultSet results = stm.executeQuery();
-			while(results.next()) {
-				System.out.println(results.getString("FK_NAME"));
-			}
 			
 			
+
 		} catch (ClassNotFoundException | SQLException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		finally{
-		}		
-		
+		}				
+
 	}
 
 }

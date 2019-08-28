@@ -512,119 +512,112 @@ function UploadCSV($el, fileName, $table){
     type: "POST",
     data: fd,
     enctype: 'multipart/form-data',
-    dataType: 'application/text',
     processData: false,  // tell jQuery not to process the data
     contentType: false,   // tell jQuery not to set contentType
     success: function(data) {
       console.log(data);
+      if(data.STATUS == "OK"){
+        switch(fileName){
+          case 'relation.csv':
+            ShowAlert(data.MESSAGE, "alert-success", $("#csvRelationModalAlert"));
+            break;
+          default:
+            ShowAlert(data.MESSAGE, "alert-success", $("#csvLabelModalAlert"));
+        }
+        $table.find("tr:gt(0)").remove();
+
+        $.each(data.DATAS, function(i, record){
+          switch(fileName){
+              case 'tableLabel.csv':
+                $table.append($('<tr>')
+                  .append($('<td>').append(record.tableName))
+                  .append($('<td>').append(record.tableLabel))
+                )
+                $('#delCsvTableLabel').prop('disabled', false);
+                break;
+              case 'tableDescription.csv':
+                $table.append($('<tr>')
+                  .append($('<td>').append(record.tableName))
+                  .append($('<td>').append(record.tableDescription))
+                )
+                $('#delCsvTableDescription').prop('disabled', false);
+                break;
+              case 'columnLabel.csv':
+                $table.append($('<tr>')
+                  .append($('<td>').append(record.tableName))
+                  .append($('<td>').append(record.columnName))
+                  .append($('<td>').append(record.columnLabel))
+                )
+                $('#delCsvColumnLabel').prop('disabled', false);
+                break;
+              case 'columnDescription.csv':
+                $table.append($('<tr>')
+                .append($('<td>').append(record.tableName))
+                .append($('<td>').append(record.columnName))
+                .append($('<td>').append(record.columnDescription))
+                )
+                $('#delCsvColumnDescription').prop('disabled', false);
+                break;
+              case 'relation.csv':
+                $table.append($('<tr>')
+                .append($('<td>').append(record.FK_NAME))
+                .append($('<td>').append(record.PK_NAME))
+                .append($('<td>').append(record.FKTABLE_NAME))
+                .append($('<td>').append(record.PKTABLE_NAME))
+                .append($('<td>').append(record.KEY_SEQ))
+                .append($('<td>').append(record.FKCOLUMN_NAME))
+                .append($('<td>').append(record.PKCOLUMN_NAME))
+                )
+                $('#delCsvRelation').prop('disabled', false);
+                break;
+          }
+        })
+        switch(fileName){
+          case 'tableLabel.csv':
+          case 'tableDescription.csv':
+            $table.append($('<tr>')
+              .append($('<td>').append("..."))
+              .append($('<td>').append("..."))
+            )
+            break;
+          case 'columnLabel.csv':
+          case 'columnDescription.csv':
+            $table.append($('<tr>')
+              .append($('<td>').append("..."))
+              .append($('<td>').append("..."))
+              .append($('<td>').append("..."))
+            )
+            break;
+          case 'relation.csv':
+            $table.append($('<tr>')
+              .append($('<td>').append("..."))
+              .append($('<td>').append("..."))
+              .append($('<td>').append("..."))
+              .append($('<td>').append("..."))
+              .append($('<td>').append("..."))
+              .append($('<td>').append("..."))
+              .append($('<td>').append("..."))
+            )
+            break;
+        }
+      }
+      else{
+        switch(fileName){
+          case 'relation.csv':
+            ShowAlert(data.MESSAGE + "<br>" + data.TROUBLESHOOTING, "alert-danger", $("#csvRelationModalAlert"));
+            break;
+          default:
+            ShowAlert(data.MESSAGE + "<br>" + data.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
+        }
+        $table.find("tr:gt(0)").remove();
+        $table.append($('<tr>')
+          .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
+        )
+
+      }
 		},
 		error: function(data) {
       console.log(data);
-      if(data.responseText){
-        var result = JSON.parse(data.responseText);
-        console.log(result);
-        if(result.STATUS == "OK"){
-          switch(fileName){
-            case 'relation.csv':
-              ShowAlert(result.MESSAGE, "alert-success", $("#csvRelationModalAlert"));
-              break;
-            default:
-              ShowAlert(result.MESSAGE, "alert-success", $("#csvLabelModalAlert"));
-          }
-          console.log(result.DATAS);
-          // $table.find('tbody tr').remove();
-          $table.find("tr:gt(0)").remove();
-
-          $.each(result.DATAS, function(i, record){
-            switch(fileName){
-                case 'tableLabel.csv':
-                  $table.append($('<tr>')
-                    .append($('<td>').append(record.tableName))
-                    .append($('<td>').append(record.tableLabel))
-                  )
-                  $('#delCsvTableLabel').prop('disabled', false);
-                  break;
-                case 'tableDescription.csv':
-                  $table.append($('<tr>')
-                    .append($('<td>').append(record.tableName))
-                    .append($('<td>').append(record.tableDescription))
-                  )
-                  $('#delCsvTableDescription').prop('disabled', false);
-                  break;
-                case 'columnLabel.csv':
-                  $table.append($('<tr>')
-                    .append($('<td>').append(record.tableName))
-                    .append($('<td>').append(record.columnName))
-                    .append($('<td>').append(record.columnLabel))
-                  )
-                  $('#delCsvColumnLabel').prop('disabled', false);
-                  break;
-                case 'columnDescription.csv':
-                  $table.append($('<tr>')
-                  .append($('<td>').append(record.tableName))
-                  .append($('<td>').append(record.columnName))
-                  .append($('<td>').append(record.columnDescription))
-                  )
-                  $('#delCsvColumnDescription').prop('disabled', false);
-                  break;
-                case 'relation.csv':
-                  $table.append($('<tr>')
-                  .append($('<td>').append(record.FK_NAME))
-                  .append($('<td>').append(record.PK_NAME))
-                  .append($('<td>').append(record.FKTABLE_NAME))
-                  .append($('<td>').append(record.PKTABLE_NAME))
-                  .append($('<td>').append(record.KEY_SEQ))
-                  .append($('<td>').append(record.FKCOLUMN_NAME))
-                  .append($('<td>').append(record.PKCOLUMN_NAME))
-                  )
-                  $('#delCsvRelation').prop('disabled', false);
-                  break;
-            }
-          })
-          switch(fileName){
-            case 'tableLabel.csv':
-            case 'tableDescription.csv':
-              $table.append($('<tr>')
-                .append($('<td>').append("..."))
-                .append($('<td>').append("..."))
-              )
-              break;
-            case 'columnLabel.csv':
-            case 'columnDescription.csv':
-              $table.append($('<tr>')
-                .append($('<td>').append("..."))
-                .append($('<td>').append("..."))
-                .append($('<td>').append("..."))
-              )
-              break;
-            case 'relation.csv':
-              $table.append($('<tr>')
-                .append($('<td>').append("..."))
-                .append($('<td>').append("..."))
-                .append($('<td>').append("..."))
-                .append($('<td>').append("..."))
-                .append($('<td>').append("..."))
-                .append($('<td>').append("..."))
-                .append($('<td>').append("..."))
-              )
-              break;
-          }
-        }
-        else{
-          switch(fileName){
-            case 'relation.csv':
-              ShowAlert(result.MESSAGE + "<br>" + result.TROUBLESHOOTING, "alert-danger", $("#csvRelationModalAlert"));
-              break;
-            default:
-              ShowAlert(result.MESSAGE + "<br>" + result.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
-          }
-          $table.find("tr:gt(0)").remove();
-          $table.append($('<tr>')
-            .append($('<td style="text-align: center; vertical-align: middle;" colspan="7">').append("no record found"))
-          )
-
-        }
-      }
 		}
   }).done(function( data ) {
     console.log(data);

@@ -74,6 +74,20 @@ public class GetCsvLabelsServlet extends HttpServlet {
 			
 			if(parms != null && parms.get("tables") != null) {
 				
+				String tlCsvFileName = "tableLabel.csv";
+				String tdCsvFileName = "tableDescription.csv";
+				String clCsvFileName = "columnLabel.csv";
+				String cdCsvFileName = "columnDescription.csv";
+				
+				if(parms.get("lang") != null && parms.get("lang").toString().length() ==2) {
+					String lang = parms.get("lang").toString();
+					tlCsvFileName = "tableLabel-" + lang + ".csv";
+					tdCsvFileName = "tableDescription-" + lang + ".csv";
+					clCsvFileName = "columnLabel-" + lang + ".csv";
+					cdCsvFileName = "columnDescription-" + lang + ".csv";
+				}
+				
+				
 				@SuppressWarnings("unchecked")
 				List<String> tables = (List<String>) parms.get("tables");
 				
@@ -92,7 +106,7 @@ public class GetCsvLabelsServlet extends HttpServlet {
 					Statement csvStmt = csvCon.createStatement();
 					ResultSet csvRst = null;
 			
-					if(Files.exists(Paths.get(prj + "/tableLabel.csv"))){
+					if(Files.exists(Paths.get(prj + "/" + tlCsvFileName))){
 						csvRst = csvStmt.executeQuery("SELECT * FROM tableLabel where TABLE_NAME in " + tableInClause);
 						while(csvRst.next()){
 							tlMap.put(csvRst.getString("Table_Name").toUpperCase(), csvRst.getString("Table_Label"));
@@ -100,7 +114,7 @@ public class GetCsvLabelsServlet extends HttpServlet {
 						csvRst.close();
 					}
 					
-					if(Files.exists(Paths.get(prj + "/tableDescription.csv"))){
+					if(Files.exists(Paths.get(prj + "/" + tdCsvFileName))){
 						csvRst = csvStmt.executeQuery("SELECT * FROM tableDescription where TABLE_NAME in " + tableInClause);
 						while(csvRst.next()){
 							tdMap.put(csvRst.getString("Table_Name").toUpperCase(), csvRst.getString("Table_Description"));
@@ -123,7 +137,7 @@ public class GetCsvLabelsServlet extends HttpServlet {
 			
 						String columnInClause = "('" + StringUtils.join(fields.iterator(), "','") + "')";
 			
-						if(Files.exists(Paths.get(prj + "/columnLabel.csv"))){
+						if(Files.exists(Paths.get(prj + "/" + clCsvFileName))){
 							Map<String, String> cols = new HashMap<String, String>();
 							String sql = "SELECT * FROM columnLabel where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
 							System.out.println(sql);
@@ -135,7 +149,7 @@ public class GetCsvLabelsServlet extends HttpServlet {
 							clMap.put(table.toUpperCase(), cols);
 						}
 						
-						if(Files.exists(Paths.get(prj + "/columnDescription.csv"))){
+						if(Files.exists(Paths.get(prj + "/" + cdCsvFileName))){
 							Map<String, String> cols = new HashMap<String, String>();
 							csvRst = csvStmt.executeQuery("SELECT * FROM columnDescription where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause);
 							while(csvRst.next()){

@@ -84,8 +84,6 @@ public class UploadCSVServlet extends HttpServlet {
 				}
 			}
 
-			result.put("STATUS", "OK");
-			result.put("MESSAGE", "CSV successfully saved in " + csv.toString());
 			
 			List<Map<String, Object>> datas = new ArrayList<Map<String,Object>>();
 			
@@ -93,81 +91,168 @@ public class UploadCSVServlet extends HttpServlet {
 			try{
 				for (String line; ((line = reader.readLine()) != null) && reader.getLineNumber() <= 2; ) {
 					Map<String, Object> data = new HashMap<String, Object>();
-					switch(csv.getFileName().toString()) {
-						case "tableLabel.csv":
-							if(line.split(";").length != 2) {
-								Files.deleteIfExists(csv);
-								throw new ArrayIndexOutOfBoundsException();
-							}
-							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;TABLE_LABEL")) {
-								Files.deleteIfExists(csv);
-								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
-								throw new Exception("First row have to match column headers.");
-							}
-							data.put("tableName", line.split(";")[0]);
-							data.put("tableLabel", line.split(";")[1]);
-							break;
-						case "tableDescription.csv":
-							if(line.split(";").length != 2) {
-								Files.deleteIfExists(csv);
-								throw new ArrayIndexOutOfBoundsException();
-							}
-							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;TABLE_DESCRIPTION")) {
-								Files.deleteIfExists(csv);
-								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
-								throw new Exception("First row have to match column headers.");
-							}
-							data.put("tableName", line.split(";")[0]);
-							data.put("tableDescription", line.split(";")[1]);
-							break;
-						case "columnLabel.csv":
-							if(line.split(";").length != 3) {
-								Files.deleteIfExists(csv);
-								throw new ArrayIndexOutOfBoundsException();
-							}
-							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_LABEL")) {
-								Files.deleteIfExists(csv);
-								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
-								throw new Exception("First row have to match column headers.");
-							}
-							data.put("tableName", line.split(";")[0]);
-							data.put("columnName", line.split(";")[1]);
-							data.put("columnLabel", line.split(";")[2]);
-							break;
-						case "columnDescription.csv":
-							if(line.split(";").length != 3) {
-								Files.deleteIfExists(csv);
-								throw new ArrayIndexOutOfBoundsException();
-							}
-							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_DESCRIPTION")) {
-								Files.deleteIfExists(csv);
-								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
-								throw new Exception("First row have to match column headers.");
-							}
-							data.put("tableName", line.split(";")[0]);
-							data.put("columnName", line.split(";")[1]);
-							data.put("columnDescription", line.split(";")[2]);
-							break;
-						case "relation.csv":
-							if(line.split(";").length != 7) {
-								Files.deleteIfExists(csv);
-								throw new ArrayIndexOutOfBoundsException();
-							}
-							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("FK_NAME;PK_NAME;FKTABLE_NAME;PKTABLE_NAME;KEY_SEQ;FKCOLUMN_NAME;PKCOLUMN_NAME")) {
-								Files.deleteIfExists(csv);
-								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
-								throw new Exception("First row have to match column headers.");
-							}
-							data.put("FK_NAME", line.split(";")[0]);
-							data.put("PK_NAME", line.split(";")[1]);
-							data.put("FKTABLE_NAME", line.split(";")[2]);
-							data.put("PKTABLE_NAME", line.split(";")[3]);
-							data.put("KEY_SEQ", line.split(";")[4]);
-							data.put("FKCOLUMN_NAME", line.split(";")[5]);
-							data.put("PKCOLUMN_NAME", line.split(";")[6]);
-							break;
-						default:
+					String fileName = csv.getFileName().toString();
+					
+					if(fileName.startsWith("tableLabel")) {
+						if(line.split(";").length != 2) {
+							Files.deleteIfExists(csv);
+							throw new ArrayIndexOutOfBoundsException();
+						}
+						if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;TABLE_LABEL")) {
+							Files.deleteIfExists(csv);
+							result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+							throw new Exception("First row have to match column headers.");
+						}
+						data.put("tableName", line.split(";")[0]);
+						data.put("tableLabel", line.split(";")[1]);
+						result.put("STATUS", "OK");
+						result.put("MESSAGE", "CSV successfully saved in " + csv.toString());
 					}
+					else if(fileName.startsWith("tableDescription")) {
+						if(line.split(";").length != 2) {
+							Files.deleteIfExists(csv);
+							throw new ArrayIndexOutOfBoundsException();
+						}
+						if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;TABLE_DESCRIPTION")) {
+							Files.deleteIfExists(csv);
+							result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+							throw new Exception("First row have to match column headers.");
+						}
+						data.put("tableName", line.split(";")[0]);
+						data.put("tableDescription", line.split(";")[1]);
+						result.put("STATUS", "OK");
+						result.put("MESSAGE", "CSV successfully saved in " + csv.toString());
+						
+					}
+					else if(fileName.startsWith("columnLabel")) {
+						if(line.split(";").length != 3) {
+							Files.deleteIfExists(csv);
+							throw new ArrayIndexOutOfBoundsException();
+						}
+						if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_LABEL")) {
+							Files.deleteIfExists(csv);
+							result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+							throw new Exception("First row have to match column headers.");
+						}
+						data.put("tableName", line.split(";")[0]);
+						data.put("columnName", line.split(";")[1]);
+						data.put("columnLabel", line.split(";")[2]);
+						result.put("STATUS", "OK");
+						result.put("MESSAGE", "CSV successfully saved in " + csv.toString());
+					}
+					else if(fileName.startsWith("columnDescription")) {
+						if(line.split(";").length != 3) {
+							Files.deleteIfExists(csv);
+							throw new ArrayIndexOutOfBoundsException();
+						}
+						if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_DESCRIPTION")) {
+							Files.deleteIfExists(csv);
+							result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+							throw new Exception("First row have to match column headers.");
+						}
+						data.put("tableName", line.split(";")[0]);
+						data.put("columnName", line.split(";")[1]);
+						data.put("columnDescription", line.split(";")[2]);
+						result.put("STATUS", "OK");
+						result.put("MESSAGE", "CSV successfully saved in " + csv.toString());
+					}
+					else if(fileName.equalsIgnoreCase("relation.csv")) {
+						if(line.split(";").length != 7) {
+							Files.deleteIfExists(csv);
+							throw new ArrayIndexOutOfBoundsException();
+						}
+						if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("FK_NAME;PK_NAME;FKTABLE_NAME;PKTABLE_NAME;KEY_SEQ;FKCOLUMN_NAME;PKCOLUMN_NAME")) {
+							Files.deleteIfExists(csv);
+							result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+							throw new Exception("First row have to match column headers.");
+						}
+						data.put("FK_NAME", line.split(";")[0]);
+						data.put("PK_NAME", line.split(";")[1]);
+						data.put("FKTABLE_NAME", line.split(";")[2]);
+						data.put("PKTABLE_NAME", line.split(";")[3]);
+						data.put("KEY_SEQ", line.split(";")[4]);
+						data.put("FKCOLUMN_NAME", line.split(";")[5]);
+						data.put("PKCOLUMN_NAME", line.split(";")[6]);
+						result.put("STATUS", "OK");
+						result.put("MESSAGE", "CSV successfully saved in " + csv.toString());
+					}
+					
+//					switch(csv.getFileName().toString()) {
+//						case "tableLabel.csv":
+//							if(line.split(";").length != 2) {
+//								Files.deleteIfExists(csv);
+//								throw new ArrayIndexOutOfBoundsException();
+//							}
+//							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;TABLE_LABEL")) {
+//								Files.deleteIfExists(csv);
+//								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+//								throw new Exception("First row have to match column headers.");
+//							}
+//							data.put("tableName", line.split(";")[0]);
+//							data.put("tableLabel", line.split(";")[1]);
+//							break;
+//						case "tableDescription.csv":
+//							if(line.split(";").length != 2) {
+//								Files.deleteIfExists(csv);
+//								throw new ArrayIndexOutOfBoundsException();
+//							}
+//							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;TABLE_DESCRIPTION")) {
+//								Files.deleteIfExists(csv);
+//								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+//								throw new Exception("First row have to match column headers.");
+//							}
+//							data.put("tableName", line.split(";")[0]);
+//							data.put("tableDescription", line.split(";")[1]);
+//							break;
+//						case "columnLabel.csv":
+//							if(line.split(";").length != 3) {
+//								Files.deleteIfExists(csv);
+//								throw new ArrayIndexOutOfBoundsException();
+//							}
+//							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_LABEL")) {
+//								Files.deleteIfExists(csv);
+//								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+//								throw new Exception("First row have to match column headers.");
+//							}
+//							data.put("tableName", line.split(";")[0]);
+//							data.put("columnName", line.split(";")[1]);
+//							data.put("columnLabel", line.split(";")[2]);
+//							break;
+//						case "columnDescription.csv":
+//							if(line.split(";").length != 3) {
+//								Files.deleteIfExists(csv);
+//								throw new ArrayIndexOutOfBoundsException();
+//							}
+//							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_DESCRIPTION")) {
+//								Files.deleteIfExists(csv);
+//								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+//								throw new Exception("First row have to match column headers.");
+//							}
+//							data.put("tableName", line.split(";")[0]);
+//							data.put("columnName", line.split(";")[1]);
+//							data.put("columnDescription", line.split(";")[2]);
+//							break;
+//						case "relation.csv":
+//							if(line.split(";").length != 7) {
+//								Files.deleteIfExists(csv);
+//								throw new ArrayIndexOutOfBoundsException();
+//							}
+//							if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("FK_NAME;PK_NAME;FKTABLE_NAME;PKTABLE_NAME;KEY_SEQ;FKCOLUMN_NAME;PKCOLUMN_NAME")) {
+//								Files.deleteIfExists(csv);
+//								result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
+//								throw new Exception("First row have to match column headers.");
+//							}
+//							data.put("FK_NAME", line.split(";")[0]);
+//							data.put("PK_NAME", line.split(";")[1]);
+//							data.put("FKTABLE_NAME", line.split(";")[2]);
+//							data.put("PKTABLE_NAME", line.split(";")[3]);
+//							data.put("KEY_SEQ", line.split(";")[4]);
+//							data.put("FKCOLUMN_NAME", line.split(";")[5]);
+//							data.put("PKCOLUMN_NAME", line.split(";")[6]);
+//							break;
+//						default:
+//					}
+					
 					if(reader.getLineNumber() > 1) {
 						datas.add(data);
 					}

@@ -6,15 +6,19 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -88,7 +92,31 @@ public class SaveRelationServlet extends HttpServlet {
 			bos.write((header + newLine).getBytes());
 			
 			for(String table: tables){
-				rst = metaData.getImportedKeys(con.getCatalog(), schema, table);
+				
+		    	Connection csvCon = null;
+		    	PreparedStatement stmt = null;
+
+		    	String FKQuery = (String) request.getSession().getAttribute("FKQuery");
+				if(Files.exists(Paths.get(prj + "/relation.csv"))) {
+					Properties props = new java.util.Properties();
+					props.put("separator",";");
+					csvCon = DriverManager.getConnection("jdbc:relique:csv:" + prj.toString(), props);
+					String sql = "SELECT * FROM relation where FKTABLE_NAME = '" + table + "'";
+					stmt = csvCon.prepareStatement(sql);
+					rst = stmt.executeQuery();
+					result.put("FKS", "CSV");
+				}
+				else if(FKQuery != null && !FKQuery.isEmpty()) {
+					stmt = con.prepareStatement(FKQuery);
+					stmt.setString(1, table);
+		    		rst = stmt.executeQuery();
+					result.put("FKS", "SQL");
+		    	}
+				else {
+					rst = metaData.getImportedKeys(con.getCatalog(), schema, table);
+					result.put("FKS", "DB");
+				}
+				
 				while(rst.next()){
 					StringBuffer key = new StringBuffer();
 					
@@ -115,7 +143,9 @@ public class SaveRelationServlet extends HttpServlet {
 					bos.write(key.toString().getBytes());
 					
 				}
-				rst.close();
+				if(rst != null) {rst.close();}
+				if(stmt != null) {stmt.close();}
+				if(csvCon != null) {csvCon.close();}
 				buf.flush();
 				
 			}

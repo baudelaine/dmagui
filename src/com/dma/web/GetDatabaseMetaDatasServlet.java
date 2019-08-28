@@ -96,23 +96,6 @@ public class GetDatabaseMetaDatasServlet extends HttpServlet {
 			    	int FKSeqCount = 0;
 			    	Set<String> FKSet = new HashSet<String>();
 			    	
-//			    	Path rels = Paths.get(prj + "/relation.json");
-//			    	
-//			    	if(Files.exists(rels)) {
-//						String FKQuery = (String) Tools.fromJSON(rels.toFile()).get("FKQuery");
-//						if(FKQuery != null) {
-//							FKQuery = FKQuery.replace(";", "");
-//				    		stmt = con.prepareStatement(FKQuery);
-//				    		stmt.setString(1, table_name);
-//				    		rst = stmt.executeQuery();
-//				    		result.put("FKS", "FKQuery");
-//						}
-//			    	}
-//			    	if( rst == null) {
-//				    	rst = metaData.getImportedKeys(con.getCatalog(), schema, table_name);
-//			    		result.put("FKS", "DB");
-//			    	}
-
 			    	Connection csvCon = null;
 			    	String FKQuery = (String) request.getSession().getAttribute("FKQuery");
 					if(Files.exists(Paths.get(prj + "/relation.csv"))) {

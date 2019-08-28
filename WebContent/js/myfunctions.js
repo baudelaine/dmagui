@@ -778,6 +778,7 @@ function SetLanguage(language){
 
   console.log(language);
 
+  $datasTable.bootstrapTable("filterBy", {});
   if($datasTable.bootstrapTable("getData").length > 0){
     var firstQs = $datasTable.bootstrapTable("getData")[0];
     var needInit = true;
@@ -789,6 +790,7 @@ function SetLanguage(language){
     });
 
     if(!needInit){
+        $datasTable.bootstrapTable("filterBy", {});
         $.each($datasTable.bootstrapTable("getData"), function(i, qs){
           console.log(qs);
           if(qs.labels[language]){
@@ -836,6 +838,7 @@ function SetLanguage(language){
 
     if(needInit){
       console.log("Let's initialize...");
+      $datasTable.bootstrapTable("filterBy", {});
       $.each($datasTable.bootstrapTable("getData"), function(i, qs){
         qs.labels[language] = "";
         qs.descriptions[language] = "";
@@ -4111,10 +4114,10 @@ function SaveQueries(){
       }
 
       var queries = {};
-      queries.tlQuery = $('#tableLabel').val();
-      queries.tdQuery = $('#tableDescription').val();
-      queries.clQuery = $('#columnLabel').val();
-      queries.cdQuery = $('#columnDescription').val();
+      queries.tlQuery = $('#tableLabel').val().replace(/[^\x20-\x7E]/gmi, "");
+      queries.tdQuery = $('#tableDescription').val().replace(/[^\x20-\x7E]/gmi, "");
+      queries.clQuery = $('#columnLabel').val().replace(/[^\x20-\x7E]/gmi, "");
+      queries.cdQuery = $('#columnDescription').val().replace(/[^\x20-\x7E]/gmi, "");
 
       var parms = {backupName: backupName, data: queries};
 
@@ -4237,8 +4240,10 @@ function GetCsvLabelsMultiLang(){
     return;
   }
 
+  var lang = $("#langSelect").find("option:selected").val();
   var parms = {};
   parms.tables = tables;
+  parms.lang = lang;
   console.log(parms);
 
   $.ajax({
@@ -4367,12 +4372,14 @@ function GetLabelsMultiLang(){
     return;
   }
 
+  var lang = $("#langSelect").find("option:selected").val();
   var parms = {};
   parms.tables = tables;
-  parms.tlQuery = $('#tableLabel').val();
-  parms.tdQuery = $('#tableDescription').val();
-  parms.clQuery = $('#columnLabel').val();
-  parms.cdQuery = $('#columnDescription').val();
+  parms.lang = lang;
+  parms.tlQuery = $('#tableLabel').val().replace(/[^\x20-\x7E]/gmi, "");
+  parms.tdQuery = $('#tableDescription').val().replace(/[^\x20-\x7E]/gmi, "");
+  parms.clQuery = $('#columnLabel').val().replace(/[^\x20-\x7E]/gmi, "");
+  parms.cdQuery = $('#columnDescription').val().replace(/[^\x20-\x7E]/gmi, "");
 
   console.log(JSON.stringify(parms));
 
@@ -4660,6 +4667,7 @@ $("#removeLangMenu").click(function(){
 
 function removeLabels(lang){
   console.log(lang);
+  $datasTable.bootstrapTable("filterBy", {});
   var qss = $datasTable.bootstrapTable('getData');
   $.each(qss, function(i, qs){
     delete qs.labels[lang];
@@ -4667,10 +4675,16 @@ function removeLabels(lang){
     qs.label = "";
     qs.description = "";
     $.each(qs.fields, function(j, field){
-        delete field.labels[lang];
-        delete field.descriptions[lang];
-        field.label = "";
-        field.description = "";
+      delete field.labels[lang];
+      delete field.descriptions[lang];
+      field.label = "";
+      field.description = "";
+    })
+    $.each(qs.relations, function(j, rel){
+      delete rel.labels[lang];
+      delete rel.descriptions[lang];
+      rel.label = "";
+      rel.description = "";
     })
   })
   console.log(qss);
@@ -4680,6 +4694,7 @@ function removeLabels(lang){
 
 function removeFolder(fold){
   console.log(fold);
+  $datasTable.bootstrapTable("filterBy", {});
   var qss = $datasTable.bootstrapTable('getData');
   $.each(qss, function(i, qs){
     if(qs.folder == fold){
@@ -4695,6 +4710,7 @@ function removeFolder(fold){
 
 function removeDimension(dim){
   console.log(dim);
+  $datasTable.bootstrapTable("filterBy", {});
   var qss = $datasTable.bootstrapTable('getData');
   $.each(qss, function(i, qs){
     $.each(qs.fields, function(j, field){
@@ -5221,10 +5237,14 @@ $('#csvLabelModal').on('hidden.bs.modal', function() {
 
 $('#csvLabelModal').on('shown.bs.modal', function() {
 
+  var currentLanguage = $('#langSelect').find("option:selected").val();
+  var parms = {"lang": currentLanguage};
+
   $.ajax({
  		type: 'POST',
  		url: "GetCSVFirstRecords",
  		dataType: 'json',
+    data: JSON.stringify(parms),
 
  		success: function(data) {
       console.log(data);
@@ -5330,19 +5350,23 @@ $('#csvLabelModal').on('shown.bs.modal', function() {
 });
 
 $("#csvTableLabelFile").change(function(){
-  UploadCSV($(this), 'tableLabel.csv', $("#csvTableLabelTable"));
+  var currentLanguage = $('#langSelect').find("option:selected").val();
+  UploadCSV($(this), 'tableLabel-' + currentLanguage + '.csv', $("#csvTableLabelTable"));
 });
 
 $("#csvTableDescriptionFile").change(function(){
-  UploadCSV($(this), 'tableDescription.csv', $("#csvTableDescriptionTable"));
+  var currentLanguage = $('#langSelect').find("option:selected").val();
+  UploadCSV($(this), 'tableDescription-' + currentLanguage + '.csv', $("#csvTableDescriptionTable"));
 });
 
 $("#csvColumnLabelFile").change(function(){
-  UploadCSV($(this), 'columnLabel.csv', $("#csvColumnLabelTable"));
+  var currentLanguage = $('#langSelect').find("option:selected").val();
+  UploadCSV($(this), 'columnLabel-' + currentLanguage + '.csv', $("#csvColumnLabelTable"));
 });
 
 $("#csvColumnDescriptionFile").change(function(){
-  UploadCSV($(this), 'columnDescription.csv', $("#csvColumnDescriptionTable"));
+  var currentLanguage = $('#langSelect').find("option:selected").val();
+  UploadCSV($(this), 'columnDescription-' + currentLanguage + '.csv', $("#csvColumnDescriptionTable"));
 });
 
 $("#csvRelationFile").change(function(){
@@ -5395,19 +5419,23 @@ delCsvRelation.addEventListener('click', function(event){
 }, false);
 
 $('#delCsvTableLabel').click(function(){
-  deleteCsv(['tableLabel.csv']);
+  var currentLanguage = $('#langSelect').find("option:selected").val();
+  deleteCsv(['tableLabel-' + currentLanguage + '.csv']);
 })
 
 $('#delCsvTableDescription').click(function(){
-  deleteCsv(['tableDescription.csv']);
+  var currentLanguage = $('#langSelect').find("option:selected").val();
+  deleteCsv(['tableDescription-' + currentLanguage + '.csv']);
 })
 
 $('#delCsvColumnLabel').click(function(){
-  deleteCsv(['columnLabel.csv']);
+  var currentLanguage = $('#langSelect').find("option:selected").val();
+  deleteCsv(['columnLabel-' + currentLanguage + '.csv']);
 })
 
 $('#delCsvTableDescription').click(function(){
-  deleteCsv(['columnDescription.csv']);
+  var currentLanguage = $('#langSelect').find("option:selected").val();
+  deleteCsv(['columnDescription-' + currentLanguage + '.csv']);
 })
 
 $('#delCsvRelation').click(function(){
@@ -5488,53 +5516,45 @@ function UploadCSV($el, fileName, $table){
 
   var fd = new FormData();
   fd.append('file', file, fileName);
-  console.log(fd);
+  console.log(fileName);
 
   $.ajax({
     url: "UploadCSV",
     type: "POST",
     data: fd,
     enctype: 'multipart/form-data',
-    dataType: 'application/text',
+    // dataType: 'application/text',
     processData: false,  // tell jQuery not to process the data
     contentType: false,   // tell jQuery not to set contentType
     success: function(data) {
       console.log(data);
-		},
-		error: function(data) {
-      console.log(data);
-      if(data.responseText){
-        var result = JSON.parse(data.responseText);
-        console.log(result);
-        if(result.STATUS == "OK"){
+        if(data.STATUS == "OK"){
           switch(fileName){
             case 'relation.csv':
-              ShowAlert(result.MESSAGE, "alert-success", $("#csvRelationModalAlert"));
+              ShowAlert(data.MESSAGE, "alert-success", $("#csvRelationModalAlert"));
               break;
             default:
-              ShowAlert(result.MESSAGE, "alert-success", $("#csvLabelModalAlert"));
+              ShowAlert(data.MESSAGE, "alert-success", $("#csvLabelModalAlert"));
           }
-          console.log(result.DATAS);
-          // $table.find('tbody tr').remove();
           $table.find("tr:gt(0)").remove();
 
-          $.each(result.DATAS, function(i, record){
+          $.each(data.DATAS, function(i, record){
             switch(fileName){
-                case 'tableLabel.csv':
+                case (fileName.match(/^tableLabel/) || {}).input:
                   $table.append($('<tr>')
                     .append($('<td>').append(record.tableName))
                     .append($('<td>').append(record.tableLabel))
                   )
                   $('#delCsvTableLabel').prop('disabled', false);
                   break;
-                case 'tableDescription.csv':
+                case (fileName.match(/^tableDescription/) || {}).input:
                   $table.append($('<tr>')
                     .append($('<td>').append(record.tableName))
                     .append($('<td>').append(record.tableDescription))
                   )
                   $('#delCsvTableDescription').prop('disabled', false);
                   break;
-                case 'columnLabel.csv':
+                case (fileName.match(/^columnLabel/) || {}).input:
                   $table.append($('<tr>')
                     .append($('<td>').append(record.tableName))
                     .append($('<td>').append(record.columnName))
@@ -5542,7 +5562,7 @@ function UploadCSV($el, fileName, $table){
                   )
                   $('#delCsvColumnLabel').prop('disabled', false);
                   break;
-                case 'columnDescription.csv':
+                case (fileName.match(/^columnDescription/) || {}).input:
                   $table.append($('<tr>')
                   .append($('<td>').append(record.tableName))
                   .append($('<td>').append(record.columnName))
@@ -5565,15 +5585,16 @@ function UploadCSV($el, fileName, $table){
             }
           })
           switch(fileName){
-            case 'tableLabel.csv':
-            case 'tableDescription.csv':
+
+            case (fileName.match(/^tableLabel/) || {}).input:
+            case (fileName.match(/^tableDescription/) || {}).input:
               $table.append($('<tr>')
                 .append($('<td>').append("..."))
                 .append($('<td>').append("..."))
               )
               break;
-            case 'columnLabel.csv':
-            case 'columnDescription.csv':
+            case (fileName.match(/^columnLabel/) || {}).input:
+            case (fileName.match(/^columnDescription/) || {}).input:
               $table.append($('<tr>')
                 .append($('<td>').append("..."))
                 .append($('<td>').append("..."))
@@ -5596,10 +5617,10 @@ function UploadCSV($el, fileName, $table){
         else{
           switch(fileName){
             case 'relation.csv':
-              ShowAlert(result.MESSAGE + "<br>" + result.TROUBLESHOOTING, "alert-danger", $("#csvRelationModalAlert"));
+              ShowAlert(data.MESSAGE + "<br>" + data.TROUBLESHOOTING, "alert-danger", $("#csvRelationModalAlert"));
               break;
             default:
-              ShowAlert(result.MESSAGE + "<br>" + result.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
+              ShowAlert(data.MESSAGE + "<br>" + data.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
           }
           $table.find("tr:gt(0)").remove();
           $table.append($('<tr>')
@@ -5607,10 +5628,10 @@ function UploadCSV($el, fileName, $table){
           )
 
         }
-      }
+		},
+		error: function(data) {
+      console.log(data);
 		}
-  }).done(function( data ) {
-    console.log(data);
   });
 
   $el.val('');
@@ -5686,7 +5707,7 @@ function saveRelsQuery(){
 
 saveRel.addEventListener('click', function(event){
   window.location.href = "SaveRelation";
-  
+
   event.preventDefault();
 }, false);
 

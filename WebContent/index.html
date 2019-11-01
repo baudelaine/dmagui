@@ -241,26 +241,40 @@
 					    </div>
 					    <div class="row">
 					        <h4>BK</h4>
-					        <select class="selectpicker form-control" id="selectBK" data-live-search="true">
-					        </select>
+									<div class="input-group-btn">
+					        	<select class="selectpicker form-control" id="selectBK" data-width="93%" data-live-search="true"></select>
+										<button type="button" class="btn btn-default" onclick="AddBKExpression()" data-toggle="tooltip" data-placement="top" title="Add BK expression."><span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></button>
+								</div>
 					    </div>
+							<div class="row">
+										<h4>BK expressions</h4>
+										<textarea id="bkExpression" class="form-control" placeholder="..." rows="3"></textarea>
+							</div>
+							<div class="row">
+					        <h4>Attribut</h4>
+									<div class="input-group-btn">
+						        <select class="selectpicker form-control" id="selectAttribut" data-width="93%" data-live-search="true"></select>
+										<button type="button" class="btn btn-default" onclick="AddAttribut()" data-toggle="tooltip" data-placement="top" title="Add Attribut."><span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></button>
+									</div>
+					    </div>
+							<div class="row">
+										<h4>Attribut list</h4>
+										<textarea id="taAttribut" class="form-control" placeholder="..." rows="3"></textarea>
+							</div>
 							<div class="row">
 					        <h4>Hierarchy Name</h4>
 									<input id="hierarchyName" class="form-control" placeholder="...">
 					        </select>
 					    </div>
-							<div class="row">
-										<h4>BK expressions</h4>
-										<textarea id="bkExpression" class="form-control" placeholder="Paste BK expressions here..." rows="8"></textarea>
-							</div>
 
 						</div>
 
 					</div> <!-- /.modal-body -->
 		      <div class="modal-footer">
-						<button type="button" class="btn btn-default" onclick="AddBKExpression()" data-toggle="tooltip" data-placement="top" title="Add BK expression."><span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></button>
-		        <button type="button" class="btn btn-primary" onclick="BuildDrillPath()"><span class="glyphicon glyphicon-ok" aria-hidden="true"></button>
-						<button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove" aria-hidden="true"></button>
+		        <!-- <button type="button" class="btn btn-primary" onclick="BuildDrillPath()"><span class="glyphicon glyphicon-ok" aria-hidden="true"></button>
+						<button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove" aria-hidden="true"></button> -->
+						<button type="button" class="btn btn-primary" onclick="BuildDrillPath()">Save</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 		      </div><!-- /.modal-footer -->
 		    </div><!-- /.modal-content -->
 		  </div><!-- /.modal-dialog -->

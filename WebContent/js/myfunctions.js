@@ -259,6 +259,7 @@ dimensionCols.push({field:"index", title: "index", formatter: "indexFormatter", 
 dimensionCols.push({field:"dimension", title: "Dimension", editable: {type: 'text', mode: 'inline'}});
 dimensionCols.push({field:"order", title: "Order", editable: {type: "textarea", mode: "inline", rows: 2}, sortable: true});
 dimensionCols.push({field:"bk", title: "BK", editable: {type: "textarea", mode: "inline", rows: 4}, sortable: true});
+dimensionCols.push({field:"attributs", title: "Attributs", editable: {type: "textarea", mode: "inline", rows: 4}, sortable: true});
 dimensionCols.push({field:"hierarchyName", title: "Hierarchy Name", editable: {type: "text", mode: "inline"}, sortable: true});
 dimensionCols.push({field:"buildDrillPath", title: '<i class="glyphicon glyphicon-zoom-in"></i>', formatter: "buildDrillPathFormatter", align: "center"});
 dimensionCols.push({field:"remove", title: '<i class="glyphicon glyphicon-trash"></i>', formatter: "removeDimensionFormatter", align: "center"});
@@ -911,6 +912,7 @@ $('#selectDimension').on('changed.bs.select', function (e, clickedIndex, isSelec
     $('#selectTimeDimension').selectpicker('deselectAll')
     updateDimension(selectedText);
     $("#bkExpression").prop('disabled', false);
+    $("#taAttribut").prop('disabled', false);
     $('#hierarchyName').prop('disabled', false);
   }
 });
@@ -923,8 +925,12 @@ $('#selectTimeDimension').on('changed.bs.select', function (e, clickedIndex, isS
     $('#selectOrder').selectpicker('refresh');
     $('#selectBK').empty();
     $('#selectBK').selectpicker('refresh');
+    $('#selectAttribut').empty();
+    $('#selectAttribut').selectpicker('refresh');
     $("#bkExpression").val('');
     $("#bkExpression").prop('disabled', true);
+    $("#taAttribut").val('');
+    $("#taAttribut").prop('disabled', true);
     $('#hierarchyName').val('');
     $('#hierarchyName').prop('disabled', true);
 
@@ -959,6 +965,7 @@ $("#DrillModal").on('shown.bs.modal', function(){
       $('#selectOrder').selectpicker('refresh');
     }
     $("#bkExpression").val($selectedDimension.bk);
+    $("#taAttribut").val($selectedDimension.attributs);
   }
   if($selectedDimension.dimension != "" && Gdimensions[$selectedDimension.dimension] == undefined){
     dimension = $selectedDimension.dimension.replace(/[\[\]]/g, '').split(',');
@@ -973,6 +980,9 @@ function updateDimension(dimension){
   $('#selectBK').empty();
   $('#selectBK').selectpicker('refresh');
   $("#bkExpression").val('');
+  $('#selectAttribut').empty();
+  $('#selectAttribut').selectpicker('refresh');
+  $("#taAttribut").val('');
 
   var emptyOption = '<option class="fontsize" value="" data-subtext=""></option>';
 
@@ -1018,13 +1028,17 @@ function updateDimension(dimension){
 
     var option = '<option class="fontsize" value="' + bk.qsFinalName + ' -- ' + bk.bk + '" data-subtext="' + subText + '">' + bk.bk + '</option>';
     $('#selectBK').append(option);
+    $('#selectAttribut').append(option);
   })
   // if($("#selectBK option[value='']").length > 0){
   $('#selectBK').append(emptyOption);
   $('#selectBK').selectpicker('val', '');
+  $('#selectAttribut').append(emptyOption);
+  $('#selectAttribut').selectpicker('val', '');
   // }
 
   $('#selectBK').selectpicker('refresh');
+  $('#selectAttribut').selectpicker('refresh');
 }
 
 function getDimensions(dimensionSet, selectedQs){
@@ -1104,6 +1118,29 @@ function AddBKExpression(){
 
 }
 
+function AddAttribut(){
+
+  var attributList = $("#taAttribut").val();
+  // var order = $('#selectOrder').find("option:selected").val();
+  var option = $('#selectAttribut').find("option:selected").val();
+
+  var attribut = option.split(' -- ').slice(1).toString();
+
+  console.log(attribut);
+
+  if(attributList != ''){
+    attributList += ';' + attribut;
+  }
+  else{
+    attributList += attribut;
+  }
+
+  console.log(attributList);
+
+  $('#taAttribut').val(attributList);
+
+}
+
 function BuildDrillPath(){
 
   var dimension = $('#selectDimension').find("option:selected").val();
@@ -1138,6 +1175,7 @@ function BuildDrillPath(){
     if(!orderQsFinalName && !orderOrder){dim.order = ""} else{dim.order = '[DATA].[' + orderQsFinalName + '].[' + orderOrder + ']';}
     // if(!bkQsFinalName && !bkBk){dim.bk = ""} else{dim.bk = '[DATA].[' + bkQsFinalName + '].[' + bkBk + ']'};
     dim.bk = $("#bkExpression").val();
+    dim.attributs = $('#taAttribut').val();
     dim.hierarchyName = hierarchyName;
     updateRow($activeSubDatasTable, $selectedDimension.index, dim);
 
@@ -1735,6 +1773,19 @@ function buildDimensionTable($el, cols, data, fld, qs){
 
       onAll: function(name, args){
         //Fires when all events trigger, the parameters contain: name: the event name, args: the event data.
+        console.log(name);
+        console.log(args);
+      },
+
+      onPreBody: function(data){
+        console.log(data);
+        if(data.length > 0){
+          $.each(data, function(index, dimension){
+            if(!dimension.attributs){
+              dimension.attributs = '';
+            }
+          })
+        }
       },
 
       onEditableInit: function(){
@@ -1986,7 +2037,7 @@ function buildFieldTable($el, cols, data, qs){
                   return;
                 }
 
-                var dimension = {dimension: '', order: '', bk: '', hierarchyName: ''};
+                var dimension = {dimension: '', order: '', bk: '', attributs: '', hierarchyName: ''};
                 row.dimensions.push(dimension);
                 $el.bootstrapTable("expandRow", row.index);
                 $el.bootstrapTable("collapseRow", row.index);

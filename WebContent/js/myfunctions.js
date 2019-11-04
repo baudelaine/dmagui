@@ -940,13 +940,15 @@ $('#selectTimeDimension').on('changed.bs.select', function (e, clickedIndex, isS
 $("#DrillModal").on('shown.bs.modal', function(){
 
   var dims = $("#dimSelect option");
-  console.log(dims);
+  // console.log(dims);
 
   var values = $.map(dims ,function(dim) {
       return dim.value;
   });
 
-  console.log(values);
+  // console.log(values);
+  // console.log($selectedDimension);
+  // console.log(Gdimensions);
 
   if($selectedDimension.dimension != "" && Gdimensions[$selectedDimension.dimension] != undefined){
     $('#selectTimeDimension').selectpicker('deselectAll');
@@ -1083,6 +1085,8 @@ function getDimensions(dimensionSet, selectedQs){
       $('#selectDimension').append(emptyOption);
       $('#selectDimension').selectpicker('val', "");
       $('#selectDimension').selectpicker('refresh');
+
+      $('#DrillModal').modal('toggle');
 
     },
     error: function(data) {
@@ -1919,12 +1923,9 @@ function buildDimensionTable($el, cols, data, fld, qs){
 
             var dimensionSet = getSetFromArray(source);
 
-            getDimensions(dimensionSet, qs._id);
-
             $selectedDimension = row;
 
-            $('#DrillModal').modal('toggle');
-
+            getDimensions(dimensionSet, qs._id);
 
             break;
 

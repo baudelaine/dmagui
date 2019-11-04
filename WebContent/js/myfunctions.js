@@ -1128,15 +1128,18 @@ function AddAttribut(){
   // var order = $('#selectOrder').find("option:selected").val();
   var option = $('#selectAttribut').find("option:selected").val();
 
+  var QsFinalName = option.split(' -- ').slice(0,1).toString();
   var attribut = option.split(' -- ').slice(1).toString();
 
   console.log(attribut);
 
-  if(attributList != ''){
-    attributList += ';' + attribut;
-  }
-  else{
-    attributList += attribut;
+  if(QsFinalName && attribut){
+    if(attributList != ''){
+      attributList += ';' + '[DATA].[' + QsFinalName + '].[' + attribut + ']';
+    }
+    else{
+      attributList = '[DATA].[' + QsFinalName + '].[' + attribut + ']';
+    }
   }
 
   console.log(attributList);

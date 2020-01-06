@@ -7,5 +7,5 @@
 <param locale="en-g" name="objectName" value="MONTANT_H"/>
 <param name="objectType" value="queryItem"/>
 <param name="makeNameUnique" value="false"/>
-<param name="basedOn"><expression></expression></param></parameters></task></tasks></updateObjectRequest>]]></value></param></inputparams><domchanges/>
+<param name="basedOn"><expression>&lt;refobj&gt;expToReplace&lt;/refobj&gt;</expression></param></parameters></task></tasks></updateObjectRequest>]]></value></param></inputparams><domchanges/>
 <result success="t"><outputparams/></result></action></transaction></bmtactionlog>

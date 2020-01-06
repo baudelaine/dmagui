@@ -128,7 +128,7 @@
 					<value>/O/expression[0]/O/[AUTOGENERATION].[AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]</value>
 				</param>
 				<param seq="2" type="i18nstring">
-					<value>bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb</value>
+					<value>&lt;refobj&gt;expToReplace&lt;/refobj&gt;</value>
 				</param>
 				<param seq="3" type="integer">
 					<value>0</value>

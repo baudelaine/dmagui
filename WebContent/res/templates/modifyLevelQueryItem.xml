@@ -13,5 +13,5 @@
 <result success="t"><outputparams/></result></action>
 <action seq="4" type="ModifyComplex"><inputparams>
 <param seq="1" type="handle"><mappingpath>queryItem/expression</mappingpath><value>/O/expression[0]/O/[DIMENSIONS].[SDIDATA.CREATEDT].[CREATEDT (By month)].[YEAR].[YEAR_KEY]</value></param>
-<param seq="2" type="i18nstring"><value>_year(&lt;refobj&gt;[FINAL].[SDIDATA].[CREATEDT]&lt;/refobj&gt;)</value></param></inputparams><domchanges/>
+<param seq="2" type="i18nstring"><value>&lt;refobj&gt;expToReplace&lt;/refobj&gt;</value></param></inputparams><domchanges/>
 <result success="t"><outputparams/></result></action></transaction></bmtactionlog>

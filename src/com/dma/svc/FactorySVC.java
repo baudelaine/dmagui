@@ -455,9 +455,31 @@ public class FactorySVC {
 			
 			elemQsPath.setText(qsPath);
 			elemHandle2.setText(handle2);
-			elemExp.setText(Exp);
 			elemHandle3.setText(handle3);
 			elemHandle4.setText(handle4);
+			
+			//gestion des refobj
+			String str = elemExp.getStringValue();
+			String refobjMaker[] = StringUtils.splitByWholeSeparator(str, "expToReplace");
+
+			String lRefobj = refobjMaker[0];
+			String rRefobj = refobjMaker[1];
+			String splitExp[] = StringUtils.splitByWholeSeparator(Exp, "].[");
+			str = "";
+			for (int i = 0 ; i < splitExp.length ; i++) {
+				String strAdd = "";
+				strAdd = StringUtils.replace(splitExp[i], "]", "]" + rRefobj);
+				strAdd = StringUtils.replace(strAdd, "[", lRefobj + "[");
+				if (i != 0) {
+					str = str + "].[" + strAdd;
+				} else {
+					str = strAdd;
+				}
+			}
+			// end gestion refobj
+			
+			elemExp.setText(str);
+			
 			
 //			System.out.println(document.asXML());
 			System.out.println("createQuerySubjectFilter(" + qsPath + ", " + Exp + ")");
@@ -469,7 +491,7 @@ public class FactorySVC {
 	}
 
 
-	public void createQueryItem(String querySubject, String name, String exp, String locale) {
+	public void createQueryItem_old(String querySubject, String name, String exp, String locale) {
 		try {
 			
 //			String querySubject = "[DATA].[HISTORIQUE_L]";
@@ -496,7 +518,28 @@ public class FactorySVC {
 
 			qiName.addAttribute("value", name);
 			qiName.addAttribute("locale", locale);
-			xp.setText(exp);
+			
+			//gestion des refobj
+			//String str = xp.getStringValue();
+			//String refobjMaker[] = StringUtils.splitByWholeSeparator(str, "expToReplace");
+
+			String lRefobj = "<refobj>";
+			String rRefobj = "</refobj>";
+			String splitExp[] = StringUtils.splitByWholeSeparator(exp, "].[");
+			String str = "";
+			for (int i = 0 ; i < splitExp.length ; i++) {
+				String strAdd = "";
+				strAdd = StringUtils.replace(splitExp[i], "]", "]" + rRefobj);
+				strAdd = StringUtils.replace(strAdd, "[", lRefobj + "[");
+				if (i != 0) {
+					str = str + "].[" + strAdd;
+				} else {
+					str = strAdd;
+				}
+			}
+			// end gestion refobj
+			
+			xp.setText(str);
 
 			// attach cdata
 		    cdata.setText("");
@@ -508,6 +551,57 @@ public class FactorySVC {
 			lg(ex.getMessage());
 		}
 	}
+
+	public void createQueryItem(String querySubject, String name, String exp, String locale) {
+		try {
+			
+//			String querySubject = "[DATA].[HISTORIQUE_L]";
+//			String name = "MONTANT_HT";
+//			String exp = "[FINAL].[HISTORIQUE_L].[QTE] * [FINAL].[HISTORIQUE_L].[PRIX_APREMISE]";
+//			String locale = "en-gb";
+			
+			File xmlFile = new File(csvc.getPathToXML() + "/createQueryItem_refobj.xml");
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(xmlFile);
+
+			Element handle = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[1]/inputparams/param[2]/value");
+			Element qiName = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[3]/inputparams/param[2]/value");
+			Element qiPath = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[4]/inputparams/param[1]/value");
+			Element xp = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[4]/inputparams/param[2]/value");
+			
+			handle.setText(querySubject);	
+			qiName.setText(name);
+			qiPath.setText("/O/expression[0]/O/" + querySubject + ".[" + name + "]");
+			
+			//gestion des refobj
+			String str = xp.getStringValue();
+			String refobjMaker[] = StringUtils.splitByWholeSeparator(str, "expToReplace");
+
+			String lRefobj = refobjMaker[0];
+			String rRefobj = refobjMaker[1];
+			String splitExp[] = StringUtils.splitByWholeSeparator(exp, "].[");
+			str = "";
+			for (int i = 0 ; i < splitExp.length ; i++) {
+				String strAdd = "";
+				strAdd = StringUtils.replace(splitExp[i], "]", "]" + rRefobj);
+				strAdd = StringUtils.replace(strAdd, "[", lRefobj + "[");
+				if (i != 0) {
+					str = str + "].[" + strAdd;
+				} else {
+					str = strAdd;
+				}
+			}
+			// end gestion refobj
+			
+			xp.setText(str);
+			
+			// System.out.println(document.asXML());
+			csvc.executeModel(document);
+		} catch (DocumentException ex) {
+			lg(ex.getMessage());
+		}
+	}
+
 	
 	public void modifyQueryItem(String qiPath, String exp, String obj) {
 		try {
@@ -539,21 +633,41 @@ public class FactorySVC {
 			Document document = reader.read(xmlFile);
 
 			// xml
-			Element folder = (Element) document.selectSingleNode("/bmtactionlog[@timestamp=\"20150729120206717\"]/transaction[@saved=\"false\"]/action[1]/inputparams/param[2]/value");
-			Element nm = (Element) document.selectSingleNode("/bmtactionlog[@timestamp=\"20150729120206717\"]/transaction[@saved=\"false\"]/action[2]/inputparams/param[2]/value");
-			Element xp = (Element) document.selectSingleNode("/bmtactionlog[@timestamp=\"20150729120206717\"]/transaction[@saved=\"false\"]/action[3]/inputparams/param[2]/value");
+			Element folder = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[1]/inputparams/param[2]/value");
+			Element nm = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[2]/inputparams/param[2]/value");
+			Element xp = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[3]/inputparams/param[2]/value");
 
-			Element n1 = (Element) document.selectSingleNode("/bmtactionlog[@timestamp=\"20150729120206717\"]/transaction[@saved=\"false\"]/action[2]/inputparams/param[1]/value");
-			Element n2 = (Element) document.selectSingleNode("/bmtactionlog[@timestamp=\"20150729120206717\"]/transaction[@saved=\"false\"]/action[3]/inputparams/param[1]/value");
+			Element n1 = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[2]/inputparams/param[1]/value");
+			Element n2 = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[3]/inputparams/param[1]/value");
 
 			// cdata
 			n1.setText("/O/name[0]/O/" + QS + ".[New Query Item]");
 			n2.setText("/O/expression[0]/O/" + QS + ".[" + Name + "]");
 			folder.setText(QS + ".[" + Folder + "]");
 			nm.setText(Name);
-			xp.setText(Exp);
+			
+			//gestion des refobj
+			String str = xp.getStringValue();
+			String refobjMaker[] = StringUtils.splitByWholeSeparator(str, "expToReplace");
+			String lRefobj = refobjMaker[0];
+			String rRefobj = refobjMaker[1];
+			String splitExp[] = StringUtils.splitByWholeSeparator(Exp, "].[");
+			str = "";
+			for (int i = 0 ; i < splitExp.length ; i++) {
+				String strAdd = "";
+				strAdd = StringUtils.replace(splitExp[i], "]", "]" + rRefobj);
+				strAdd = StringUtils.replace(strAdd, "[", lRefobj + "[");
+				if (i != 0) {
+					str = str + "].[" + strAdd;
+				} else {
+					str = strAdd;
+				}
+			}
+			// end gestion refobj
+			xp.setText(str);
 
-			// System.out.println(document.asXML());
+
+//			System.out.println(document.asXML());		
 //			System.out.println("createQueryItemInFolder(" + QS + ", " + Folder + ", " + Exp + ")");
 			csvc.executeModel(document);
 		} catch (DocumentException ex) {
@@ -630,7 +744,28 @@ public class FactorySVC {
 			refobj_xp.setText("/O/expression[0]/O/[" + rs.getParentNamespace() + "].[" + rs.getName() + "]");
 			refobj_cr.setText("[" + rs.getParentNamespace() + "].[" + rs.getName() + "]");
 			nm.setText(rs.getName());
-			exp.setText(rs.getExpression());
+			
+			//gestion des refobj
+			String str = exp.getStringValue();
+			String refobjMaker[] = StringUtils.splitByWholeSeparator(str, "expToReplace");
+
+			String lRefobj = refobjMaker[0];
+			String rRefobj = refobjMaker[1];
+			String splitExp[] = StringUtils.splitByWholeSeparator(rs.getExpression(), "].[");
+			str = "";
+			for (int i = 0 ; i < splitExp.length ; i++) {
+				String strAdd = "";
+				strAdd = StringUtils.replace(splitExp[i], "]", "]" + rRefobj);
+				strAdd = StringUtils.replace(strAdd, "[", lRefobj + "[");
+				if (i != 0) {
+					str = str + "].[" + strAdd;
+				} else {
+					str = strAdd;
+				}
+			}
+			// end gestion refobj
+			
+			exp.setText(str);
 			System.out.println( "createRelationship - " +
 					"query_left: " + rs.getQuerySubject_left() + ", " +
 					"query_right: " + rs.getQuerySubject_right() + ", " +
@@ -1176,7 +1311,7 @@ public class FactorySVC {
 			handleLP.setText(levelPath);
 			elem0or1.setText(int0or1);
 			
-			System.out.println("adjustScopeRelationship( dimensionMeasurePath " + dimensionMeasurePath + ", measurePath " + measurePath + ", dimensionPath " + dimensionPath + ", levelPath " + levelPath  + ",int0or1 " + int0or1);
+		//	System.out.println("adjustScopeRelationship( dimensionMeasurePath " + dimensionMeasurePath + ", measurePath " + measurePath + ", dimensionPath " + dimensionPath + ", levelPath " + levelPath  + ",int0or1 " + int0or1);
 		// System.out.println(document.asXML());
 			
 		csvc.executeModel(document);
@@ -1209,6 +1344,7 @@ public class FactorySVC {
 			handle2.setText(handleLevelName);
 			ElemlevelName.setText(levelName);
 			
+			System.out.println("createEmptyHierarchy(dimensionPath : " +  dimensionPath + " ,hierarchyName : " + hierarchyName + ")");
 		// System.out.println(document.asXML());
 		csvc.executeModel(document);
 	} catch (DocumentException ex) {
@@ -1288,6 +1424,7 @@ public class FactorySVC {
 			elemhandleLevelName.setText(handleLevelName);
 			ElemlevelName.setText(levelName);
 
+			System.out.println("createEmptyHierarchyLevel(hierarchyPath: " + hierarchyPath + ",levelName : " + levelName + ")");
 		// System.out.println(document.asXML());
 				csvc.executeModel(document);
 			} catch (DocumentException ex) {
@@ -1359,9 +1496,9 @@ public class FactorySVC {
 			SAXReader reader = new SAXReader();
 			Document document = reader.read(xmlFile);
 
-			Element handle = (Element) document.selectSingleNode("/bmtactionlog[@timestamp=\"20171122162251466\"]/transaction[@saved=\"false\"]/action[@seq=\"1\"]/inputparams/param[1]/value");
+			Element handle = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[1]/inputparams/param[1]/value");
 						
-			Element cdata = (Element) document.selectSingleNode("/bmtactionlog[@timestamp=\"20171122162251466\"]/transaction[@saved=\"false\"]/action[@seq=\"1\"]/inputparams/param[2]/value");
+			Element cdata = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[1]/inputparams/param[2]/value");
 			String s = cdata.getText();
 			handle.setText(levelPath);
 
@@ -1370,19 +1507,73 @@ public class FactorySVC {
 			Element xp = (Element) doc.selectSingleNode("/updateObjectRequest/tasks/task[@name=\"addObject\"]/parameters/param[4]/expression");		
 			Element root_cdata = doc.getRootElement();
 			qin.addAttribute("value", queryItemName);
+
 			xp.setText(exp);
 			// attach cdata
 		    cdata.setText("");
 		    cdata.addCDATA(root_cdata.asXML());
 
-		// System.out.println(document.asXML());
+//		 System.out.println(document.asXML());
+				csvc.executeModel(document);
+			} catch (DocumentException ex) {
+				lg(ex.getMessage());
+			}
+			// gestion des refobj
+			modifyLevelQueryItemNameExp(levelPath, queryItemName, queryItemName, exp);
+			// end gestion refobj
+		}
+
+	public void createHierarchyLevelQueryItem_refobj_fail(String levelPath, String queryItemName, String exp) {
+		
+		try {
+//			String levelPath = "[DIMENSIONS].[SDIDATA.CREATEDT].[SDIDATA.CREATEDT (By month)].[YEAR]";
+//			String queryItemName = "YEAR_KEY";
+//			String exp = "_year (<refobj>[FINAL].[SDIDATA].[CREATEDT]</refobj>)";
+					
+			File xmlFile = new File(csvc.getPathToXML() + "/createHierarchyLevelQueryItem_refobj.xml");
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(xmlFile);
+
+			Element handle = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[1]/inputparams/param[2]/value");
+			Element qiName = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[1]/inputparams/param[3]/value");
+			Element qiPath = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[4]/inputparams/param[1]/value");
+			Element xp = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[4]/inputparams/param[2]/value");
+			
+			handle.setText(levelPath);
+			qiName.setText(queryItemName);
+			qiPath.setText("/O/expression[0]/O/" + levelPath + ".[" + queryItemName + "]");
+			
+			//gestion des refobj
+			String str = xp.getStringValue();
+			String refobjMaker[] = StringUtils.splitByWholeSeparator(str, "expToReplace");
+
+			String lRefobj = refobjMaker[0];
+			String rRefobj = refobjMaker[1];
+			String splitExp[] = StringUtils.splitByWholeSeparator(exp, "].[");
+			str = "";
+			for (int i = 0 ; i < splitExp.length ; i++) {
+				String strAdd = "";
+				strAdd = StringUtils.replace(splitExp[i], "]", "]" + rRefobj);
+				strAdd = StringUtils.replace(strAdd, "[", lRefobj + "[");
+				if (i != 0) {
+					str = str + "].[" + strAdd;
+				} else {
+					str = strAdd;
+				}
+			}
+			// end gestion refobj
+
+			xp.setText(str);
+
+//		 System.out.println(document.asXML());
 				csvc.executeModel(document);
 			} catch (DocumentException ex) {
 				lg(ex.getMessage());
 			}
 		}
 
-	public void modifyLevelQueryItemName(String levelPath, String queryItemOldName, String queryItemName, String exp) {
+	
+	public void modifyLevelQueryItemNameExp(String levelPath, String queryItemOldName, String queryItemName, String exp) {
 		
 		try {
 //			String queryItemOldName = "CREATEDT";
@@ -1402,7 +1593,27 @@ public class FactorySVC {
 			handle1.setText("/O/name[0]/O/" + levelPath + ".[" + queryItemOldName + "]");
 			qiName.setText(queryItemName);
 			handle2.setText("/O/expression[0]/O/" + levelPath + ".[" + queryItemName + "]");
-			qiExp.setText(exp);
+			
+			//gestion des refobj
+			String str = qiExp.getStringValue();
+			String refobjMaker[] = StringUtils.splitByWholeSeparator(str, "expToReplace");
+
+			String lRefobj = refobjMaker[0];
+			String rRefobj = refobjMaker[1];
+			String splitExp[] = StringUtils.splitByWholeSeparator(exp, "].[");
+			str = "";
+			for (int i = 0 ; i < splitExp.length ; i++) {
+				String strAdd = "";
+				strAdd = StringUtils.replace(splitExp[i], "]", "]" + rRefobj);
+				strAdd = StringUtils.replace(strAdd, "[", lRefobj + "[");
+				if (i != 0) {
+					str = str + "].[" + strAdd;
+				} else {
+					str = strAdd;
+				}
+			}
+			// end gestion refobj
+			qiExp.setText(str);
 			
 			System.out.println("levelPath : " + levelPath + ", queryItemOldName : " + queryItemOldName + ", queryItemName : " +  queryItemName +  ", exp :" + exp);
 //			System.out.println(document.asXML());
@@ -1428,15 +1639,17 @@ public class FactorySVC {
 	// hierarchy (By month)
 			createDimensionHierarchy("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemPath);
 			createScopeRelationship("[DIMENSIONAL].[" + dimensionName + "]");
-		
+			
 	// level year
 			modifyHierarchyName("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemName,dateQueryItemName + " (By month)");
 			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "YEAR");
+			
 			String exp = "_year(" + dateQueryItemPath + ")";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
+			modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
+			
 			
 			if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
-			//	exp = "to_char(_year (" + dateQueryItemPath + "))";
+
 				exp = "to_char(" + dateQueryItemPath + ",'yyyy')";
 			} else {
 				exp = "_year (" + dateQueryItemPath + ")";
@@ -1458,7 +1671,7 @@ public class FactorySVC {
 					+ "if (_month (" + dateQueryItemPath + ") in_range {4:6}) then (2) else ( "
 					+ "if (_month (" + dateQueryItemPath + ") in_range {7:9}) then (3) else (4)))";
 				}
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER]", dateQueryItemName, "QUARTER_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[QUARTER]", dateQueryItemName, "QUARTER_KEY", exp);
 				
 				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 					exp = "to_char(" + dateQueryItemPath + ",'yyyy-Q')";
@@ -1481,7 +1694,7 @@ public class FactorySVC {
 			}
 			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "MONTH");
 			exp = "_month (" + dateQueryItemPath + ")";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MONTH]", dateQueryItemName, "MONTH_KEY", exp);
+			modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MONTH]", dateQueryItemName, "MONTH_KEY", exp);
 			
 			if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM')";
@@ -1499,7 +1712,7 @@ public class FactorySVC {
 			addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MONTH]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
 			modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "DAY");
 			exp = "_day (" + dateQueryItemPath + ")";
-			modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DAY]", dateQueryItemName, "DAY_KEY", exp);
+			modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DAY]", dateQueryItemName, "DAY_KEY", exp);
 			
 			if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 				exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd')";
@@ -1522,14 +1735,10 @@ public class FactorySVC {
 				} else {
 					exp = "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (1)  else (2)";
 				}
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
 				
 				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
-				/*
-					exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd') || "
-					+ "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (' AM')  else (' PM')";
-					*/
-					//test
+				
 					exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd AM')";
 	
 				} else {
@@ -1553,7 +1762,7 @@ public class FactorySVC {
 				}
 				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "HOUR");
 				exp = "_hour (  " + dateQueryItemPath + " )";
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
 				
 				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 					exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH')";
@@ -1574,7 +1783,7 @@ public class FactorySVC {
 				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[HOUR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
 				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "MIN");
 				exp = "_minute (  " + dateQueryItemPath + " )";
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MIN]", dateQueryItemName, "MIN_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MIN]", dateQueryItemName, "MIN_KEY", exp);
 				
 				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 					exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH:mi')";
@@ -1596,7 +1805,7 @@ public class FactorySVC {
 				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[MIN]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[" + dateQueryItemName + "]", dateQueryItemPath);
 				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)]", dateQueryItemName, "DATE");
 				exp = dateQueryItemPath;
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By month)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
 				
 				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 				//	exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH:mi:ss')";
@@ -1626,7 +1835,7 @@ public class FactorySVC {
 				exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
 				+ "then ( _year (" + dateQueryItemPath + ") + 1 ) "
 				+ "else (  _year (" + dateQueryItemPath + ") )";
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
 				
 				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 					exp = "to_char(if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
@@ -1655,7 +1864,7 @@ public class FactorySVC {
 					+ "else (  _year (" + dateQueryItemPath + ") )  || '-' || _week_of_year (" + dateQueryItemPath + ")";
 				}
 				
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK]", dateQueryItemName, "WEEK_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[WEEK]", dateQueryItemName, "WEEK_KEY", exp);
 				
 				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 					exp = "if (_month (" + dateQueryItemPath + ") = 12 AND _week_of_year (" + dateQueryItemPath + ") = 1) "
@@ -1682,7 +1891,7 @@ public class FactorySVC {
 				} else {
 					exp = "_day_of_week (" + dateQueryItemPath + ",1)";
 				}
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK]", dateQueryItemName, "DAY_OF_WEEK_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DAY_OF_WEEK]", dateQueryItemName, "DAY_OF_WEEK_KEY", exp);
 				
 				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 					exp = "to_char(  " + dateQueryItemPath + ",'yyyy/MM/dd - Day')";
@@ -1720,7 +1929,7 @@ public class FactorySVC {
 					} else {
 						exp = "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (1)  else (2)";
 					}
-					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
+					modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
 					
 					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd AM')";
@@ -1745,7 +1954,7 @@ public class FactorySVC {
 					}
 					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "HOUR");
 					exp = "_hour (  " + dateQueryItemPath + " )";
-					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
+					modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
 					
 					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH')";
@@ -1767,7 +1976,7 @@ public class FactorySVC {
 					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[HOUR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
 					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "MIN");
 					exp = "_minute(  " + dateQueryItemPath + " )";
-					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[MIN]", dateQueryItemName, "MIN_KEY", exp);
+					modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[MIN]", dateQueryItemName, "MIN_KEY", exp);
 					
 					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH:mi')";
@@ -1789,7 +1998,7 @@ public class FactorySVC {
 					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[MIN]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[" + dateQueryItemName + "]", dateQueryItemPath);
 					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)]", dateQueryItemName, "DATE");
 					exp = dateQueryItemPath;
-					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
+					modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (By week)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
 					
 					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 						exp = dateQueryItemPath;
@@ -1817,7 +2026,7 @@ public class FactorySVC {
 				modifyHierarchyName("[DIMENSIONAL].[" + dimensionName + "]", dateQueryItemName,dateQueryItemName + " (Rolling month)");
 				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "YEAR");
 				exp = "_year (" + dateQueryItemPath + ")  - _year( current_timestamp )";
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[YEAR]", dateQueryItemName, "YEAR_KEY", exp);
 				
 				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 					exp = "'Y'  || (_year (" + dateQueryItemPath + ")  - _year( current_timestamp ))";
@@ -1840,7 +2049,7 @@ public class FactorySVC {
 					+ "if (_month( current_timestamp ) in_range {1 : 3}) then (1) else ( "
 					+ "if (_month( current_timestamp ) in_range {4 : 6}) then (2) else ( "
 					+ "if (_month( current_timestamp ) in_range {7 : 9}) then (3) else (4)))";
-					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER]", dateQueryItemName, "QUARTER_KEY", exp);
+					modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[QUARTER]", dateQueryItemName, "QUARTER_KEY", exp);
 					
 					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 						exp = "'Q' || "
@@ -1877,7 +2086,7 @@ public class FactorySVC {
 				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "MONTH");
 				exp = "(_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 12 + "
 				+ "_month (" + dateQueryItemPath + ") - _month( current_timestamp )";
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH]", dateQueryItemName, "MONTH_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH]", dateQueryItemName, "MONTH_KEY", exp);
 				exp = "'M' || ((_year (" + dateQueryItemPath + ")  - _year( current_timestamp )) * 12 + "
 				+ "_month (" + dateQueryItemPath + ")  - _month( current_timestamp ))";
 				createHierarchyLevelQueryItem("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH]", "MONTH", exp);
@@ -1889,7 +2098,7 @@ public class FactorySVC {
 				addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MONTH]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
 				modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "DAY");
 				exp = "_days_between (" + dateQueryItemPath + ", current_timestamp)";
-				modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY]", dateQueryItemName, "DAY_KEY", exp);
+				modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DAY]", dateQueryItemName, "DAY_KEY", exp);
 				
 				if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 					exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd')";
@@ -1913,7 +2122,7 @@ public class FactorySVC {
 					} else {
 						exp = "if (_hour (  " + dateQueryItemPath + " ) in_range {0:11}) then (1)  else (2)";
 					}
-					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
+					modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[AM/PM]", dateQueryItemName, "AM/PM_KEY", exp);
 					
 					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd AM')";
@@ -1937,7 +2146,7 @@ public class FactorySVC {
 					}
 					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "HOUR");
 					exp = "_hour (  " + dateQueryItemPath + " )";
-					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
+					modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR]", dateQueryItemName, "HOUR_KEY", exp);
 					
 					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH')";
@@ -1959,7 +2168,7 @@ public class FactorySVC {
 					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[HOUR]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
 					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "MIN");
 					exp = "_minute(  " + dateQueryItemPath + " )";
-					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MIN]", dateQueryItemName, "MIN_KEY", exp);
+					modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MIN]", dateQueryItemName, "MIN_KEY", exp);
 					
 					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 						exp = "to_char(" + dateQueryItemPath + ",'yyyy/MM/dd HH:mi')";
@@ -1981,7 +2190,7 @@ public class FactorySVC {
 					addHierarchyLevel("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[MIN]", "[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[" + dateQueryItemName + "]", dateQueryItemPath);
 					modifyLevelName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)]", dateQueryItemName, "DATE");
 					exp = dateQueryItemPath;
-					modifyLevelQueryItemName("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
+					modifyLevelQueryItemNameExp("[DIMENSIONAL].[" + dimensionName + "].[" + dateQueryItemName + " (Rolling month)].[DATE]", dateQueryItemName, "DATE_KEY", exp);
 					
 					if (dbEngine.equals("ORA") || dbEngine.equals("DB2")) {
 						exp = dateQueryItemPath;
@@ -2325,13 +2534,17 @@ public class FactorySVC {
 		while (qiName != null)
 		{
 			System.out.println("queryItem : " + qiName.getStringValue() + " * * * * * * * " + map.get(qiName.getStringValue()));  // clef de map
-			String prefixTab[] = StringUtils.split(qiName.getStringValue(), ".");
+			// Prefix a priori inutile sue les QI
+			
+/*			String prefixTab[] = StringUtils.split(qiName.getStringValue(), ".");
 			String prefix = prefixTab[0];
 			for (int k=1; k < prefixTab.length - 1; k++) {
 				prefix = prefix + "." + prefixTab[k];
 			}
 			System.out.println("queryItem prefix : " + prefix + " * * * * * * * " + map.get(prefix));
 			String label = map.get("(" + map.get(prefix) + ") " + qiName.getStringValue());  // valeur de map
+*/
+			String label = map.get(qiName.getStringValue());
 			if (label != null) {
 				qiNameLocale.setText(label);        // valeur de map
 				}

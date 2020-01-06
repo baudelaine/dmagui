@@ -44,7 +44,7 @@
 					<value>/O/expression[0]/O/[DYNAMIC DATA].[S_SAMPLE].[AAAAAAAAAAAAAAAAAAAAAAAAAAA]</value>
 				</param>
 				<param seq="2" type="i18nstring">
-					<value>BBBBBBBBBBBBBBBBBBBBBBBBB</value>
+					<value>&lt;refobj&gt;expToReplace&lt;/refobj&gt;</value>
 				</param>
 			</inputparams>
 			<domchanges/>

@@ -59,6 +59,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	String FKQuery = "";
 	Path prj = null;
 	String relationMode = "DB";
+	Map<String, QuerySubject> qsFromXML = new HashMap<String, QuerySubject>();
        
     /**
      * @see HttpServlet#HttpServlet()
@@ -101,15 +102,18 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		
 		try{
 			
-			withRecCount = (Boolean) request.getServletContext().getAttribute("withRecCount");
 			Project project = (Project) request.getSession().getAttribute("currentProject");
 			language = project.languages.get(0);
-			relationCount = project.isRelationCount();
-			con = (Connection) request.getSession().getAttribute("con");
-			schema = (String) request.getSession().getAttribute("schema");
-			dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
-			tableAliases = (Map<String, String>) request.getSession().getAttribute("tableAliases");
-			metaData = con.getMetaData();
+			qsFromXML = (Map<String, QuerySubject>) request.getSession().getAttribute("QSFromXML");
+			if(qsFromXML.isEmpty()) {
+				withRecCount = (Boolean) request.getServletContext().getAttribute("withRecCount");
+				relationCount = project.isRelationCount();
+				con = (Connection) request.getSession().getAttribute("con");
+				schema = (String) request.getSession().getAttribute("schema");
+				dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
+				tableAliases = (Map<String, String>) request.getSession().getAttribute("tableAliases");
+				metaData = con.getMetaData();
+			}
 			
 			QuerySubject querySubject = getQuerySubjects();
 			
@@ -154,11 +158,12 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	protected QuerySubject getQuerySubjects() throws SQLException{
 		
 
+
 		String label = "";
 		String desc = "";
 		ResultSet rst = null;
 
-		if(importLabel) {
+		if(importLabel && qsFromXML.isEmpty()) {
 		
 			String[] types = {"TABLE"};
 			rst = metaData.getTables(con.getCatalog(), schema, table, types);
@@ -177,13 +182,20 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		    	}
 			}
 		}
-    	
+
 		QuerySubject result = new QuerySubject();
 		
+		if(!qsFromXML.isEmpty()) {
+			result = qsFromXML.get(table);
+			result.set_id(alias + result.getType());
+		}
+		else {
+			result.setTable_name(table);
+		}
+
 		result.set_id(alias + type);
-		result.setTable_alias(alias);
-		result.setTable_name(table);
 		result.setType(type);
+		result.setTable_alias(alias);
 		result.setLabel(label);
 		result.setDescription(desc);
 		if(!language.isEmpty()) {
@@ -192,7 +204,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		}
 		result.addLinker_id(linker_id);
 		
-		if(withRecCount){
+		if(withRecCount && qsFromXML.isEmpty()){
             long recCount = 0;
     		Statement stmt = null;
     		ResultSet rs = null;
@@ -225,7 +237,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 			
 		}
 		
-		if(importLabel) {
+		if(importLabel && qsFromXML.isEmpty()) {
 		
 			if(dbmd != null){
 				DBMDTable dbmdTable = dbmd.get(table);
@@ -249,6 +261,10 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	protected List<Field> getFields() throws SQLException{
 		
 //		Map<String, Field> result = new HashMap<String, Field>();
+		
+		if(!qsFromXML.isEmpty()) {
+			return qsFromXML.get(table).getFields();
+		}
 		
 		ResultSet rst = metaData.getPrimaryKeys(con.getCatalog(), schema, table);
 	    Set<String> pks = new HashSet<String>();
@@ -474,7 +490,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	        	relation.set_id("FK_" + relation.getPktable_alias() + "_" + alias + "_" + type.toUpperCase());
 	        	relation.setAbove(fkcolumn_name);
 	        	
-	        	if(importLabel) {
+	        	if(importLabel && qsFromXML.isEmpty()) {
 		        	String[] types = {"TABLE"};
 		    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, pktable_name, types);
 		    		while (rst0.next()) {
@@ -515,7 +531,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	    		if(relation.getLabel() == null) {relation.setLabel("");}
 	    		if(relation.getDescription() == null) {relation.setDescription("");}
 	        	
-	    		if(importLabel) {
+	    		if(importLabel && qsFromXML.isEmpty()) {
 		    		if(dbmd != null){
 		    			DBMDTable dbmdTable = dbmd.get(pktable_name);
 		    			if(dbmdTable != null){

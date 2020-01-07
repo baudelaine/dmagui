@@ -2765,6 +2765,8 @@ function RemoveKeysAccepted(){
 
 function buildTable($el, cols, data) {
 
+  console.log(data);
+
     $el.bootstrapTable({
         columns: cols,
         // url: url,
@@ -4591,6 +4593,56 @@ function OpenQueries(id){
   $('#modQueriesList').modal('toggle');
 
 }
+
+
+$('#XMLFile').change(function(){
+  var file = $(this)[0].files[0];
+  console.log(file);
+
+  var fd = new FormData();
+  fd.append('file', file, 'model.xml');
+  console.log(fd);
+
+  $.ajax({
+    url: "UploadXML",
+    type: "POST",
+    data: fd,
+    enctype: 'multipart/form-data',
+    // dataType: 'application/text',
+    processData: false,  // tell jQuery not to process the data
+    contentType: false,   // tell jQuery not to set contentType
+    success: function(data) {
+      console.log(data);
+        if(data.STATUS == "OK"){
+
+          var table = $('#tables');
+
+          table.empty();
+
+          $.each(data.TABLES, function(i, obj){
+            var option = '<option class="fontsize" value="' + obj + '">' + obj + '</option>';
+            table.append(option);
+          });
+          table.selectpicker('refresh');
+
+
+        }
+		},
+		error: function(data) {
+      console.log(data);
+		}
+  });
+
+  $(this).val('');  
+
+})
+
+$("#loadFromXML").click(function(){
+  console.log("loadFromXML was clicked");
+  $('#XMLFile').trigger('click');
+
+})
+
 
 $("#setHidden").click(function(){
   var table = $("#qsSelect").find("option:selected").val();

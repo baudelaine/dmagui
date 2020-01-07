@@ -32,82 +32,82 @@ public class Test7 {
 		String schema = "DB2INST1";
 		
 		try {
-			Class.forName("com.ibm.db2.jcc.DB2Driver");
-			con = DriverManager.getConnection("jdbc:db2://localhost:50000/SAMPLE", "db2inst1", "spcspc");
-			con.createStatement().execute("set schema=" + schema);
-			DatabaseMetaData metaData = con.getMetaData();
-			
-			Set<String> aliases = new HashSet<String>();
-			String aliasesQuery = "SELECT base_tabname, tabname FROM syscat.tables WHERE type = 'A' AND owner = '" + schema.toUpperCase() + "'";
-			
-			stmt = con.getMetaData().getConnection().prepareStatement(aliasesQuery);
-            rst = stmt.executeQuery();
-            while (rst.next()) {
-                String alias = rst.getString(2);
-                aliases.add(alias);
-            }						
-			
-            System.out.println(Tools.toJSON(aliases));
-			
-            List<String> tables = new ArrayList<String>();
+//			Class.forName("com.ibm.db2.jcc.DB2Driver");
+//			con = DriverManager.getConnection("jdbc:db2://localhost:50000/SAMPLE", "db2inst1", "spcspc");
+//			con.createStatement().execute("set schema=" + schema);
+//			DatabaseMetaData metaData = con.getMetaData();
+//			
+//			Set<String> aliases = new HashSet<String>();
+//			String aliasesQuery = "SELECT base_tabname, tabname FROM syscat.tables WHERE type = 'A' AND owner = '" + schema.toUpperCase() + "'";
+//			
+//			stmt = con.getMetaData().getConnection().prepareStatement(aliasesQuery);
+//            rst = stmt.executeQuery();
+//            while (rst.next()) {
+//                String alias = rst.getString(2);
+//                aliases.add(alias);
+//            }						
+//			
+//            System.out.println(Tools.toJSON(aliases));
+//			
+//            List<String> tables = new ArrayList<String>();
 //            tables = Arrays.asList(
 //					"PROJECT", 
 //					"DEPARTMENT",
 //					"EMPLOYEE"
 //					);
 			
-			String[] types = {"TABLE"};
-		    rst = metaData.getTables(con.getCatalog(), schema, "%", types);	
-		    
-		    while (rst.next()) {
-		    	tables.add(rst.getString("TABLE_NAME"));
-		    }
-			if(rst != null) {rst.close();}
-			
-			List<String> keys = new ArrayList<String>();
-			Path path = Paths.get("/opt/wks/dmagui/relations.csv");
-			FileWriter fw = new FileWriter(path.toFile());
-			String newLine = System.getProperty("line.separator");
-			String header = "FK_NAME;PK_NAME;FKTABLE_NAME;PKTABLE_NAME;KEY_SEQ;FKCOLUMN_NAME;PKCOLUMN_NAME";
-			fw.write(header + newLine);
+//			String[] types = {"TABLE"};
+//		    rst = metaData.getTables(con.getCatalog(), schema, "%", types);	
+//		    
+//		    while (rst.next()) {
+//		    	tables.add(rst.getString("TABLE_NAME"));
+//		    }
+//			if(rst != null) {rst.close();}
+//			
+//			List<String> keys = new ArrayList<String>();
+//			Path path = Paths.get("/opt/wks/dmagui/relations.csv");
+//			FileWriter fw = new FileWriter(path.toFile());
+//			String newLine = System.getProperty("line.separator");
+//			String header = "FK_NAME;PK_NAME;FKTABLE_NAME;PKTABLE_NAME;KEY_SEQ;FKCOLUMN_NAME;PKCOLUMN_NAME";
+//			fw.write(header + newLine);
+//
+//			for(String table: tables){
+//				rst = metaData.getImportedKeys(con.getCatalog(), schema, table);
+//				while(rst.next()){
+//					StringBuffer key = new StringBuffer();
+//					
+//					key.append(rst.getString("FK_NAME") + ";");
+//					key.append(rst.getString("PK_NAME") + ";");
+//					key.append(rst.getString("FKTABLE_NAME") + ";");
+//					key.append(rst.getString("PKTABLE_NAME") + ";");
+//					key.append(rst.getShort("KEY_SEQ") + ";");
+//					key.append(rst.getString("FKCOLUMN_NAME") + ";");
+//					key.append(rst.getString("PKCOLUMN_NAME") + newLine);
+//					
+//					String pktable_name = rst.getString("PKTABLE_NAME");
+//					if(!aliases.contains(pktable_name)) {
+//						keys.add(key.toString());
+//						fw.write(key.toString());
+//					}
+//				}
+//				rst.close();
+//			}
+//			if(rst != null){
+//				rst.close();
+//			}
+//			if(fw != null) {
+//				fw.close();
+//			}
+//			if(stmt != null){
+//				stmt.close();
+//			}
+//			if(con != null){
+//				con.close();
+//			}
+//			
+//			System.out.println(Tools.toJSON(keys));
 
-			for(String table: tables){
-				rst = metaData.getImportedKeys(con.getCatalog(), schema, table);
-				while(rst.next()){
-					StringBuffer key = new StringBuffer();
-					
-					key.append(rst.getString("FK_NAME") + ";");
-					key.append(rst.getString("PK_NAME") + ";");
-					key.append(rst.getString("FKTABLE_NAME") + ";");
-					key.append(rst.getString("PKTABLE_NAME") + ";");
-					key.append(rst.getShort("KEY_SEQ") + ";");
-					key.append(rst.getString("FKCOLUMN_NAME") + ";");
-					key.append(rst.getString("PKCOLUMN_NAME") + newLine);
-					
-					String pktable_name = rst.getString("PKTABLE_NAME");
-					if(!aliases.contains(pktable_name)) {
-						keys.add(key.toString());
-						fw.write(key.toString());
-					}
-				}
-				rst.close();
-			}
-			if(rst != null){
-				rst.close();
-			}
-			if(fw != null) {
-				fw.close();
-			}
-			if(stmt != null){
-				stmt.close();
-			}
-			if(con != null){
-				con.close();
-			}
-			
-			System.out.println(Tools.toJSON(keys));
-
-			path = Paths.get("/home/dma/dma/p0/relation.csv");
+			Path path = Paths.get("/tmp/relation.csv");
 			
 			// Load the driver.
 			Class.forName("org.relique.jdbc.csv.CsvDriver");
@@ -119,7 +119,7 @@ public class Test7 {
 			Connection conn = DriverManager.getConnection("jdbc:relique:csv:" + path.getParent().toString(), props);
 
 			// Create a Statement object to execute the query with.
-			String sql = "SELECT * FROM relation where FKTABLE_NAME = 'PROJECT'";
+			String sql = "SELECT * FROM relation where FKTABLE_NAME = 'S_SAMPLE'";
 			PreparedStatement stm = conn.prepareStatement(sql);
 
 			// Query the table. The name of the table is the name of the file without ".csv"
@@ -129,7 +129,7 @@ public class Test7 {
 			}
 			
 			
-		} catch (ClassNotFoundException | SQLException | IOException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

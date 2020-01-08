@@ -81,7 +81,15 @@ $("#prjResource").change(function () {
     var dbSchema = datas.RESOURCES[selectedText].jndiName.split('.')[1];
     console.log(selectedText);
     console.log(dbSchema);
-		$('#prjDbSchema').val(dbSchema);
+    $('#prjDbSchema').val(dbSchema);
+    if(selectedText == "XML"){
+      $("#relationCount").prop("disabled", true);
+      $("#relationCount").prop("checked", false);
+    }
+    else{
+      $("#relationCount").prop("disabled", false);
+      $("#relationCount").prop("checked", true);
+    }
 });
 
 function initPrjLanguage(){
@@ -226,9 +234,15 @@ function loadLocales(obj, list){
 function loadResources(obj, list){
   obj.empty();
   $.each(list, function(i, item){
-    var option = '<option class="fontsize" value="' + i + '" data-subtext="' + item.dbName + ' - ' + item.dbEngine
+    var option = '';
+    if(item.jndiName == "XML"){
+      option = '<option class="fontsize" value="' + i + '" data-subtext="' + item.description + '">' + item.jndiName + '</option>';
+    }
+    else{
+    option = '<option class="fontsize" value="' + i + '" data-subtext="' + item.dbName + ' - ' + item.dbEngine
       + ' - ' + item.cognosCatalog + ' - ' + item.cognosDataSource + ' - ' + item.cognosSchema
       + '">' + item.jndiName + '</option>';
+    }
     obj.append(option);
   });
   obj.selectpicker('refresh');

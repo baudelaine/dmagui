@@ -71,92 +71,98 @@ public class GetFieldsServlet extends HttpServlet {
 			Map<String, Object> parms = Tools.fromJSON(request.getInputStream());
 			
 			if(parms != null && parms.get("table") != null) {
-
 				String table = (String) parms.get("table");
-				con = (Connection) request.getSession().getAttribute("con");
-				schema = (String) request.getSession().getAttribute("schema");
-				dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
-				Project project = (Project) request.getSession().getAttribute("currentProject");
-				language = project.languages.get(0);
-				
-			    DatabaseMetaData metaData = con.getMetaData();
-			    
-			    rst = metaData.getPrimaryKeys(con.getCatalog(), schema, table);
-			    Set<String> pks = new HashSet<String>();
-			    
-			    while (rst.next()) {
-			    	pks.add(rst.getString("COLUMN_NAME"));
-			    }
 
-		        if(rst != null){rst.close();}
-
-			    rst = metaData.getIndexInfo(con.getCatalog(), schema, table, false, true);
-			    Set<String> indexes = new HashSet<String>();
-			    
-			    while (rst.next()) {
-			    	indexes.add(rst.getString("COLUMN_NAME"));
-			    }
-
-		        if(rst != null){rst.close();}
-		        
-		        rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
-		        
-		        Map<String, DBMDColumn> dbmdColumns = null;
-		        if(dbmd != null){
-					DBMDTable dbmdTable = dbmd.get(table);
-					dbmdColumns = dbmdTable.getColumns();
-		        }
-		        
-		        while (rst.next()) {
-		        	String field_name = rst.getString("COLUMN_NAME");
-		        	String field_type = rst.getString("TYPE_NAME");
-		        	String field_remarks = rst.getString("REMARKS");
-		        	String field_desc = "";
-		        	
-		    		if(field_remarks == null) {
-		    			field_remarks = "";
-		    		}
-		    		else {
-		    	    	if(field_remarks.length() > 50) {
-		    		    	field_desc = field_remarks;
-		    	    		field_remarks = field_remarks.substring(1, 50);
-		    	    	}
-		    		}
-		        	
-		        	Field field = new Field();
-		        	field.setField_name(field_name);
-		        	field.setField_type(field_type);
-		        	field.setLabel(field_remarks);
-		        	field.setDescription(field_desc);
-	        		if(!language.isEmpty()) {
-	        			field.getLabels().put(language, field_remarks);
-	        			field.getDescriptions().put(language, field_desc);
-	        		}
-		        	field.set_id(field_name + field_type);
-		        	if(pks.contains(rst.getString("COLUMN_NAME"))){
-		    			field.setPk(true);
-		    		}
-		        	if(indexes.contains(rst.getString("COLUMN_NAME"))){
-		        		field.setIndexed(true);
-		        	}
-		        	if(dbmdColumns != null){
-		    			DBMDColumn dbmdColumn = dbmdColumns.get(field_name);
-		    			if(dbmdColumns != null){
-		    				String label = dbmdColumn.getColumn_remarks();
-			    			field.setLabel(label);
-			    			String desc = dbmdColumn.getColumn_description();
-			    			field.setDescription(desc);
-			           		if(!language.isEmpty()) {
-			        			field.getLabels().put(language, label);
-			        			field.getDescriptions().put(language, desc);
-			        		}	    			
-		    			}
-		    		}
-		        	
-		        	fields.add(field);
-		        }
-			    
-		        if(rst != null){rst.close();}				
+				Map<String, QuerySubject> qsFromXML = (Map<String, QuerySubject>) request.getSession().getAttribute("QSFromXML");				
+				if(qsFromXML != null) {
+					fields = qsFromXML.get(table).getFields();
+				}
+				else {
+					con = (Connection) request.getSession().getAttribute("con");
+					schema = (String) request.getSession().getAttribute("schema");
+					dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
+					Project project = (Project) request.getSession().getAttribute("currentProject");
+					language = project.languages.get(0);
+					
+				    DatabaseMetaData metaData = con.getMetaData();
+				    
+				    rst = metaData.getPrimaryKeys(con.getCatalog(), schema, table);
+				    Set<String> pks = new HashSet<String>();
+				    
+				    while (rst.next()) {
+				    	pks.add(rst.getString("COLUMN_NAME"));
+				    }
+	
+			        if(rst != null){rst.close();}
+	
+				    rst = metaData.getIndexInfo(con.getCatalog(), schema, table, false, true);
+				    Set<String> indexes = new HashSet<String>();
+				    
+				    while (rst.next()) {
+				    	indexes.add(rst.getString("COLUMN_NAME"));
+				    }
+	
+			        if(rst != null){rst.close();}
+			        
+			        rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
+			        
+			        Map<String, DBMDColumn> dbmdColumns = null;
+			        if(dbmd != null){
+						DBMDTable dbmdTable = dbmd.get(table);
+						dbmdColumns = dbmdTable.getColumns();
+			        }
+			        
+			        while (rst.next()) {
+			        	String field_name = rst.getString("COLUMN_NAME");
+			        	String field_type = rst.getString("TYPE_NAME");
+			        	String field_remarks = rst.getString("REMARKS");
+			        	String field_desc = "";
+			        	
+			    		if(field_remarks == null) {
+			    			field_remarks = "";
+			    		}
+			    		else {
+			    	    	if(field_remarks.length() > 50) {
+			    		    	field_desc = field_remarks;
+			    	    		field_remarks = field_remarks.substring(1, 50);
+			    	    	}
+			    		}
+			        	
+			        	Field field = new Field();
+			        	field.setField_name(field_name);
+			        	field.setField_type(field_type);
+			        	field.setLabel(field_remarks);
+			        	field.setDescription(field_desc);
+		        		if(!language.isEmpty()) {
+		        			field.getLabels().put(language, field_remarks);
+		        			field.getDescriptions().put(language, field_desc);
+		        		}
+			        	field.set_id(field_name + field_type);
+			        	if(pks.contains(rst.getString("COLUMN_NAME"))){
+			    			field.setPk(true);
+			    		}
+			        	if(indexes.contains(rst.getString("COLUMN_NAME"))){
+			        		field.setIndexed(true);
+			        	}
+			        	if(dbmdColumns != null){
+			    			DBMDColumn dbmdColumn = dbmdColumns.get(field_name);
+			    			if(dbmdColumns != null){
+			    				String label = dbmdColumn.getColumn_remarks();
+				    			field.setLabel(label);
+				    			String desc = dbmdColumn.getColumn_description();
+				    			field.setDescription(desc);
+				           		if(!language.isEmpty()) {
+				        			field.getLabels().put(language, label);
+				        			field.getDescriptions().put(language, desc);
+				        		}	    			
+			    			}
+			    		}
+			        	
+			        	fields.add(field);
+			        }
+				    
+			        if(rst != null){rst.close();}				
+				}
 		        
 		        result.put("DATAS", fields);
 				result.put("STATUS", "OK");

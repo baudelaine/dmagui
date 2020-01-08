@@ -35,6 +35,12 @@ public class GetResourcesServlet extends HttpServlet {
 
 		
 		result = (Map<String, Object>) request.getServletContext().getAttribute("resources");
+		
+		Resource xml = new Resource();
+		xml.setJndiName("XML");
+		xml.setDescription("Cognos model with PHYSICAL namespace");
+		
+		result.put("XML", xml);
 		    
 		response.setContentType("application/json");
 		response.setCharacterEncoding("UTF-8");

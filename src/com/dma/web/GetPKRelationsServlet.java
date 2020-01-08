@@ -97,11 +97,12 @@ public class GetPKRelationsServlet extends HttpServlet {
 			Project project = (Project) request.getSession().getAttribute("currentProject");
 			language = project.languages.get(0);
 			relationCount = project.isRelationCount();
+			Map<String, QuerySubject> qsFromXML = (Map<String, QuerySubject>) request.getSession().getAttribute("QSFromXML");				
+
 			
 			dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
 			withRecCount = (Boolean) request.getServletContext().getAttribute("withRecCount");
 			tableAliases = (Map<String, String>) request.getSession().getAttribute("tableAliases");
-			metaData = con.getMetaData();
 			
 		    Map<String, Relation> map = new HashMap<String, Relation>();
 		    
@@ -127,6 +128,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 				result.put("MODE", "SQL");
 	    	}
 			else {
+				metaData = con.getMetaData();
 				rst = metaData.getExportedKeys(con.getCatalog(), schema, table);
 				result.put("MODE", "DB");
 			}
@@ -180,7 +182,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 		        	relation.setDescription("");
 		        	
 		        	ResultSet rst0 = null;
-		        	if(importLabel) {
+		        	if(importLabel && qsFromXML == null) {
 		        	
 			        	String[] types = {"TABLE"};
 			        	rst0 = metaData.getTables(con.getCatalog(), schema, fktable_name, types);
@@ -279,7 +281,7 @@ public class GetPKRelationsServlet extends HttpServlet {
 		    if (stmt != null) { stmt.close();}
 		    if (csvCon != null) { csvCon.close();}
 		    
-		    if(withRecCount){
+		    if(withRecCount && qsFromXML == null){
 		    	
 	            long tableRecCount = 0;
 	    		Statement stm = null;

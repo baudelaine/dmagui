@@ -67,70 +67,83 @@ public class GetNewRelationServlet extends HttpServlet {
 			if(parms != null && parms.get("table") != null) {
 
 				String table = (String) parms.get("table");
-				@SuppressWarnings("unchecked")
-				Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
-				
-				con = (Connection) request.getSession().getAttribute("con");
-				schema = (String) request.getSession().getAttribute("schema");
-				
-				
 				Project project = (Project) request.getSession().getAttribute("currentProject");
 				String language = project.languages.get(0);			
 				relation = new Relation();
-		        
-	        	String[] types = {"TABLE"};
-	        	metaData = con.getMetaData();
-	    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, table, types);
-	    		String label = "";
-	    		String desc = "";
-	    		while (rst0.next()) {
-	    			label = rst0.getString("REMARKS");
-	    			relation.setLabel(label);
-	    	    	
-	    	    	if(label == null) {
-	    	    		label = "";
-	    	    		relation.setLabel(label);
-	    	    		relation.setDescription(desc);
-	    				if(!language.isEmpty()) {
-	    					relation.getLabels().put(language, label);
-	    					relation.getDescriptions().put(language, desc);
-	    				}
-	    	    		
-	    	    	}
-	    	    	else {
-	    		    	if(label.length() <= 50) {
-	    		    		relation.setLabel(label);
-	    		    		relation.setDescription(desc);
-	    					if(!language.isEmpty()) {
-	    						relation.getLabels().put(language, label);
-	    						relation.getDescriptions().put(language, desc);
-	    					}
-	    		    		
-	    		    	}
-	    		    	else {
-	    		    		relation.setDescription(label);
-	    		    		relation.setLabel(label.substring(0, 50));
-	    					if(!language.isEmpty()) {
-	    						relation.getLabels().put(language, label.substring(0, 50));
-	    						relation.getDescriptions().put(language, label);
-	    					}
-	    		    	}
-	    	    	}
-	    			
-	    	    }
-	    		if(rst0 != null){rst0.close();}
-		        
-				if(dbmd != null){
-					DBMDTable dbmdTable = dbmd.get(table);
-					if(dbmdTable != null){
-						label = dbmdTable.getTable_remarks(); 
-						desc = dbmdTable.getTable_description();
-						relation.setLabel(label);
-						relation.setDescription(desc);
-						
-						if(!language.isEmpty()) {
-							relation.getLabels().put(language, label);
-							relation.getDescriptions().put(language, desc);
+				
+				@SuppressWarnings("unchecked")
+				Map<String, QuerySubject> qsFromXML = (Map<String, QuerySubject>) request.getSession().getAttribute("QSFromXML");				
+				if(qsFromXML != null) {
+    	    		relation.setDescription("");
+    				if(!language.isEmpty()) {
+    					relation.getLabels().put(language, "");
+    					relation.getDescriptions().put(language, "");
+    				}					
+				}
+				else {
+				
+					@SuppressWarnings("unchecked")
+					Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
+					
+					con = (Connection) request.getSession().getAttribute("con");
+					schema = (String) request.getSession().getAttribute("schema");
+					
+					
+			        
+		        	String[] types = {"TABLE"};
+		        	metaData = con.getMetaData();
+		    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, table, types);
+		    		String label = "";
+		    		String desc = "";
+		    		while (rst0.next()) {
+		    			label = rst0.getString("REMARKS");
+		    			relation.setLabel(label);
+		    	    	
+		    	    	if(label == null) {
+		    	    		label = "";
+		    	    		relation.setLabel(label);
+		    	    		relation.setDescription(desc);
+		    				if(!language.isEmpty()) {
+		    					relation.getLabels().put(language, label);
+		    					relation.getDescriptions().put(language, desc);
+		    				}
+		    	    		
+		    	    	}
+		    	    	else {
+		    		    	if(label.length() <= 50) {
+		    		    		relation.setLabel(label);
+		    		    		relation.setDescription(desc);
+		    					if(!language.isEmpty()) {
+		    						relation.getLabels().put(language, label);
+		    						relation.getDescriptions().put(language, desc);
+		    					}
+		    		    		
+		    		    	}
+		    		    	else {
+		    		    		relation.setDescription(label);
+		    		    		relation.setLabel(label.substring(0, 50));
+		    					if(!language.isEmpty()) {
+		    						relation.getLabels().put(language, label.substring(0, 50));
+		    						relation.getDescriptions().put(language, label);
+		    					}
+		    		    	}
+		    	    	}
+		    			
+		    	    }
+		    		if(rst0 != null){rst0.close();}
+			        
+					if(dbmd != null){
+						DBMDTable dbmdTable = dbmd.get(table);
+						if(dbmdTable != null){
+							label = dbmdTable.getTable_remarks(); 
+							desc = dbmdTable.getTable_description();
+							relation.setLabel(label);
+							relation.setDescription(desc);
+							
+							if(!language.isEmpty()) {
+								relation.getLabels().put(language, label);
+								relation.getDescriptions().put(language, desc);
+							}
 						}
 					}
 				}

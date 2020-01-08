@@ -91,7 +91,6 @@ public class UploadXMLServlet extends HttpServlet {
 						Path xml = Paths.get(prj + "/" + item.getName());
 						Files.copy(new BufferedInputStream(item.getInputStream()), xml, StandardCopyOption.REPLACE_EXISTING);
 						xml.toFile().setReadable(true, false);
-						result.put("STATUS", "OK");
 					}
 				}
 			}
@@ -176,7 +175,7 @@ public class UploadXMLServlet extends HttpServlet {
 				Files.write(relationsPath, header);
 				Files.write(relationsPath, relations, StandardOpenOption.APPEND);
 				relationsPath.toFile().setReadable(true, false);
-				
+				result.put("STATUS", "OK");
 				
 			}
 			catch (Exception e) {

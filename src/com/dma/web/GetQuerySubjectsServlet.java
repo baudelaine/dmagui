@@ -105,7 +105,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 			Project project = (Project) request.getSession().getAttribute("currentProject");
 			language = project.languages.get(0);
 			qsFromXML = (Map<String, QuerySubject>) request.getSession().getAttribute("QSFromXML");
-			if(qsFromXML.isEmpty()) {
+			if(qsFromXML == null) {
 				withRecCount = (Boolean) request.getServletContext().getAttribute("withRecCount");
 				relationCount = project.isRelationCount();
 				con = (Connection) request.getSession().getAttribute("con");
@@ -163,7 +163,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		String desc = "";
 		ResultSet rst = null;
 
-		if(importLabel && qsFromXML.isEmpty()) {
+		if(importLabel && qsFromXML == null) {
 		
 			String[] types = {"TABLE"};
 			rst = metaData.getTables(con.getCatalog(), schema, table, types);
@@ -185,7 +185,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 
 		QuerySubject result = new QuerySubject();
 		
-		if(!qsFromXML.isEmpty()) {
+		if(qsFromXML != null) {
 			result = qsFromXML.get(table);
 			result.set_id(alias + result.getType());
 		}
@@ -204,7 +204,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		}
 		result.addLinker_id(linker_id);
 		
-		if(withRecCount && qsFromXML.isEmpty()){
+		if(withRecCount && qsFromXML == null){
             long recCount = 0;
     		Statement stmt = null;
     		ResultSet rs = null;
@@ -237,7 +237,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 			
 		}
 		
-		if(importLabel && qsFromXML.isEmpty()) {
+		if(importLabel && qsFromXML == null) {
 		
 			if(dbmd != null){
 				DBMDTable dbmdTable = dbmd.get(table);
@@ -262,7 +262,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 		
 //		Map<String, Field> result = new HashMap<String, Field>();
 		
-		if(!qsFromXML.isEmpty()) {
+		if(qsFromXML != null) {
 			return qsFromXML.get(table).getFields();
 		}
 		
@@ -490,7 +490,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	        	relation.set_id("FK_" + relation.getPktable_alias() + "_" + alias + "_" + type.toUpperCase());
 	        	relation.setAbove(fkcolumn_name);
 	        	
-	        	if(importLabel && qsFromXML.isEmpty()) {
+	        	if(importLabel && qsFromXML == null) {
 		        	String[] types = {"TABLE"};
 		    		ResultSet rst0 = metaData.getTables(con.getCatalog(), schema, pktable_name, types);
 		    		while (rst0.next()) {
@@ -531,7 +531,7 @@ public class GetQuerySubjectsServlet extends HttpServlet {
 	    		if(relation.getLabel() == null) {relation.setLabel("");}
 	    		if(relation.getDescription() == null) {relation.setDescription("");}
 	        	
-	    		if(importLabel && qsFromXML.isEmpty()) {
+	    		if(importLabel && qsFromXML == null) {
 		    		if(dbmd != null){
 		    			DBMDTable dbmdTable = dbmd.get(pktable_name);
 		    			if(dbmdTable != null){

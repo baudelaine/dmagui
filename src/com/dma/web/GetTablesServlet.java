@@ -1,6 +1,10 @@
 package com.dma.web;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -37,40 +41,69 @@ public class GetTablesServlet extends HttpServlet {
 		// TODO Auto-generated method stub
 		Connection con = null;
 		ResultSet rst = null;
-		List<Object> result = new ArrayList<Object>();
+		Map<String, Object> result = new HashMap<String, Object>();
 		String schema = "";
 
 		try {
 			
-			con = (Connection) request.getSession().getAttribute("con");
-			schema = (String) request.getSession().getAttribute("schema");
+			result.put("CLIENT", request.getRemoteAddr() + ":" + request.getRemotePort());
+			result.put("SERVER", request.getLocalAddr() + ":" + request.getLocalPort());
 			
-		    DatabaseMetaData metaData = con.getMetaData();
-		    //String[] types = {"TABLE", "VIEW", "SYSTEM TABLE", "GLOBAL TEMPORARY", "LOCAL TEMPORARY", "ALIAS", "SYNONYM"};
-		    String[] types = {"TABLE"};
-		    rst = metaData.getTables(con.getCatalog(), schema, "%", types);	
+			result.put("FROM", this.getServletName());
+			
+			String user = request.getUserPrincipal().getName();
+			result.put("USER", user);
 
-		    
-		    while (rst.next()) {
-		    	String table_name = rst.getString("TABLE_NAME");
-		    	String table_type = rst.getString("TABLE_TYPE");
-			    Map<String, Object> table = new HashMap<>();
-			    table.put("name", table_name);
-			    table.put("type", table_type);
-			    result.add(table);
-		    }		    
-		    
-		    rst.close();
-		    
-		    response.setContentType("application/json");
-			response.setCharacterEncoding("UTF-8");
-			response.getWriter().write(Tools.toJSON(result));
+			result.put("JSESSIONID", request.getSession().getId());
+			
+			Path wks = Paths.get(getServletContext().getRealPath("/datas") + "/" + user);			
+			result.put("WKS", wks.toString());
+			
+			Path prj = Paths.get((String) request.getSession().getAttribute("projectPath"));
+			result.put("PRJ", prj.toString());
+			
+			@SuppressWarnings("unchecked")
+			Map<String, QuerySubject> qsFromXML = (Map<String, QuerySubject>) request.getSession().getAttribute("QSFromXML");
+		    List<String> tables = new ArrayList<String>();
+			
+			if(qsFromXML == null) {
+				con = (Connection) request.getSession().getAttribute("con");
+				schema = (String) request.getSession().getAttribute("schema");
+				
+			    DatabaseMetaData metaData = con.getMetaData();
+			    //String[] types = {"TABLE", "VIEW", "SYSTEM TABLE", "GLOBAL TEMPORARY", "LOCAL TEMPORARY", "ALIAS", "SYNONYM"};
+			    String[] types = {"TABLE"};
+			    rst = metaData.getTables(con.getCatalog(), schema, "%", types);	
+			    
+			    while (rst.next()) {
+			    	tables.add(rst.getString("TABLE_NAME"));
+			    }		    
+			    result.put("TABLES", tables);
+			    
+			    rst.close();
+			}
+			else {
+			    result.put("TABLES", qsFromXML.keySet());
+			}
+			result.put("STATUS", "OK");
 			
 		}
-		catch (Exception e){
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			result.put("STATUS", "KO");
+			result.put("EXCEPTION", e.getClass().getName());
+			result.put("MESSAGE", e.getMessage());
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			result.put("STACKTRACE", sw.toString());
 			e.printStackTrace(System.err);
+		}
+
+		finally{
+			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
+			response.getWriter().write(Tools.toJSON(result));
 		}		
-		
 	}
 
 	/**

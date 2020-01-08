@@ -267,10 +267,8 @@ dimensionCols.push({field:"remove", title: '<i class="glyphicon glyphicon-trash"
 $(document)
 .ready(function() {
   // localStorage.setItem('dbmd', null);
-  GetDBMDFromCache();
 
   buildTable($datasTable, qsCols, datas, true);
-  GetDBDataType();
   // buildComboList($('#selectDimension'));
   // GetCognosLocales();
   initLangList();
@@ -3494,13 +3492,18 @@ function ChooseTable(table, sort) {
         url: "GetTables",
         dataType: 'json',
         async: true,
-        success: function(tables) {
-          $.each(tables, function(i, obj){
-            var option = '<option class="fontsize" value="' + obj.name + '">' + obj.name + '</option>';
+        success: function(data) {
+          console.log(data);
+          $.each(data.TABLES, function(i, tableName){
+            var option = '<option class="fontsize" value="' + tableName + '">' + tableName + '</option>';
             table.append(option);
           });
           table.selectpicker('refresh');
+        },
+        error: function(data) {
+            console.log(data);
         }
+
       });
     }
   }
@@ -4122,6 +4125,39 @@ function GetCurrentProject(){
 
         $("#langSelect").selectpicker('val', lang);
         $("#langSelect").selectpicker('refresh');
+
+        if(data.data.resource.jndiName != "XML"){
+          GetDBMDFromCache();
+          GetDBDataType();
+        }
+        else{
+          $.ajax({
+            url: "UploadXML",
+            type: "POST",
+            success: function(data) {
+              console.log(data);
+                if(data.STATUS == "OK"){
+        
+                  var table = $('#tables');
+        
+                  table.empty();
+        
+                  $.each(data.TABLES, function(i, obj){
+                    var option = '<option class="fontsize" value="' + obj + '">' + obj + '</option>';
+                    table.append(option);
+                  });
+                  table.selectpicker('refresh');
+        
+                }
+            },
+            error: function(data) {
+              console.log(data);
+            }
+          });
+        
+        }
+
+
       }
       console.log(data.data);
     }

@@ -723,7 +723,7 @@ public class SendQuerySubjectsServlet extends HttpServlet {
             e.printStackTrace(new PrintWriter(sw));
             result.put("STACKTRACE", sw.toString());
             String[] axisFault = StringUtils.substringsBetween(sw.toString(), "<ns1:messageString>", "</ns1:messageString>");
-            if(axisFault.length > 0) {
+            if(axisFault != null && axisFault.length > 0) {
             	result.put("AXISFAULT", axisFault);
             }
             e.printStackTrace(System.err);			}

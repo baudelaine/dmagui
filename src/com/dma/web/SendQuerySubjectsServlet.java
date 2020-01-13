@@ -14,9 +14,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -159,26 +158,31 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 				throw new Exception();
 			}
 			else {
-			
+				
 				BufferedOutputStream dest = null;
 				int BUFFER = Long.bitCount(Files.size(zip));
 				ZipInputStream zis = new ZipInputStream(new BufferedInputStream(Files.newInputStream(zip))); 
 				ZipEntry entry;
 				while((entry = zis.getNextEntry()) != null) {
-					System.out.println("Extracting: " + entry);
-		            int count;
-		            byte datas[] = new byte[BUFFER];
-		            // write the files to the disk
-		            FileOutputStream fos = new FileOutputStream(projectPath + "/" + entry.getName());
-		            dest = new BufferedOutputStream(fos, BUFFER);
-		            while ((count = zis.read(datas, 0, BUFFER)) 
-		              != -1) {
-		               dest.write(datas, 0, count);
-		            }
-		            dest.flush();
-		            dest.close();
+						System.out.println("Extracting: " + entry);
+			            int count;
+			            byte datas[] = new byte[BUFFER];
+			            // write the files to the disk
+			            FileOutputStream fos = new FileOutputStream(projectPath + "/" + entry.getName());
+			            dest = new BufferedOutputStream(fos, BUFFER);
+			            while ((count = zis.read(datas, 0, BUFFER)) 
+			              != -1) {
+			               dest.write(datas, 0, count);
+			            }
+			            dest.flush();
+			            dest.close();
 		        }
 				zis.close();
+				
+				Path XMLModel = Paths.get((String) request.getSession().getAttribute("projectPath") + "/model.xml");
+				if(Files.exists(XMLModel)){
+					Files.copy(Paths.get(projectPath + "/model.xml"), XMLModel, StandardCopyOption.REPLACE_EXISTING);
+				}
 			}
 			
 			Path cpf = Paths.get(projectPath + "/model.cpf");
@@ -1042,6 +1046,7 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 	protected void createMeasures(String PreviousQSID, String qsID, Boolean first, Map<String, Map<String, String>> mm) {
 
 		QuerySubject query_subject = query_subjects.get(qsID);
+		@SuppressWarnings("unused")
 		QuerySubject query_subject_prev = query_subjects.get(PreviousQSID);
 		
 		if(!mm.containsKey("[DIMENSIONAL].[" + query_subject.getTable_alias() + " Fact]")) {

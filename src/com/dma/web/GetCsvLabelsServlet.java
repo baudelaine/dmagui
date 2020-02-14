@@ -81,15 +81,16 @@ public class GetCsvLabelsServlet extends HttpServlet {
 				String tdCsvFileName = "tableDescription.csv";
 				String clCsvFileName = "columnLabel.csv";
 				String cdCsvFileName = "columnDescription.csv";
+				String lang = null;
+				
 				
 				if(parms.get("lang") != null && parms.get("lang").toString().length() ==2) {
-					String lang = parms.get("lang").toString();
+					lang = parms.get("lang").toString();
 					tlCsvFileName = "tableLabel-" + lang + ".csv";
 					tdCsvFileName = "tableDescription-" + lang + ".csv";
 					clCsvFileName = "columnLabel-" + lang + ".csv";
 					cdCsvFileName = "columnDescription-" + lang + ".csv";
 				}
-				
 				
 				@SuppressWarnings("unchecked")
 				List<String> tables = (List<String>) parms.get("tables");
@@ -105,12 +106,20 @@ public class GetCsvLabelsServlet extends HttpServlet {
 				
 					Properties props = new java.util.Properties();
 					props.put("separator",";");
+					props.put("charset", "ISO-8859-1");
 					Connection csvCon = DriverManager.getConnection("jdbc:relique:csv:" + prj.toString(), props);
 					Statement csvStmt = csvCon.createStatement();
 					ResultSet csvRst = null;
 			
 					if(Files.exists(Paths.get(prj + "/" + tlCsvFileName))){
-						csvRst = csvStmt.executeQuery("SELECT * FROM tableLabel where TABLE_NAME in " + tableInClause);
+						String sql = null;
+						if(lang != null) {
+							sql = "SELECT * FROM tableLabel-" + lang + "where TABLE_NAME in " + tableInClause;
+						}
+						else {
+							sql = "SELECT * FROM tableLabel where TABLE_NAME in " + tableInClause;
+						}
+						csvRst = csvStmt.executeQuery(sql);
 						while(csvRst.next()){
 							tlMap.put(csvRst.getString("Table_Name").toUpperCase(), csvRst.getString("Table_Label"));
 						}
@@ -118,7 +127,14 @@ public class GetCsvLabelsServlet extends HttpServlet {
 					}
 					
 					if(Files.exists(Paths.get(prj + "/" + tdCsvFileName))){
-						csvRst = csvStmt.executeQuery("SELECT * FROM tableDescription where TABLE_NAME in " + tableInClause);
+						String sql = null;
+						if(lang != null) {
+							sql = "SELECT * FROM tableDescription-" + lang + " where TABLE_NAME in " + tableInClause;
+						}
+						else {
+							sql = "SELECT * FROM tableDescription where TABLE_NAME in " + tableInClause;
+						}
+						csvRst = csvStmt.executeQuery(sql);
 						while(csvRst.next()){
 							tdMap.put(csvRst.getString("Table_Name").toUpperCase(), csvRst.getString("Table_Description"));
 						}
@@ -150,8 +166,13 @@ public class GetCsvLabelsServlet extends HttpServlet {
 			
 						if(Files.exists(Paths.get(prj + "/" + clCsvFileName))){
 							Map<String, String> cols = new HashMap<String, String>();
-							String sql = "SELECT * FROM columnLabel where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
-							System.out.println(sql);
+							String sql = null;
+							if(lang != null) {
+								sql = "SELECT * FROM columnLabel-" + lang + " where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
+							}
+							else {
+								sql = "SELECT * FROM columnLabel where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
+							}
 							csvRst = csvStmt.executeQuery(sql);
 							while(csvRst.next()){
 								cols.put(csvRst.getString("Column_Name").toUpperCase(), csvRst.getString("Column_Label"));
@@ -162,7 +183,14 @@ public class GetCsvLabelsServlet extends HttpServlet {
 						
 						if(Files.exists(Paths.get(prj + "/" + cdCsvFileName))){
 							Map<String, String> cols = new HashMap<String, String>();
-							csvRst = csvStmt.executeQuery("SELECT * FROM columnDescription where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause);
+							String sql = null;
+							if(lang != null) {
+								sql = "SELECT * FROM columnDescription-" + lang + " where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
+							}
+							else {
+								sql = "SELECT * FROM columnDescription where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
+							}
+							csvRst = csvStmt.executeQuery(sql);
 							while(csvRst.next()){
 								cols.put(csvRst.getString("Column_Name").toUpperCase(), csvRst.getString("Column_Description"));
 							}

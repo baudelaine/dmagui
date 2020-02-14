@@ -565,12 +565,14 @@ public class FactorySVC {
 			Document document = reader.read(xmlFile);
 
 			Element handle = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[1]/inputparams/param[2]/value");
+			Element qiPathNewItem = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[3]/inputparams/param[1]/value");
 			Element qiName = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[3]/inputparams/param[2]/value");
 			Element qiPath = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[4]/inputparams/param[1]/value");
 			Element xp = (Element) document.selectSingleNode("/bmtactionlog/transaction/action[4]/inputparams/param[2]/value");
 			
 			handle.setText(querySubject);	
 			qiName.setText(name);
+			qiPathNewItem.setText("/O/name[0]/O/" + querySubject + ".[New Query Item]");
 			qiPath.setText("/O/expression[0]/O/" + querySubject + ".[" + name + "]");
 			
 			//gestion des refobj
@@ -595,7 +597,8 @@ public class FactorySVC {
 			
 			xp.setText(str);
 			
-			// System.out.println(document.asXML());
+			System.out.println("createQueryItem(" + querySubject + ", " + name + ", " + exp + ", " + locale + ")");
+			System.out.println(document.asXML());
 			csvc.executeModel(document);
 		} catch (DocumentException ex) {
 			lg(ex.getMessage());
@@ -2629,7 +2632,7 @@ public class FactorySVC {
 		
 		// create a folder in the public folders
 		//folder = "/content/folder[@name='Folder DDTool']";
-		csvc.createPublicFolder(folder);
+//		csvc.createPublicFolder(folder);
 
 		try {
 
@@ -2658,7 +2661,7 @@ public class FactorySVC {
 			Element ElemPackageName = (Element) document.selectSingleNode("/bmtactionlog/transaction[3]/action[@seq=\"1\"]/inputparams/param[4]/value");
 			ElemPackageName.setText(packageName);
 			
-	//		System.out.println(document.asXML());
+			System.out.println(document.asXML());
 			csvc.executeModel(document);
 			} catch (DocumentException ex) {
 				lg(ex.getMessage());

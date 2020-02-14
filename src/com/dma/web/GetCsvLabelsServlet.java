@@ -72,6 +72,9 @@ public class GetCsvLabelsServlet extends HttpServlet {
 			@SuppressWarnings("unchecked")
 			Map<String, DBMDTable> dbmd = (Map<String, DBMDTable>) request.getSession().getAttribute("dbmd");
 			
+			@SuppressWarnings("unchecked")
+			Map<String, QuerySubject> qsFromXML = (Map<String, QuerySubject>) request.getSession().getAttribute("QSFromXML");
+			
 			if(parms != null && parms.get("tables") != null) {
 				
 				String tlCsvFileName = "tableLabel.csv";
@@ -126,14 +129,22 @@ public class GetCsvLabelsServlet extends HttpServlet {
 						
 						List<String> fields = new ArrayList<String>();
 						
-						Connection con = (Connection) request.getSession().getAttribute("con");
-						String schema = (String) request.getSession().getAttribute("schema");
-						DatabaseMetaData metaData = con.getMetaData();
-						ResultSet rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
-						while(rst.next()){
-							fields.add(rst.getString("COLUMN_NAME"));
+						if(qsFromXML != null) {
+							List<Field> fieldsFromXML = qsFromXML.get(table).getFields();
+							for(Field fieldFromXML: fieldsFromXML) {
+								fields.add(fieldFromXML.getField_name());
+							}
+						}						
+						else {
+							Connection con = (Connection) request.getSession().getAttribute("con");
+							String schema = (String) request.getSession().getAttribute("schema");
+							DatabaseMetaData metaData = con.getMetaData();
+							ResultSet rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
+							while(rst.next()){
+								fields.add(rst.getString("COLUMN_NAME"));
+							}
+							if(rst != null) {rst.close();}
 						}
-						rst.close();
 			
 						String columnInClause = "('" + StringUtils.join(fields.iterator(), "','") + "')";
 			

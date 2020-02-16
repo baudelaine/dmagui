@@ -1,6 +1,9 @@
 package com.dma.web;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
@@ -10,12 +13,15 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import javax.servlet.ServletException;
@@ -75,12 +81,17 @@ public class GetCsvLabelsServlet extends HttpServlet {
 			@SuppressWarnings("unchecked")
 			Map<String, QuerySubject> qsFromXML = (Map<String, QuerySubject>) request.getSession().getAttribute("QSFromXML");
 			
-			if(parms != null && parms.get("tables") != null) {
+			if(parms != null && parms.get("aliases") != null) {
 				
 				String tlCsvFileName = "tableLabel.csv";
+				boolean tlIsAlias = false;
 				String tdCsvFileName = "tableDescription.csv";
+				boolean tdIsAlias = false;
 				String clCsvFileName = "columnLabel.csv";
+				boolean clIsAlias = false;
 				String cdCsvFileName = "columnDescription.csv";
+				boolean cdIsAlias = false;
+				
 				String lang = null;
 				
 				
@@ -93,16 +104,26 @@ public class GetCsvLabelsServlet extends HttpServlet {
 				}
 				
 				@SuppressWarnings("unchecked")
-				List<String> tables = (List<String>) parms.get("tables");
+				Map<String , Map<String, String>> aliasesMap = (Map<String , Map<String, String>>) parms.get("aliases");
 				
-				if(tables.size() > 0){
+				if(aliasesMap.size() > 0){
 				
 					Map<String, String> tlMap = new HashMap<String, String>();
 					Map<String, String> tdMap = new HashMap<String, String>();
 					Map<String, Map<String, String>> clMap = new HashMap<String, Map<String, String>>();
 					Map<String, Map<String, String>> cdMap = new HashMap<String, Map<String, String>>();
 					
+					Set<String> tables = new HashSet<String>();
+					Set<String> aliases = new HashSet<String>();
+					
+					for(Entry<String, Map<String, String>> alias: aliasesMap.entrySet()) {
+						tables.add(alias.getValue().get("table"));
+						aliases.add(alias.getValue().get("alias"));
+					}
+					
+					
 					String tableInClause = "('" + StringUtils.join(tables.iterator(), "','") + "')";
+					String aliasInClause = "('" + StringUtils.join(aliases.iterator(), "','") + "')";
 				
 					Properties props = new java.util.Properties();
 					props.put("separator",";");
@@ -112,12 +133,27 @@ public class GetCsvLabelsServlet extends HttpServlet {
 					ResultSet csvRst = null;
 			
 					if(Files.exists(Paths.get(prj + "/" + tlCsvFileName))){
+						
+						String whereClause = "TABLE_NAME";
+						String inClause = tableInClause;
+						String selectClause = "TABLE_NAME, TABLE_LABEL";
+
+						LineNumberReader reader = new LineNumberReader(new BufferedReader(new FileReader(Paths.get(prj + "/" + tlCsvFileName).toFile())));
+						
+						if(reader.readLine().contains("TABLE_ALIAS")){
+							selectClause = "TABLE_ALIAS, TABLE_LABEL";
+							whereClause = "TABLE_ALIAS";
+							inClause = aliasInClause;
+							tlIsAlias = true;
+						}
+						reader.close();
+						
 						String sql = null;
 						if(lang != null) {
-							sql = "SELECT * FROM tableLabel-" + lang + "where TABLE_NAME in " + tableInClause;
+							sql = "SELECT " + selectClause + " FROM tableLabel-" + lang + "where " + whereClause + " in " + inClause;
 						}
 						else {
-							sql = "SELECT * FROM tableLabel where TABLE_NAME in " + tableInClause;
+							sql = "SELECT " + selectClause + " FROM tableLabel where " + whereClause + " in " + inClause;
 						}
 						csvRst = csvStmt.executeQuery(sql);
 						while(csvRst.next()){
@@ -127,12 +163,27 @@ public class GetCsvLabelsServlet extends HttpServlet {
 					}
 					
 					if(Files.exists(Paths.get(prj + "/" + tdCsvFileName))){
+						
+						String selectClause = "TABLE_NAME, TABLE_DESCRIPTION";
+						String whereClause = "TABLE_NAME";
+						String inClause = tableInClause;
+
+						LineNumberReader reader = new LineNumberReader(new BufferedReader(new FileReader(Paths.get(prj + "/" + tdCsvFileName).toFile())));
+						
+						if(reader.readLine().contains("TABLE_ALIAS")){
+							selectClause = "TABLE_ALIAS, TABLE_DESCRIPTION";
+							whereClause = "TABLE_ALIAS";
+							inClause = aliasInClause;
+							tdIsAlias = true;
+						}
+						reader.close();
+						
 						String sql = null;
 						if(lang != null) {
-							sql = "SELECT * FROM tableDescription-" + lang + " where TABLE_NAME in " + tableInClause;
+							sql = "SELECT " + selectClause + " FROM tableDescription-" + lang + " where " + whereClause + " in " + inClause;
 						}
 						else {
-							sql = "SELECT * FROM tableDescription where TABLE_NAME in " + tableInClause;
+							sql = "SELECT " + selectClause + " FROM tableDescription where TABLE_NAME in " + inClause;
 						}
 						csvRst = csvStmt.executeQuery(sql);
 						while(csvRst.next()){
@@ -141,82 +192,198 @@ public class GetCsvLabelsServlet extends HttpServlet {
 						csvRst.close();
 					}
 					
-					for(String table: tables) {
+					if(Files.exists(Paths.get(prj + "/" + clCsvFileName))){
 						
-						List<String> fields = new ArrayList<String>();
+						boolean isAlias = false;
+						String selectClause = "TABLE_NAME, COLUMN_NAME, COLUMN_LABEL";
+						String whereClause = "TABLE_NAME";
+						Set<String> elements = tables;
+						LineNumberReader reader = new LineNumberReader(new BufferedReader(new FileReader(Paths.get(prj + "/" + clCsvFileName).toFile())));
 						
-						if(qsFromXML != null) {
-							List<Field> fieldsFromXML = qsFromXML.get(table).getFields();
-							for(Field fieldFromXML: fieldsFromXML) {
-								fields.add(fieldFromXML.getField_name());
-							}
-						}						
-						else {
-							Connection con = (Connection) request.getSession().getAttribute("con");
-							String schema = (String) request.getSession().getAttribute("schema");
-							DatabaseMetaData metaData = con.getMetaData();
-							ResultSet rst = metaData.getColumns(con.getCatalog(), schema, table, "%");
-							while(rst.next()){
-								fields.add(rst.getString("COLUMN_NAME"));
-							}
-							if(rst != null) {rst.close();}
+						if(reader.readLine().contains("TABLE_ALIAS")){
+							selectClause = "TABLE_ALIAS, COLUMN_NAME, COLUMN_LABEL";
+							whereClause = "TABLE_ALIAS";
+							elements = aliases;
+							isAlias = true;
+							clIsAlias = true;
 						}
-			
-						String columnInClause = "('" + StringUtils.join(fields.iterator(), "','") + "')";
-			
-						if(Files.exists(Paths.get(prj + "/" + clCsvFileName))){
+						reader.close();
+						
+						for(String element: elements) {
+
+							List<String> fields = new ArrayList<String>();
+							String tableName = null;
+							if(isAlias) {
+								tableName = aliasesMap.get(element).get("table");
+							}
+							else {
+								tableName = element;
+							}
+							
+							if(qsFromXML != null) {
+								List<Field> fieldsFromXML = qsFromXML.get(tableName).getFields();
+								for(Field fieldFromXML: fieldsFromXML) {
+									fields.add(fieldFromXML.getField_name());
+								}
+							}						
+							else {
+								Connection con = (Connection) request.getSession().getAttribute("con");
+								String schema = (String) request.getSession().getAttribute("schema");
+								DatabaseMetaData metaData = con.getMetaData();
+								ResultSet rst = metaData.getColumns(con.getCatalog(), schema, tableName, "%");
+								while(rst.next()){
+									fields.add(rst.getString("COLUMN_NAME"));
+								}
+								if(rst != null) {rst.close();}
+							}
+				
+							String columnInClause = "('" + StringUtils.join(fields.iterator(), "','") + "')";
+
 							Map<String, String> cols = new HashMap<String, String>();
 							String sql = null;
 							if(lang != null) {
-								sql = "SELECT * FROM columnLabel-" + lang + " where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
+								sql = "SELECT " + selectClause + " FROM columnLabel-" + lang + " where " + whereClause + " = '" + element + "' and COLUMN_NAME in " + columnInClause;
 							}
 							else {
-								sql = "SELECT * FROM columnLabel where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
+								sql = "SELECT " + selectClause + " FROM columnLabel where " + whereClause + " = '" + element + "' and COLUMN_NAME in " + columnInClause;
 							}
 							csvRst = csvStmt.executeQuery(sql);
 							while(csvRst.next()){
 								cols.put(csvRst.getString("Column_Name").toUpperCase(), csvRst.getString("Column_Label"));
 							}
 							csvRst.close();
-							clMap.put(table.toUpperCase(), cols);
-						}
-						
-						if(Files.exists(Paths.get(prj + "/" + cdCsvFileName))){
-							Map<String, String> cols = new HashMap<String, String>();
-							String sql = null;
-							if(lang != null) {
-								sql = "SELECT * FROM columnDescription-" + lang + " where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
-							}
-							else {
-								sql = "SELECT * FROM columnDescription where TABLE_NAME = '" + table + "' and COLUMN_NAME in " + columnInClause;
-							}
-							csvRst = csvStmt.executeQuery(sql);
-							while(csvRst.next()){
-								cols.put(csvRst.getString("Column_Name").toUpperCase(), csvRst.getString("Column_Description"));
-							}
-							csvRst.close();
-							cdMap.put(table.toUpperCase(), cols);
+							clMap.put(element.toUpperCase(), cols);
+							
 						}
 						
 					}
 					
-					csvStmt.close();
+					if(Files.exists(Paths.get(prj + "/" + cdCsvFileName))){
+						
+						boolean isAlias = false;
+						String selectClause = "TABLE_NAME, COLUMN_NAME, COLUMN_DESCRIPTION";
+						String whereClause = "TABLE_NAME";
+						Set<String> elements = tables;
+						LineNumberReader reader = new LineNumberReader(new BufferedReader(new FileReader(Paths.get(prj + "/" + cdCsvFileName).toFile())));
+						
+						if(reader.readLine().contains("TABLE_ALIAS")){
+							selectClause = "TABLE_ALIAS, COLUMN_NAME, COLUMN_DESCRIPTION";
+							whereClause = "TABLE_ALIAS";
+							elements = aliases;
+							isAlias = true;
+							cdIsAlias = true;
+						}
+						reader.close();
+						
+						for(String element: elements) {
+							
+							List<String> fields = new ArrayList<String>();
+							String tableName = null;
+							if(isAlias) {
+								tableName = aliasesMap.get(element).get("table");
+							}
+							else {
+								tableName = element;
+							}
+							
+							if(qsFromXML != null) {
+								List<Field> fieldsFromXML = qsFromXML.get(tableName).getFields();
+								for(Field fieldFromXML: fieldsFromXML) {
+									fields.add(fieldFromXML.getField_name());
+								}
+							}						
+							else {
+								Connection con = (Connection) request.getSession().getAttribute("con");
+								String schema = (String) request.getSession().getAttribute("schema");
+								DatabaseMetaData metaData = con.getMetaData();
+								ResultSet rst = metaData.getColumns(con.getCatalog(), schema, tableName, "%");
+								while(rst.next()){
+									fields.add(rst.getString("COLUMN_NAME"));
+								}
+								if(rst != null) {rst.close();}
+							}
+				
+							String columnInClause = "('" + StringUtils.join(fields.iterator(), "','") + "')";
+							
+							Map<String, String> cols = new HashMap<String, String>();
+							String sql = null;
+							if(lang != null) {
+								sql = "SELECT " + selectClause + " FROM columnDescription-" + lang + " where " + whereClause + " = '" + element + "' and COLUMN_NAME in " + columnInClause;
+							}
+							else {
+								sql = "SELECT " + selectClause + " FROM columnDescription where " + whereClause + " = '" + element + "' and COLUMN_NAME in " + columnInClause;
+							}
+							
+							csvRst = null;
+							try {
+								csvRst = csvStmt.executeQuery(sql);
+								while(csvRst.next()){
+									cols.put(csvRst.getString("Column_Name").toUpperCase(), csvRst.getString("Column_Description"));
+								}
+							}
+							catch(SQLException e){
+				            	System.out.println("CATCHING SQLEXCEPTION...");
+				            	System.out.println(e.getSQLState());
+				            	System.out.println(e.getMessage());
+				            	
+				            }
+				            finally {
+								if(csvRst != null) {csvRst.close();}
+				            }
+							
+							cdMap.put(element.toUpperCase(), cols);
+							
+						}
+						
+					}
+					
+					
+					if(csvStmt != null) {csvStmt.close();}
 					if(csvCon != null){csvCon.close();}
 					
-					for(String table: tables){
+					
+					for(Entry<String, Map<String, String>> alias: aliasesMap.entrySet()) {
+						String tableName = alias.getValue().get("table");
+						String aliasName = alias.getValue().get("alias");
+						
 						DBMDTable dbmdTable = new DBMDTable();
-						if(dbmd != null && dbmd.containsKey(table)) {
-							dbmdTable = dbmd.get(table);
+						if(dbmd != null && dbmd.containsKey(tableName)) {
+							dbmdTable = dbmd.get(tableName);
 						}
-						dbmdTable.setTable_remarks(tlMap.get(table));
-						dbmdTable.setTable_description(tdMap.get(table));
-	
+						if(dbmd != null && dbmd.containsKey(aliasName)) {
+							dbmdTable = dbmd.get(aliasName);
+						}
+						
+						if(tlIsAlias) {
+							dbmdTable.setTable_remarks(tlMap.get(aliasName));
+						}
+						else {
+							dbmdTable.setTable_remarks(tlMap.get(tableName));
+						}
+
+						if(tdIsAlias) {
+							dbmdTable.setTable_description(tdMap.get(aliasName));
+						}
+						else {
+							dbmdTable.setTable_description(tdMap.get(tableName));
+						}
+						
 						Map<String, DBMDColumn> dbmdColumns = new HashMap<String, DBMDColumn>();
-						if(dbmd != null && dbmd.containsKey(table)) {
+						if(dbmd != null && dbmd.containsKey(tableName)) {
+							dbmdColumns = dbmdTable.getColumns();
+						}
+						if(dbmd != null && dbmd.containsKey(aliasName)) {
 							dbmdColumns = dbmdTable.getColumns();
 						}
 						
-						Map<String, String> cls = (Map<String, String>) clMap.get(table);
+						Map<String, String> cls = null;
+						
+						if(clIsAlias) {
+							cls = (Map<String, String>) clMap.get(aliasName);
+						}
+						else {
+							cls = (Map<String, String>) clMap.get(tableName);
+						}
 						
 						if(cls != null){
 							for(Entry<String, String> cl: cls.entrySet()){
@@ -229,8 +396,15 @@ public class GetCsvLabelsServlet extends HttpServlet {
 								dbmdColumns.get(column_name).setColumn_remarks(column_remarks);
 							}
 						}
-	
-						Map<String, String> cds = (Map<String, String>) cdMap.get(table);
+						
+						Map<String, String> cds = null;
+						
+						if(cdIsAlias) {
+							cds = (Map<String, String>) cdMap.get(aliasName);
+						}
+						else {
+							cds = (Map<String, String>) cdMap.get(tableName);
+						}
 						
 						if(cds != null){
 							for(Entry<String, String> cd: cds.entrySet()){
@@ -243,12 +417,12 @@ public class GetCsvLabelsServlet extends HttpServlet {
 								dbmdColumns.get(column_name).setColumn_description(column_description);
 							}
 						}
-	
+						
 						dbmdTable.setColumns(dbmdColumns);
 						if(dbmd == null) {
 							dbmd = new HashMap<String, DBMDTable>();
 						}
-						dbmd.put(table, dbmdTable);
+						dbmd.put(alias.getKey(), dbmdTable);
 						
 					}
 					

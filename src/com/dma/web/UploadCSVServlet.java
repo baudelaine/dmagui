@@ -1,16 +1,16 @@
 package com.dma.web;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -77,9 +77,36 @@ public class UploadCSVServlet extends HttpServlet {
 					if (!item.isFormField()) {
 						// item is the file (and not a field)
 						csv = Paths.get(prj + "/" + item.getName());
-						Files.copy(new BufferedInputStream(item.getInputStream()), csv, StandardCopyOption.REPLACE_EXISTING);
-						csv.toFile().setReadable(true);
+//						Files.copy(new BufferedInputStream(item.getInputStream()), csv, StandardCopyOption.REPLACE_EXISTING);
+						csv.toFile().setWritable(true);
 
+						String fileName = csv.getFileName().toString();
+						
+						LineNumberReader reader = new LineNumberReader(new BufferedReader(new InputStreamReader(item.getInputStream(), StandardCharsets.ISO_8859_1)));
+
+						List<String> lines = new ArrayList<String>();
+						String line;
+					    while ((line = reader.readLine()) != null) {
+					    	
+					    	if(fileName.startsWith("tableLabel") && line.split(";").length >= 2) {
+					    		lines.add(line.replaceAll("\"", ""));
+					    	}
+					    	if(fileName.startsWith("tableDescription") && line.split(";").length >= 2) {
+					    		lines.add(line.replaceAll("\"", ""));
+					    	}
+					    	if(fileName.startsWith("columnLabel") && line.split(";").length >= 3) {
+					    		lines.add(line.replaceAll("\"", ""));
+					    	}
+					    	if(fileName.startsWith("columnDescription") && line.split(";").length >= 3) {
+					    		lines.add(line.replaceAll("\"", ""));
+					    	}
+					    	if(fileName.equalsIgnoreCase("relation.csv") && line.split(";").length >= 7) {
+					    		lines.add(line.replaceAll("\"", ""));
+					    	}
+					    }
+						
+					    Files.write(csv, lines, StandardCharsets.ISO_8859_1);
+						csv.toFile().setReadable(true);
 					}
 				}
 			}
@@ -98,7 +125,7 @@ public class UploadCSVServlet extends HttpServlet {
 							Files.deleteIfExists(csv);
 							throw new ArrayIndexOutOfBoundsException();
 						}
-						if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;TABLE_LABEL")) {
+						if(reader.getLineNumber() == 1 && ( !line.equalsIgnoreCase("TABLE_NAME;TABLE_LABEL") && !line.equalsIgnoreCase("TABLE_ALIAS;TABLE_LABEL"))) {
 							Files.deleteIfExists(csv);
 							result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
 							throw new Exception("First row have to match column headers.");
@@ -113,7 +140,7 @@ public class UploadCSVServlet extends HttpServlet {
 							Files.deleteIfExists(csv);
 							throw new ArrayIndexOutOfBoundsException();
 						}
-						if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;TABLE_DESCRIPTION")) {
+						if(reader.getLineNumber() == 1 && (!line.equalsIgnoreCase("TABLE_NAME;TABLE_DESCRIPTION") && !line.equalsIgnoreCase("TABLE_ALIAS;TABLE_DESCRIPTION"))) {
 							Files.deleteIfExists(csv);
 							result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
 							throw new Exception("First row have to match column headers.");
@@ -129,7 +156,7 @@ public class UploadCSVServlet extends HttpServlet {
 							Files.deleteIfExists(csv);
 							throw new ArrayIndexOutOfBoundsException();
 						}
-						if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_LABEL")) {
+						if(reader.getLineNumber() == 1 && (!line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_LABEL") && !line.equalsIgnoreCase("TABLE_ALIAS;COLUMN_NAME;COLUMN_LABEL"))) {
 							Files.deleteIfExists(csv);
 							result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
 							throw new Exception("First row have to match column headers.");
@@ -145,7 +172,7 @@ public class UploadCSVServlet extends HttpServlet {
 							Files.deleteIfExists(csv);
 							throw new ArrayIndexOutOfBoundsException();
 						}
-						if(reader.getLineNumber() == 1 && !line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_DESCRIPTION")) {
+						if(reader.getLineNumber() == 1 && (!line.equalsIgnoreCase("TABLE_NAME;COLUMN_NAME;COLUMN_DESCRIPTION") && !line.equalsIgnoreCase("TABLE_ALIAS;COLUMN_NAME;COLUMN_DESCRIPTION"))) {
 							Files.deleteIfExists(csv);
 							result.put("TROUBLESHOOTING", "Have a look at CSV format and e.g.");
 							throw new Exception("First row have to match column headers.");

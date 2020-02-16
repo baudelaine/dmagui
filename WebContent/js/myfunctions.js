@@ -3263,13 +3263,13 @@ function GetQuerySubjects(table_name, table_alias, type, linker_id, index) {
         $("#qsSelect").empty();
         $.each(datas, function(i, data){
           if(data.type.match("Final|Ref")){
-            var option = '<option class="fontsize" value="' + data.table_name + '" data-subtext="' + data.type + '" data-content="">' + data._id + '</option>';
+            var option = '<option class="fontsize" value="' + data._id + '" data-subtext="' + data.type + '" data-content="">' + data._id + '</option>';
             $("#qsSelect").append(option);
           }
         })
         $("#qsSelect").selectpicker('refresh');
         if (data.DATAS.relations.length == 0) {
-          showalert("Relation(s) retrieved from " + data.MODE + ".<br>" + table_name + " has no key.", "", "alert-info", "bottom");
+          showalert("Relation(s) retrieved from " + data.MODE + ".<br>" + table_alias + " has no key.", "", "alert-info", "bottom");
         }
         else{
           showalert(data.DATAS.relations.length + " relation(s) successfully retrieved from " + data.MODE + ".", "", "alert-success", "bottom");
@@ -3943,7 +3943,7 @@ function OpenModel(id){
       $("#qsSelect").empty();
       $.each($datasTable.bootstrapTable("getData"), function(i, data){
         if(data.type.match("Final|Ref")){
-          var option = '<option class="fontsize" value="' + data.table_name + '" data-subtext="' + data.type + '" data-content="">' + data._id + '</option>';
+          var option = '<option class="fontsize" value="' + data._id + '" data-subtext="' + data.type + '" data-content="">' + data._id + '</option>';
           $("#qsSelect").append(option);
         }
       })
@@ -4316,26 +4316,47 @@ function GetCsvLabelsMultiLang(){
       $(this).collapse('hide');
   });
 
-  var tablesSet = new Set();
+  var aliasesSet = new Set();
   $datasTable.bootstrapTable("filterBy", {});
   $.each($datasTable.bootstrapTable('getData'), function(i, qs){
     console.log(qs)
-    tablesSet.add(qs.table_name);
+    aliasesSet.add(qs.table_alias);
     $.each(qs.relations, function(j, relation){
-      tablesSet.add(relation.pktable_name);
+      aliasesSet.add(relation.pktable_alias);
     })
   })
 
-  var tables = getArrayFromSet(tablesSet);
+  var aliases = getArrayFromSet(aliasesSet);
 
-  if(tables.length == 0){
+  if(aliases.length == 0){
     ShowAlert("Import at least one Query Subject to test.", "alert-warning", $("#csvLabelModalAlert"));
     return;
   }
 
+  var qss = {};
+
+  $.each(aliases, function(i, alias){
+
+    $.each($datasTable.bootstrapTable('getData'), function(i, qs){
+
+      if(alias == qs.table_alias){
+        qss[alias] = {};
+        qss[alias].alias = alias;
+        qss[alias].table = qs.table_name;
+      }
+
+      $.each(qs.relations, function(j, relation){
+        aliasesSet.add(relation.pktable_alias);
+      })
+    })
+      
+  })
+
+  
+
   var lang = $("#langSelect").find("option:selected").val();
   var parms = {};
-  parms.tables = tables;
+  parms.aliases = qss;
   parms.lang = lang;
   console.log(parms);
 
@@ -4347,11 +4368,11 @@ function GetCsvLabelsMultiLang(){
 
     success: function(labels) {
       console.log(labels);
-      labels = labels.DATAS;
       if(labels.STATUS == "KO"){
         ShowAlert("ERROR: " + labels.MESSAGE + "<br>TROUBLESHOOTING: " + labels.TROUBLESHOOTING, "alert-danger", $("#csvLabelModalAlert"));
       }
       else{
+        labels = labels.DATAS;
         var currentLanguage = $('#langSelect').find("option:selected").val();
         $.each($datasTable.bootstrapTable('getData'), function(i, qs){
           if(labels[qs.table_name]){
@@ -4430,6 +4451,83 @@ function GetCsvLabelsMultiLang(){
               }
             })
           }
+          if(labels[qs.table_alias]){
+            if(!qs.labels[currentLanguage] || qs.labels[currentLanguage] == ""){
+              if(labels[qs.table_alias].table_remarks){
+                qs.labels[currentLanguage] = labels[qs.table_alias].table_remarks;
+              }
+              else{
+                qs.labels[currentLanguage] = "";
+              }
+            }
+            if(!qs.descriptions[currentLanguage] || qs.descriptions[currentLanguage] == ""){
+              if(labels[qs.table_alias].table_description){
+                qs.descriptions[currentLanguage] = labels[qs.table_alias].table_description;
+              }
+              else{
+                qs.descriptions[currentLanguage] = "";
+              }
+            }
+            if(!qs.label || qs.label == ""){
+              qs.label = qs.labels[currentLanguage];
+            }
+            if(!qs.description || qs.description == ""){
+              qs.description = qs.descriptions[currentLanguage];
+            }
+            $.each(qs.fields, function(j, field){
+              if(labels[qs.table_alias].columns[field.field_name]){
+                if(!field.labels[currentLanguage] || field.labels[currentLanguage] == ""){
+                  if(labels[qs.table_alias].columns[field.field_name].column_remarks){
+                    field.labels[currentLanguage] = labels[qs.table_alias].columns[field.field_name].column_remarks;
+                  }
+                  else{
+                    field.labels[currentLanguage] = "";
+                  }
+                }
+                if(!field.descriptions[currentLanguage] || field.descriptions[currentLanguage] == ""){
+                  if(labels[qs.table_alias].columns[field.field_name].column_description){
+                    field.descriptions[currentLanguage] = labels[qs.table_alias].columns[field.field_name].column_description;
+                  }
+                  else{
+                    field.descriptions[currentLanguage] = "";
+                  }
+                }
+                if(!field.label || field.label == ""){
+                  field.label = field.labels[currentLanguage];
+                }
+                if(!field.description || field.description == ""){
+                  field.description = field.descriptions[currentLanguage];
+                }
+              }
+            })
+            $.each(qs.relations, function(j, relation){
+              if(labels[relation.pktable_alias]){
+                if(!relation.labels[currentLanguage] || relation.labels[currentLanguage] == ""){
+                  if(labels[relation.pktable_alias].table_remarks){
+                    relation.labels[currentLanguage] = labels[relation.pktable_alias].table_remarks;
+                  }
+                  else{
+                    relation.labels[currentLanguage] = "";
+                  }
+                }
+                if(!relation.descriptions[currentLanguage] || relation.descriptions[currentLanguage] == ""){
+                  if(labels[relation.pktable_alias].table_description){
+                    relation.descriptions[currentLanguage] = labels[relation.pktable_alias].table_description;
+                  }
+                  else{
+                    relation.descriptions[currentLanguage] = "";
+                  }
+                }
+                if(!relation.label || relation.label == ""){
+                  relation.label = relation.labels[currentLanguage];
+                }
+                if(!relation.description || relation.description == ""){
+                  relation.description = relation.descriptions[currentLanguage];
+                }
+              }
+            })
+          }
+
         })
         $('#csvLabelModal').modal('toggle');
         $refTab.tab('show');
@@ -4680,8 +4778,41 @@ $("#loadFromXML").click(function(){
 })
 
 
-$("#setHidden").click(function(){
+$('#setHiddenINL').click(function(){
   var table = $("#qsSelect").find("option:selected").val();
+  var lang = $("#langSelect").find("option:selected").val();
+  console.log(table);
+  console.log(lang);
+  if(!table == ""){
+
+    var qsId = $("#qsSelect").find("option:selected").text();
+    var qss = $datasTable.bootstrapTable('getData');
+    var qs;
+    var index;
+    $.each(qss, function(i, o){
+      if(o._id.match(qsId)){
+        qs = o;
+        index = i;
+        console.log(qs);
+        $.each(qs.fields, function(j, field){
+          if(!field.labels[lang]){
+            field.hidden = true;
+          }
+        })
+      }
+    })
+    $refTab.tab('show');
+    $qsTab.tab('show');
+    $datasTable.bootstrapTable('expandRow', index);
+
+  }
+  else{
+    showalert("No Query Subject selected.", "Select a Query Subject first.", "alert-warning", "bottom");
+  }
+})
+
+$("#setHidden").click(function(){
+  var table = $("#qsSelect").find("option:selected").text();
   console.log(table);
   if(!table == ""){
     $("#hiddenQueryModal").modal("toggle");

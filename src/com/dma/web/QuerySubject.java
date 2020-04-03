@@ -29,6 +29,7 @@ public class QuerySubject {
 	String folder = "";
 	Map<String, String> labels = new HashMap<String, String>();
 	Map<String, String> descriptions = new HashMap<String, String>();
+	String merge = "";
 	
 	
 	public String getFolder() {
@@ -174,6 +175,12 @@ public class QuerySubject {
 	}
 	public void addRelations(List<Relation> relations){
 		this.relations.addAll(relations);
+	}
+	public String getMerge() {
+		return merge;
+	}
+	public void setMerge(String merge) {
+		this.merge = merge;
 	}
 	
 }

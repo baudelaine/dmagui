@@ -139,6 +139,7 @@ qsCols.push({field:"filter", title: "filter", editable: {type: "textarea", mode:
 qsCols.push({field:"secFilter", title: "security filters", editable: {type: "textarea", mode: "inline"}, sortable: true});
 qsCols.push({field:"label", title: "label", editable: {type: "textarea", mode: "inline"}, sortable: true});
 qsCols.push({field:"description", title: "Description", sortable: false, editable: {type: "textarea", mode: "inline", rows: 4}});
+qsCols.push({field:"merge", title: "Merge", sortable: false, editable: {type: "textarea", mode: "inline", rows: 2}});
 qsCols.push({field:"recCount", title: "count(*)", sortable: true});
 qsCols.push({field:"recurseCount", title: '<i class="glyphicon glyphicon-repeat" title="Set recurse count"></i>', editable: {
     type: "select",
@@ -333,6 +334,7 @@ $qsTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('hideColumn', 'addRelation');
   $datasTable.bootstrapTable('hideColumn', 'addPKRelation');
   $datasTable.bootstrapTable('showColumn', 'addField');
+  $datasTable.bootstrapTable('showColumn', 'merge');
   // $datasTable.bootstrapTable('showColumn', 'addFolder');
   // $datasTable.bootstrapTable('showColumn', 'addDimensionName');
   $datasTable.bootstrapTable('hideColumn', 'recurseCount');
@@ -367,6 +369,7 @@ $finTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('showColumn', 'addRelation');
   $datasTable.bootstrapTable('hideColumn', 'addDimensionName');
   $datasTable.bootstrapTable('hideColumn', 'addField');
+  $datasTable.bootstrapTable('hideColumn', 'merge');
   $datasTable.bootstrapTable('hideColumn', 'addPKRelation');
   // $datasTable.bootstrapTable('hideColumn', 'addFolder');
   // $datasTable.bootstrapTable('hideColumn', 'addDimension');
@@ -397,6 +400,7 @@ $refTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('showColumn', 'addRelation');
   $datasTable.bootstrapTable('showColumn', 'above');
   $datasTable.bootstrapTable('hideColumn', 'addField');
+  $datasTable.bootstrapTable('hideColumn', 'merge');
   $datasTable.bootstrapTable('showColumn', 'recurseCount');
   $datasTable.bootstrapTable('showColumn', 'nommageRep');
   $datasTable.bootstrapTable('hideColumn', '_id');
@@ -423,6 +427,7 @@ $secTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('hideColumn', 'addDimensionName');
   $datasTable.bootstrapTable('showColumn', 'addRelation');
   $datasTable.bootstrapTable('hideColumn', 'addField');
+  $datasTable.bootstrapTable('hideColumn', 'merge');
   $datasTable.bootstrapTable('showColumn', 'recurseCount');
   $datasTable.bootstrapTable('showColumn', 'nommageRep');
   $datasTable.bootstrapTable('showColumn', 'above');
@@ -446,6 +451,7 @@ $traTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('showColumn', 'recurseCount');
   $datasTable.bootstrapTable('showColumn', 'nommageRep');
   $datasTable.bootstrapTable('showColumn', 'above');
+  $datasTable.bootstrapTable('hideColumn', 'merge');
 });
 
 
@@ -3772,9 +3778,9 @@ function Publish(){
 
 
 function removeSpecialChars(name){
-  var re = new RegExp("[#@&~€$£ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÇçÌÍÎÏìíîïÙÚÛÜùúûüÿÑñŒœ¨%µ\{\}\\[\\]\^\*/<>\?\!;§]", "gi");
-  return name.replace(re, "");
-
+  // var re = new RegExp("[#@&~€$£ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÇçÌÍÎÏìíîïÙÚÛÜùúûüÿÑñŒœ¨%µ\{\}\\[\\]\^\*/<>\?\!;§]", "gi");
+  // return name.replace(re, "");
+  return name;
 }
 
 function SaveModel(){
@@ -3929,6 +3935,7 @@ function OpenModel(id){
     data: "model=" + modelName,
 
 		success: function(data) {
+      console.log(data);
       $datasTable.bootstrapTable("load", data);
       $refTab.tab('show');
       initGlobals();

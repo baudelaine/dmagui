@@ -2967,6 +2967,7 @@ function buildTable($el, cols, data) {
     $el.bootstrapTable('hideColumn', 'addDimensionName');
     $el.bootstrapTable('hideColumn', 'addDimension');
     $el.bootstrapTable('hideColumn', 'addField');
+    $el.bootstrapTable('hideColumn', 'merge');
     $el.bootstrapTable('showColumn', '_id');
     $el.bootstrapTable('hideColumn', 'linker');
     $el.bootstrapTable('hideColumn', 'linker_ids');

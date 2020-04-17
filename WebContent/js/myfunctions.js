@@ -282,6 +282,7 @@ $(document)
   // GetCognosLocales();
   initLangList();
   GetCurrentProject();
+  $viewTab.prop('disabled',true);
 
 })
 .on('hidden.bs.modal', '.modal', function () {
@@ -3900,9 +3901,14 @@ function removeSpecialChars(name){
 
 function SaveModel(){
 
+  if(activeTab == "View"){
+    $qsTab.tab('show');
+  }
+
   $datasTable.bootstrapTable("filterBy", {});
   var modelName;
-	var data = $datasTable.bootstrapTable('getData');
+  var data = $datasTable.bootstrapTable('getData');
+  var view = views;
 
   if (data.length == 0) {
     showalert("SaveModel()", "Nothing to save.", "alert-warning", "bottom");
@@ -3923,8 +3929,11 @@ function SaveModel(){
     if(!modelName){
       return;
     }
-
-    var parms = {modelName: removeSpecialChars(modelName), data: JSON.stringify(data)};
+    console.log(data);
+    var parms = {modelName: removeSpecialChars(modelName), 
+      data: JSON.stringify(data),
+      view: JSON.stringify(view)
+    };
     console.log(parms);
 
    	$.ajax({
@@ -4050,13 +4059,29 @@ function OpenModel(id){
     data: "model=" + modelName,
 
 		success: function(data) {
-      console.log(data);
-      $datasTable.bootstrapTable("load", data);
+      if(data.querySubjects){
+        console.log(data.querySubjects);
+        $datasTable.bootstrapTable("load", data.querySubjects);
+      }
+      else{
+        console.log(data);
+        $datasTable.bootstrapTable("load", data);
+      }
+      if(data.views){
+        $("#viewTab").removeClass('disabled');
+        $viewTab.prop('disabled',false);
+        views = data.views;
+      }
       $refTab.tab('show');
       initGlobals();
       $finTab.tab('show');
       $qsTab.tab('show');
-      var langs = Object.keys(data[0].labels);
+      if(data.querySubjects){
+        var langs = Object.keys(data.querySubjects[0].labels);
+      }
+      else{
+        var langs = Object.keys(data[0].labels);
+      }
       console.log(langs[0]);
       $("#langSelect").selectpicker('val', langs[0]);
       $("#langSelect").selectpicker('refresh');
@@ -5279,6 +5304,7 @@ $("#removeQS").click(function(){
 
 $("#generateViews").click(function(){
   $("#viewTab").removeClass('disabled');
+  $viewTab.prop('disabled',false);
   ViewsGeneratorFromMerge();
 })
 
@@ -6111,6 +6137,58 @@ saveRel.addEventListener('click', function(event){
 
   event.preventDefault();
 }, false);
+
+downloadViews.addEventListener('click', function(event){
+
+  var vues = [];
+
+  if(activeTab.match("Views")){
+    vues = $datasTable.bootstrapTable('getData');
+  }
+  else{
+    vues = views;
+  }
+
+  console.log(views.length);
+
+  if(views.length == 0){
+    showalert("Nothing to do", "No view found.", "alert-info", "bottom");
+    return;
+  }
+
+  var lang = $("#langSelect").find("option:selected").val();
+
+  var parms = {"views": JSON.stringify(vues), "delim": ";", "lang": lang}
+
+  console.log(parms);
+
+  $.ajax({
+    type: 'POST',
+    url: "SaveViews",
+    dataType: 'json',
+    data: JSON.stringify(parms),
+
+    success: function(data) {
+      console.log(data);
+      if(data.STATUS == "OK"){
+        showalert(data.FROM, data.MESSAGE, "alert-success", "bottom");
+        window.location.href = "DownloadViewsAsCSV";
+      }
+      else{
+        showalert(data.FROM, data.MESSAGE, "alert-warning", "bottom");
+      }
+    },
+    error: function(data) {
+      console.log(data);
+    }
+  });
+
+
+
+  
+  event.preventDefault();
+}, false);
+
 
 removeRel.addEventListener('click', function(event){
 

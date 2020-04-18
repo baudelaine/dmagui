@@ -3,9 +3,11 @@ package com.dma.web;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -47,9 +49,13 @@ public class SaveModelServlet extends HttpServlet {
 		Map<String, Object> results = new HashMap<String, Object>();
 		
 		try {
-		
+			
+			System.out.println(parms.get("data"));
+			
 			@SuppressWarnings("unchecked")
 			List<QuerySubject> querySubjects = (List<QuerySubject>) Tools.fromJSON(parms.get("data").toString(), new TypeReference<List<QuerySubject>>(){});		
+			@SuppressWarnings("unchecked")
+			List<QuerySubject> views = (List<QuerySubject>) Tools.fromJSON(parms.get("view").toString(), new TypeReference<List<QuerySubject>>(){});		
 
 			Calendar c = Calendar.getInstance();
 	
@@ -64,7 +70,11 @@ public class SaveModelServlet extends HttpServlet {
 			String fileName = path + "/models/" + modelName + "-" + date + "-" + time + ".json";
 			Path output = Paths.get(fileName);
 			
-			Files.write(output, Tools.toJSON(querySubjects).getBytes());
+			Map<String, List<QuerySubject>> content = new HashMap<String, List<QuerySubject>>();
+			content.put("querySubjects", querySubjects);
+			content.put("views", views);
+			
+			Files.write(output, Arrays.asList(Tools.toJSON(content)), StandardCharsets.UTF_8);
 			
 			results.put("STATUS", "OK");
 			results.put("FILENAME", fileName);

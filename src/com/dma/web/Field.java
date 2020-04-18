@@ -34,6 +34,9 @@ public class Field {
 	String hierarchyName = "";
 	boolean timeDimension = false;
 	Object recCount = 0;
+	String alias = "";
+	String folder = "";
+	String role = "Field";
 	
 	public String getBK() {
 		return BK;
@@ -196,6 +199,24 @@ public class Field {
 	}
 	public void setRecCount(Object recCount) {
 		this.recCount = recCount;
+	}
+	public String getAlias() {
+		return alias;
+	}
+	public void setAlias(String alias) {
+		this.alias = alias;
+	}
+	public String getFolder() {
+		return folder;
+	}
+	public void setFolder(String folder) {
+		this.folder = folder;
+	}
+	public String getRole() {
+		return role;
+	}
+	public void setRole(String role) {
+		this.role = role;
 	}
 	
 }

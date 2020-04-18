@@ -1,4 +1,3 @@
-
 var datas = [];
 var tables = [];
 var modelList = [];
@@ -10,6 +9,7 @@ var $finTab = $("a[href='#Final']");
 var $qsTab = $("a[href='#QuerySubject']");
 var $secTab = $("a[href='#Security']");
 var $traTab = $("a[href='#Translation']");
+var $viewTab = $("a[href='#View']");
 var activeTab = "Final";
 var previousTab;
 var $activeSubDatasTable;
@@ -34,6 +34,7 @@ var currentProject;
 
 var countryCodes = ["ar", "be", "bg", "cs", "da", "de", "el", "en", "es", "et", "fi", "fr", "ga", "hi", "hr", "hu", "in", "is", "it", "iw", "ja", "ko", "lt", "lv", "mk", "ms", "mt", "nl", "no", "pl", "pt", "ro", "ru", "sk", "sl", "sq", "sr", "sv", "th", "tr", "uk", "vi", "zh"];
 var emptyOption = '<option class="fontsize" value="" data-subtext="" data-content=""></option>';
+var views = [];
 
 var relationCols = [];
 // relationCols.push({field:"checkbox", checkbox: "true"});
@@ -253,7 +254,14 @@ var dateDimensions = {
 // fieldCols.push({field:"buildDrillPath", title: '<i class="glyphicon glyphicon-zoom-in"></i>', formatter: "buildDrillPathFormatter", align: "center"});
 fieldCols.push({field:"addDimension", title: '<i class="glyphicon glyphicon-plus-sign" title="Add new dimension"></i>', formatter: "addDimensionFormatter", align: "center"});
 
+fieldCols.push({field:"alias", title: "Alias", sortable: false, editable: {type: "textarea", mode: "inline", rows: 2}});
+fieldCols.push({field:"folder", title: "Folder", sortable: false, editable: {type: "textarea", mode: "inline", rows: 2}});
+fieldCols.push({field:"role", title: "Role", sortable: true });
+
 fieldCols.push({field:"remove", title: '<i class="glyphicon glyphicon-trash"></i>', formatter: "removeFieldFormatter", align: "center"});
+
+
+
 
 var dimensionCols = [];
 dimensionCols.push({field:"index", title: "index", formatter: "indexFormatter", sortable: false});
@@ -274,6 +282,7 @@ $(document)
   // GetCognosLocales();
   initLangList();
   GetCurrentProject();
+  $viewTab.prop('disabled',true);
 
 })
 .on('hidden.bs.modal', '.modal', function () {
@@ -344,6 +353,48 @@ $qsTab.on('shown.bs.tab', function(e) {
   $datasTable.bootstrapTable('hideColumn', 'linker');
   $datasTable.bootstrapTable('hideColumn', 'linker_ids');
   $datasTable.bootstrapTable('hideColumn', 'remove');
+
+  // $("#foldInputGroup").hide().addClass('hidden');
+  // $("#foldInputGroup").hide().addClass('show');
+    // $("#dimInputGroup").addClass('show');
+  // $("#dimInputGroup").hide().addClass('show');
+    // $("#hierInputGroup").addClass('show');
+  // $("#hierInputGroup").hide().addClass('show');
+
+});
+
+$viewTab.on('hide.bs.tab', function(e) {
+  views = $('#DatasTable').bootstrapTable('getData');
+	$('#DatasTable').bootstrapTable('load', datas);
+})
+
+$viewTab.on('shown.bs.tab', function(e) {
+  console.log(views);
+  datas = $('#DatasTable').bootstrapTable('getData');
+	$('#DatasTable').bootstrapTable('load', views);
+  buildTable($datasTable, qsCols, views, true, fieldCols, "fields");
+  $datasTable.bootstrapTable("filterBy", {});
+  // $datasTable.bootstrapTable('showColumn', 'checkbox');
+  $datasTable.bootstrapTable('hideColumn', 'visible');
+  $datasTable.bootstrapTable('hideColumn', 'filter');
+  $datasTable.bootstrapTable('hideColumn', 'secFilter');
+  $datasTable.bootstrapTable('showColumn', 'label');
+  $datasTable.bootstrapTable('hideColumn', 'operate');
+  $datasTable.bootstrapTable('hideColumn', 'addRelation');
+  $datasTable.bootstrapTable('hideColumn', 'addPKRelation');
+  $datasTable.bootstrapTable('showColumn', 'addField');
+  $datasTable.bootstrapTable('hideColumn', 'merge');
+  $datasTable.bootstrapTable('hideColumn', 'table_alias');
+  // $datasTable.bootstrapTable('showColumn', 'addFolder');
+  // $datasTable.bootstrapTable('showColumn', 'addDimensionName');
+  $datasTable.bootstrapTable('hideColumn', 'recurseCount');
+  $datasTable.bootstrapTable('hideColumn', '_id');
+  $datasTable.bootstrapTable('hideColumn', 'above');
+  $datasTable.bootstrapTable('hideColumn', 'folder');
+  $datasTable.bootstrapTable('hideColumn', 'linker');
+  $datasTable.bootstrapTable('hideColumn', 'linker_ids');
+  $datasTable.bootstrapTable('hideColumn', 'remove');
+  $datasTable.bootstrapTable('hideColumn', 'recCount');
 
   // $("#foldInputGroup").hide().addClass('hidden');
   // $("#foldInputGroup").hide().addClass('show');
@@ -1947,6 +1998,27 @@ function buildDimensionTable($el, cols, data, fld, qs){
 
 function buildFieldTable($el, cols, data, qs){
 
+  console.log(cols);
+  console.log(activeTab);
+  var detailView = true;
+
+  if(activeTab.match("Query Subject")){
+    cols = $.grep(cols, function(el, idx) {return el.field == "folder"}, true);
+    cols = $.grep(cols, function(el, idx) {return el.field == "alias"}, true);
+    cols = $.grep(cols, function(el, idx) {return el.field == "role"}, true);
+  }
+
+  if(activeTab.match("View")){
+    cols = $.grep(cols, function(el, idx) {return el.field == "traduction"}, true);
+    cols = $.grep(cols, function(el, idx) {return el.field == "measure"}, true);
+    cols = $.grep(cols, function(el, idx) {return el.field == "dimensions"}, true);
+    cols = $.grep(cols, function(el, idx) {return el.field == "addDimension"}, true);
+    cols = $.grep(cols, function(el, idx) {return el.field == "displayType"}, true);
+    detailView = false;
+  }
+
+  console.log(cols);
+
       $el.bootstrapTable({
           columns: cols,
           // url: url,
@@ -1958,7 +2030,7 @@ function buildFieldTable($el, cols, data, qs){
           // sortName: "recCountPercent",
           // sortOrder: "desc",
           idField: "index",
-          detailView: true,
+          detailView: detailView,
 
           onExpandRow: function (index, row, $detail) {
               console.log(index);
@@ -1999,11 +2071,19 @@ function buildFieldTable($el, cols, data, qs){
 
           onPreBody: function(data){
             //Fires before the table body is rendered, the parameters contain: data: the rendered data.
+            console.log(data);
+            if(data.length > 0){
+              $.each(data, function(index, dimension){
+                if(!dimension.attributs){
+                  dimension.attributs = '';
+                }
+              })
+            }
           },
 
           onPostBody: function(data){
             // Fires after the table body is rendered and available in the DOM, the parameters contain: data: the rendered data.
-          },
+        },
 
           onResetView: function(){
 
@@ -2064,7 +2144,7 @@ function buildFieldTable($el, cols, data, qs){
                 break;
 
               case "remove":
-                if(activeTab.match("Query Subject")){
+                if(activeTab.match("Query Subject|View")){
                   if(row.custom == true){
                     $el.bootstrapTable('remove', {
                         field: 'index',
@@ -2774,7 +2854,7 @@ function buildTable($el, cols, data) {
     $el.bootstrapTable({
         columns: cols,
         // url: url,
-        // data: data,
+        data: data,
         search: false,
 				showRefresh: false,
 				showColumns: false,
@@ -3078,6 +3158,9 @@ function GetNewField($el) {
             console.log(currentLanguage);
             data.labels[currentLanguage] = '';
             data.descriptions[currentLanguage] = '';
+            if(activeTab.match("View")){
+              data.role = "Folder"
+            }
             AddRow($el, data);
           },
           error: function(data) {
@@ -3777,6 +3860,38 @@ function Publish(){
 
 }
 
+function ViewsGeneratorFromMerge(){
+
+  $datasTable.bootstrapTable("filterBy", {});
+  var data = $datasTable.bootstrapTable('getData');
+  
+  var parms = {data: JSON.stringify(data)};
+  console.log(parms);
+
+  $.ajax({
+    type: 'POST',
+    url: "ViewsGeneratorFromMerge",
+    dataType: 'json',
+    data: JSON.stringify(parms),
+
+    success: function(data) {
+      // $('#DatasTable').bootstrapTable('load', data);
+      console.log(data);
+      if(data.STATUS == "OK"){
+        showalert(data.FROM, data.MESSAGE, "alert-success", "bottom");
+        console.log(Object.values(data.DATAS));
+        views = Object.values(data.DATAS);
+      }
+      else{
+        showalert(data.ERROR, data.MESSAGE, "alert-danger");
+      }
+    },
+    error: function(data) {
+      showalert("Publish()", "Publish failed.", "alert-danger", "bottom");
+    }
+  });  
+
+}
 
 function removeSpecialChars(name){
   // var re = new RegExp("[#@&~€$£ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÇçÌÍÎÏìíîïÙÚÛÜùúûüÿÑñŒœ¨%µ\{\}\\[\\]\^\*/<>\?\!;§]", "gi");
@@ -3786,9 +3901,14 @@ function removeSpecialChars(name){
 
 function SaveModel(){
 
+  if(activeTab == "View"){
+    $qsTab.tab('show');
+  }
+
   $datasTable.bootstrapTable("filterBy", {});
   var modelName;
-	var data = $datasTable.bootstrapTable('getData');
+  var data = $datasTable.bootstrapTable('getData');
+  var view = views;
 
   if (data.length == 0) {
     showalert("SaveModel()", "Nothing to save.", "alert-warning", "bottom");
@@ -3809,8 +3929,11 @@ function SaveModel(){
     if(!modelName){
       return;
     }
-
-    var parms = {modelName: removeSpecialChars(modelName), data: JSON.stringify(data)};
+    console.log(data);
+    var parms = {modelName: removeSpecialChars(modelName), 
+      data: JSON.stringify(data),
+      view: JSON.stringify(view)
+    };
     console.log(parms);
 
    	$.ajax({
@@ -3936,13 +4059,29 @@ function OpenModel(id){
     data: "model=" + modelName,
 
 		success: function(data) {
-      console.log(data);
-      $datasTable.bootstrapTable("load", data);
+      if(data.querySubjects){
+        console.log(data.querySubjects);
+        $datasTable.bootstrapTable("load", data.querySubjects);
+      }
+      else{
+        console.log(data);
+        $datasTable.bootstrapTable("load", data);
+      }
+      if(data.views){
+        $("#viewTab").removeClass('disabled');
+        $viewTab.prop('disabled',false);
+        views = data.views;
+      }
       $refTab.tab('show');
       initGlobals();
       $finTab.tab('show');
       $qsTab.tab('show');
-      var langs = Object.keys(data[0].labels);
+      if(data.querySubjects){
+        var langs = Object.keys(data.querySubjects[0].labels);
+      }
+      else{
+        var langs = Object.keys(data[0].labels);
+      }
       console.log(langs[0]);
       $("#langSelect").selectpicker('val', langs[0]);
       $("#langSelect").selectpicker('refresh');
@@ -5163,6 +5302,12 @@ $("#removeQS").click(function(){
 
 })
 
+$("#generateViews").click(function(){
+  $("#viewTab").removeClass('disabled');
+  $viewTab.prop('disabled',false);
+  ViewsGeneratorFromMerge();
+})
+
 $('#foldSelect').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
 
 });
@@ -5992,6 +6137,58 @@ saveRel.addEventListener('click', function(event){
 
   event.preventDefault();
 }, false);
+
+downloadViews.addEventListener('click', function(event){
+
+  var vues = [];
+
+  if(activeTab.match("Views")){
+    vues = $datasTable.bootstrapTable('getData');
+  }
+  else{
+    vues = views;
+  }
+
+  console.log(views.length);
+
+  if(views.length == 0){
+    showalert("Nothing to do", "No view found.", "alert-info", "bottom");
+    return;
+  }
+
+  var lang = $("#langSelect").find("option:selected").val();
+
+  var parms = {"views": JSON.stringify(vues), "delim": ";", "lang": lang}
+
+  console.log(parms);
+
+  $.ajax({
+    type: 'POST',
+    url: "SaveViews",
+    dataType: 'json',
+    data: JSON.stringify(parms),
+
+    success: function(data) {
+      console.log(data);
+      if(data.STATUS == "OK"){
+        showalert(data.FROM, data.MESSAGE, "alert-success", "bottom");
+        window.location.href = "DownloadViewsAsCSV";
+      }
+      else{
+        showalert(data.FROM, data.MESSAGE, "alert-warning", "bottom");
+      }
+    },
+    error: function(data) {
+      console.log(data);
+    }
+  });
+
+
+
+  
+  event.preventDefault();
+}, false);
+
 
 removeRel.addEventListener('click', function(event){
 

@@ -1,6 +1,13 @@
 package com.dma.nicomains;
 
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -11,9 +18,20 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
+import org.dom4j.io.OutputFormat;
+import org.dom4j.io.SAXReader;
+import org.dom4j.io.SAXWriter;
+import org.dom4j.io.XMLWriter;
+import org.xml.sax.SAXException;
+
 
 import com.dma.svc.CognosSVC;
 import com.dma.svc.FactorySVC;
@@ -94,6 +112,7 @@ public class MainTravail_dmaxml_POC_views_algo {
 		filterMapApply = new HashMap<String, String>();
 //		viewsMap = new HashMap<String, String>();
 		
+		System.out.println("Start");
 		//scan final views
 		for(Entry<String, QuerySubject> query_subject: query_subjects.entrySet()){
 			
@@ -137,7 +156,7 @@ public class MainTravail_dmaxml_POC_views_algo {
 				for(Field field: query_subject.getValue().getFields()) {
 					
 					//views
-					if(!query_subject.getValue().getMerge().equals("")) {
+					if(!query_subject.getValue().getMerge().equals("") && !field.isHidden()) {
 						String viewsTab[] = StringUtils.split(query_subject.getValue().getMerge(), ";");
 						
 						for (int i=0;i<viewsTab.length;i++) {
@@ -149,6 +168,7 @@ public class MainTravail_dmaxml_POC_views_algo {
 							f.setField_name(field.getField_name());
 							String ex = "[DATA].[" + query_subject.getValue().getTable_alias() + "].[" + field.getField_name() + "]";
 							f.setExpression(ex);
+//							f.setRole("Field");
 							qsView.addField(f);
 						}
 					}
@@ -160,14 +180,14 @@ public class MainTravail_dmaxml_POC_views_algo {
 			
 		}
 				
-		// travail vues Résultats
+		// Pour visualiser dans la console
+/*
 		for(Entry<String, QuerySubject> query_subject: query_subjects_views.entrySet()){
-			System.out.println(query_subject.getValue().get_id());
 			for(Field field: query_subject.getValue().getFields()) {
-				System.out.println(query_subject.getValue().get_id() + " *** " + field.get_id() + " * * " + field.getField_name() + " * * * * " + field.getExpression());
+				System.out.println(query_subject.getValue().get_id() + " *** " + field.get_id() + " * * " + field.getField_name() + " * * * * " + field.getExpression() + " *  *  * " + field.isHidden());
 			}
 		}
-
+*/
 		Tools.toJSON(query_subjects_views);
 		/* Ta sortie */
 	}
@@ -249,6 +269,20 @@ public class MainTravail_dmaxml_POC_views_algo {
 				String filterNameSpaceSource = "[" + namespaceName+ "]";
 				if (namespaceID.equals("Ref")) {
 					
+					//Ajout du field de type RefView dans la vue de type Final
+					if(!query_subjects.get(pkAlias + namespaceID).getMerge().equals("") && !query_subjects.get(pkAlias + namespaceID).getMerge().contains(mergeView)) {
+						QuerySubject qsview = query_subjects_views.get(mergeView);
+						Field f = new Field();
+						f.set_id(qsFinalName + gDirNameCurrent);
+						f.setField_name("(" + query_subjects.get(pkAlias + namespaceID).getMerge() + ") " + qsFinalName + gDirNameCurrent);
+						String ex = qsFinalName + gDirNameCurrent;
+						f.setExpression(ex);
+//						f.setRole("FolderRefView");
+						qsview.addField(f);
+						mergeView = query_subjects.get(pkAlias + namespaceID).getMerge();
+					}
+					//End linked view
+					
 					//QsViews create Ref view
 					if(!query_subjects.get(pkAlias + namespaceID).getMerge().equals("")) {
 						String viewsTab[] = StringUtils.split(query_subjects.get(pkAlias + namespaceID).getMerge(), ";");
@@ -270,21 +304,40 @@ public class MainTravail_dmaxml_POC_views_algo {
 						}
 					}
 					//end QsViews
+					String viewsTab[] = StringUtils.split(query_subjects.get(pkAlias + namespaceID).getMerge(), ";");
 					
 					for(Field field: query_subjects.get(pkAlias + namespaceID).getFields()){
 						
 						if (rel.isRef()) {
-														
-							//views
-							if(!query_subjects.get(pkAlias + namespaceID).getMerge().equals("")) {
-								String viewsTab[] = StringUtils.split(query_subjects.get(pkAlias + namespaceID).getMerge(), ";");
+		
+							//views field
+							if(!query_subjects.get(pkAlias + namespaceID).getMerge().equals("") && !field.isHidden()) {
 								
 								for (int j=0;j<viewsTab.length;j++) {
 									String viewName = viewsTab[j];
 									if (viewName.equals(mergeView)) {
 										QuerySubject qsView = query_subjects_views.get(viewName);
 										Field f = new Field();
-										f = field;
+										//Copie des éléments du field afin d'éviter la copie d'objet qui n'est pas adapté ! f = field redonne une référence existante 
+										//lorsqu'on repasser par un field ou nous sommes déjà passé. 
+										f.setField_type(field.getField_type());
+										f.setPk(field.isPk());
+										f.setIndex(field.isIndex());
+										f.setLabel(field.getLabel());
+										f.setField_size(field.getField_size());
+										f.setNullable(field.getNullable());
+										f.setTraduction(field.isTraduction());
+										f.setHidden(field.isHidden());
+										f.setTimezone(field.isTimezone());
+										f.setIcon(field.getIcon());
+										f.setDisplayType(field.getDisplayType());
+										f.setDescription(field.getDescription());
+										f.setLabels(field.getLabels());
+										f.setDescriptions(field.getDescriptions());
+										f.setMeasure(field.getMeasure());
+										f.setCustom(field.isCustom());
+//										f.setRole("Field");
+										
 										if (qsView.getType().equals("Final")) {
 											f.set_id(qsFinalName + gDirNameCurrent + "." + field.getField_name());
 											f.setField_name(field.getField_name());
@@ -300,7 +353,7 @@ public class MainTravail_dmaxml_POC_views_algo {
 									}
 								}
 							}
-							//end views	
+							//end views field							
 						}
 					}
 				}

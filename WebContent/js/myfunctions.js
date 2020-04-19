@@ -178,6 +178,7 @@ var fieldCols = [];
 // fieldCols.push({field:"checkbox", checkbox: "true"});
 fieldCols.push({field:"index", title: "index", formatter: "indexFormatter", sortable: false});
 fieldCols.push({field:"field_name", title: "Name", sortable: true });
+fieldCols.push({field:"alias", title: "Alias", sortable: false, editable: {type: "textarea", mode: "inline", rows: 2}});
 fieldCols.push({class:"field_type", field:"field_type", title: "Type", editable: {type: "text", mode: "inline"}, sortable: true});
 
 var customFieldType = {
@@ -254,7 +255,6 @@ var dateDimensions = {
 // fieldCols.push({field:"buildDrillPath", title: '<i class="glyphicon glyphicon-zoom-in"></i>', formatter: "buildDrillPathFormatter", align: "center"});
 fieldCols.push({field:"addDimension", title: '<i class="glyphicon glyphicon-plus-sign" title="Add new dimension"></i>', formatter: "addDimensionFormatter", align: "center"});
 
-fieldCols.push({field:"alias", title: "Alias", sortable: false, editable: {type: "textarea", mode: "inline", rows: 2}});
 fieldCols.push({field:"folder", title: "Folder", sortable: false, editable: {type: "textarea", mode: "inline", rows: 2}});
 fieldCols.push({field:"role", title: "Role", sortable: true });
 

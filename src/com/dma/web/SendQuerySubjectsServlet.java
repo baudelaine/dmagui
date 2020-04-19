@@ -62,6 +62,7 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 	Map<String, String> filterMapApply;
 	Map<String, Boolean> folerMap;
 	List<QuerySubject> qsList = null;
+	List<QuerySubject> viewList = null;
 	CognosSVC csvc;
 	FactorySVC fsvc;
 
@@ -88,10 +89,12 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 			
 			String projectName = (String) parms.get("projectName");
 			String data = (String) parms.get("data");
+			String view = (String) parms.get("view");
 			
 			ObjectMapper mapper = new ObjectMapper();
 	        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 	        qsList = Arrays.asList(mapper.readValue(data, QuerySubject[].class));
+	        viewList = Arrays.asList(mapper.readValue(data, QuerySubject[].class));
 	        
 	        query_subjects = new HashMap<String, QuerySubject>();
 	        Map<String, Integer> recurseCount = new HashMap<String, Integer>();

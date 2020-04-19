@@ -3819,6 +3819,12 @@ function Publish(){
     return;
   }
 
+  if(activeTab == "View"){
+    $qsTab.tab('show');
+  }
+
+  var view = views;
+
   bootbox.prompt({
     size: "small",
     title: "Enter project name",
@@ -3829,7 +3835,11 @@ function Publish(){
         return;
       }
 
-      var parms = {projectName: projectName, data: JSON.stringify(data)};
+      var parms = {projectName: projectName,
+        data: JSON.stringify(data),
+        view: JSON.stringify(view)
+      };
+
       console.log(parms);
 
       $.ajax({
@@ -3887,7 +3897,7 @@ function ViewsGeneratorFromMerge(){
       }
     },
     error: function(data) {
-      showalert("Publish()", "Publish failed.", "alert-danger", "bottom");
+      showalert("ViewsGeneratorFromMerge()", "Generating failed.", "alert-danger", "bottom");
     }
   });  
 

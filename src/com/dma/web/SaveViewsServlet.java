@@ -69,7 +69,7 @@ public class SaveViewsServlet extends HttpServlet {
 				List<QuerySubject> views = (List<QuerySubject>) Tools.fromJSON(parms.get("views").toString(), new TypeReference<List<QuerySubject>>(){});				
 				
 				String header = "TABLE_NAME" + delim + "TABLE_TYPE" + delim + "TABLE_LABEL" + delim + "TABLE_DESCRIPTION" + delim +
-						"FIELD_NAME" + delim + "FIELD_TYPE" + delim + "FIELD_LABEL" + delim + "FIELD_DESCRIPTION" + delim +
+						"FIELD_ID" + delim  + "FIELD_NAME" + delim + "FIELD_TYPE" + delim + "FIELD_LABEL" + delim + "FIELD_DESCRIPTION" + delim +
 						"EXPRESSION" + delim + "HIDDEN" + delim + "ICON" + delim + "ALIAS" + delim + "FOLDER" + delim + "ROLE";				
 				
 				List<String> lines = new ArrayList<String>();
@@ -90,7 +90,7 @@ public class SaveViewsServlet extends HttpServlet {
 					String tbl = tblBuf.toString();
 					for(Field field: view.getFields()) {
 						StringBuffer fldBuf = new StringBuffer();
-						fldBuf.append(tbl + delim + field.getField_name() + delim + field.getField_type());
+						fldBuf.append(tbl + delim + field.get_id() + delim + field.getField_name() + delim + field.getField_type());
 						String flabel = "";
 						if(field.getLabels().containsKey(lang)) {
 							flabel = field.getLabels().get(lang);

@@ -122,6 +122,30 @@ public class ViewsGeneratorFromMergeServlet extends HttpServlet {
 						//End Views
 					}
 				}
+				//scan final views
+				for(Entry<String, QuerySubject> query_subject: query_subjects.entrySet()){
+					
+					if (query_subject.getValue().getType().equalsIgnoreCase("Final")){
+						
+						//Views
+						if(!query_subject.getValue().getMerge().equals("")) {
+							String viewsTab[] = StringUtils.split(query_subject.getValue().getMerge(), ";");
+							
+							for (int i=0;i<viewsTab.length;i++) {
+								String viewName = viewsTab[i];
+								QuerySubject qsView = new QuerySubject();
+								qsView.set_id(viewName);
+								qsView.setTable_name(viewName);
+								qsView.setTable_alias(viewName);
+								qsView.setType("Final");
+								if (query_subjects_views.get(qsView.getTable_alias()) == null) {
+									query_subjects_views.put(qsView.getTable_alias(), qsView);
+								}		
+							}
+						}
+						//End Views
+					}
+				}
 				//scan final view
 								
 				for(Entry<String, QuerySubject> query_subject: query_subjects.entrySet()){
@@ -135,13 +159,15 @@ public class ViewsGeneratorFromMergeServlet extends HttpServlet {
 				        	recurseCount.put(qs.getTable_alias(), 0);
 				        }
 						
-						f1(query_subject.getValue().getTable_alias(), query_subject.getValue().getTable_alias(), "", "[DATA].[" + query_subject.getValue().getTable_alias() + "]", query_subject.getValue().getTable_alias(), recurseCount, "Final", filterNameSpaceSource, query_subject.getValue().getMerge(), "");
+						if (!query_subject.getValue().getMerge().equals("")) {
+							f1(query_subject.getValue().getTable_alias(), query_subject.getValue().getTable_alias(), "", "[DATA].[" + query_subject.getValue().getTable_alias() + "]", query_subject.getValue().getTable_alias(), recurseCount, "Final", filterNameSpaceSource, query_subject.getValue().getMerge(), "");
+						}
 						//end f1		
 
 						for(Field field: query_subject.getValue().getFields()) {
 							
 							//views
-							if(!query_subject.getValue().getMerge().equals("")) {
+							if(!query_subject.getValue().getMerge().equals("") && !field.isHidden()) {
 								String viewsTab[] = StringUtils.split(query_subject.getValue().getMerge(), ";");
 								
 								for (int i=0;i<viewsTab.length;i++) {
@@ -153,13 +179,12 @@ public class ViewsGeneratorFromMergeServlet extends HttpServlet {
 									f.setField_name(field.getField_name());
 									String ex = "[DATA].[" + query_subject.getValue().getTable_alias() + "].[" + field.getField_name() + "]";
 									f.setExpression(ex);
+									f.setRole("Field");
 									qsView.addField(f);
 								}
 							}
-							//end views
-							
+							//end views	
 						}
-						// end label
 					}
 					
 				}
@@ -232,20 +257,13 @@ public class ViewsGeneratorFromMergeServlet extends HttpServlet {
 		}
 
 		for(Relation rel: query_subject.getRelations()){
-			if(rel.isRef() || rel.isSec() || rel.isTra()){
+			if(rel.isRef()){
 				
 				String namespaceID = "";
 				String namespaceName = "";
-				if(rel.isRef()) {
-					namespaceID = "Ref";
-					namespaceName = "REF";
-				} else if (rel.isSec()) {
-					namespaceID = "Sec";
-					namespaceName = "SEC";
-				} else {
-					namespaceID = "Tra";
-					namespaceName = "TRA";
-				}
+				namespaceID = "Ref";
+				namespaceName = "REF";
+				
 								
 				String pkAlias = rel.getPktable_alias();
 				Integer i = gRefMap.get(pkAlias);
@@ -288,6 +306,22 @@ public class ViewsGeneratorFromMergeServlet extends HttpServlet {
 				String filterNameSpaceSource = "[" + namespaceName+ "]";
 				if (namespaceID.equals("Ref")) {
 					
+					//Ajout du field de type RefView dans la vue de type Final
+					if(!query_subjects.get(pkAlias + namespaceID).getMerge().equals("") && !query_subjects.get(pkAlias + namespaceID).getMerge().contains(mergeView)) {
+						QuerySubject qsview = query_subjects_views.get(mergeView);
+						Field f = new Field();
+						f.set_id(qsFinalName + gDirNameCurrent);
+						f.setField_name("(" + query_subjects.get(pkAlias + namespaceID).getMerge() + ") " + qsFinalName + gDirNameCurrent);
+						String ex = "[DATA].[" + qsFinalName + "].[" + gDirNameCurrent.substring(1);
+						f.setExpression(ex);
+						f.setRole("FolderRefView");
+//						System.out.println(f.get_id() + " * * * " + f.getRole());
+						qsview.addField(f);
+						mergeView = query_subjects.get(pkAlias + namespaceID).getMerge();
+						gDirNameCurrentView = "*";
+					}
+					//End linked view
+										
 					//QsViews create Ref view
 					if(!query_subjects.get(pkAlias + namespaceID).getMerge().equals("")) {
 						String viewsTab[] = StringUtils.split(query_subjects.get(pkAlias + namespaceID).getMerge(), ";");
@@ -302,28 +336,45 @@ public class ViewsGeneratorFromMergeServlet extends HttpServlet {
 							qsView.setType("Ref");
 							if (query_subjects_views.get(qsView.getTable_alias()) == null) {
 								query_subjects_views.put(qsView.getTable_alias(), qsView);
-								String gDirNameCurrentTab[] = StringUtils.split(gDirNameCurrent,".");
-								gDirNameCurrentView = gDirNameCurrentTab[gDirNameCurrentTab.length-1];
 								mergeView = query_subjects.get(pkAlias + namespaceID).getMerge();
 							}
 						}
 					}
 					//end QsViews
+					String viewsTab[] = StringUtils.split(query_subjects.get(pkAlias + namespaceID).getMerge(), ";");
 					
 					for(Field field: query_subjects.get(pkAlias + namespaceID).getFields()){
 						
 						if (rel.isRef()) {
-														
-							//views
-							if(!query_subjects.get(pkAlias + namespaceID).getMerge().equals("")) {
-								String viewsTab[] = StringUtils.split(query_subjects.get(pkAlias + namespaceID).getMerge(), ";");
+		
+							//views field
+							if(!query_subjects.get(pkAlias + namespaceID).getMerge().equals("") && !field.isHidden()) {
 								
 								for (int j=0;j<viewsTab.length;j++) {
 									String viewName = viewsTab[j];
 									if (viewName.equals(mergeView)) {
 										QuerySubject qsView = query_subjects_views.get(viewName);
 										Field f = new Field();
-										f = field;
+										//Copie des éléments du field afin d'éviter la copie d'objet qui n'est pas adapté ! f = field redonne une référence existante 
+										//lorsqu'on repasser par un field ou nous sommes déjà passé. 
+										f.setField_type(field.getField_type());
+										f.setPk(field.isPk());
+										f.setIndexed(field.isIndexed());
+										f.setLabel(field.getLabel());
+										f.setField_size(field.getField_size());
+										f.setNullable(field.getNullable());
+										f.setTraduction(field.isTraduction());
+										f.setHidden(field.isHidden());
+										f.setTimezone(field.isTimezone());
+										f.setIcon(field.getIcon());
+										f.setDisplayType(field.getDisplayType());
+										f.setDescription(field.getDescription());
+										f.setLabels(field.getLabels());
+										f.setDescriptions(field.getDescriptions());
+										f.setMeasure(field.getMeasure());
+										f.setCustom(field.isCustom());
+										f.setRole("Field");
+										
 										if (qsView.getType().equals("Final")) {
 											f.set_id(qsFinalName + gDirNameCurrent + "." + field.getField_name());
 											f.setField_name(field.getField_name());
@@ -332,24 +383,32 @@ public class ViewsGeneratorFromMergeServlet extends HttpServlet {
 										} else {
 											f.set_id(gDirNameCurrentView + "." + field.getField_name());
 											f.setField_name(field.getField_name());
-											String ex = "*." + gDirNameCurrentView + "." + field.getField_name() + "]";
-											f.setExpression(ex);
+											String ex = gDirNameCurrentView + "." + field.getField_name() + "]";
+											f.setExpression(ex);		
 										}
-										qsView.addField(f);
+										Boolean addField = true;
+										for(Field ff: qsView.getFields()) {
+											if (ff.get_id().equals(f.get_id())) {
+												addField = false;
+											}
+										}
+										if (addField) {
+											qsView.addField(f);
+										}			
 									}
 								}
 							}
-							//end views	
+							//end views field							
 						}
 					}
+					
 				}
 				//end only for Ref
 
-								
-				f1(pkAlias, qsFinalName + gDirNameCurrent, gDirNameCurrent, qsFinal, qsFinalName, copyRecurseCount, namespaceID, filterNameSpaceSource, mergeView, gDirNameCurrentView);	
+				if (!query_subject.getMerge().equals("")) {
+					f1(pkAlias, qsFinalName + gDirNameCurrent, gDirNameCurrent, qsFinal, qsFinalName, copyRecurseCount, namespaceID, filterNameSpaceSource, mergeView, gDirNameCurrentView);
+				}
 			}
 		}
 	}	
-	
-	
 }

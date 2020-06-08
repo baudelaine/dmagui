@@ -77,10 +77,10 @@ public class XML2CSV {
 				String qifName =  getTextContent(nl.item(i), "name");
 				if(! qifName.startsWith(".")) {
 					line = qsName + ";" + qifName + ";" + folder + ";Folder";
-					NodeList subNl = nl.item(i).getChildNodes();
-					recurse(qsName, subNl, qifName);
 					System.out.println(line);
 					lines.add(line);
+					NodeList subNl = nl.item(i).getChildNodes();
+					recurse(qsName, subNl, qifName);
 				}
 				else {
 					line = qsName + ";" + qifName + ";" + folder + ";FolderRefView";

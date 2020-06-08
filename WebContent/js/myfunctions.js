@@ -4934,6 +4934,61 @@ $("#loadFromXML").click(function(){
 
 })
 
+$('#CSVViewsFile').change(function(){
+
+  var fd = new FormData();
+
+  var lang = $("#langSelect").find("option:selected").val();
+  var parms = {};
+  parms.lang = lang;
+  console.log(parms);
+
+  fd.append('json', JSON.stringify(parms));
+
+  var file = $(this)[0].files[0];
+  console.log(file);
+
+  fd.append('file', file, 'views.csv');
+  console.log(fd);
+
+  $.ajax({
+    url: "LoadViews",
+    type: "POST",
+    data: fd,
+    enctype: 'multipart/form-data',
+    // dataType: 'application/text',
+    processData: false,  // tell jQuery not to process the data
+    contentType: false,   // tell jQuery not to set contentType
+    success: function(data) {
+      console.log(data);
+      if(data.STATUS == "OK"){
+        showalert(data.FROM, data.MESSAGE, "alert-success", "bottom");
+        console.log(Object.values(data.DATAS));
+        views = Object.values(data.DATAS);
+        $("#viewTab").removeClass('disabled');
+        $viewTab.prop('disabled',false);
+      
+      }
+      else{
+        showalert(data.ERROR, data.MESSAGE, "alert-danger");
+      }
+
+		},
+		error: function(data) {
+      console.log(data);
+		}
+  });
+
+  $(this).val('');  
+
+})
+
+$("#loadViews").click(function(){
+  console.log("loadViews was clicked");
+  $('#CSVViewsFile').trigger('click');
+
+})
+
 
 $('#setHiddenINL').click(function(){
   var table = $("#qsSelect").find("option:selected").val();

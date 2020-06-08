@@ -1,154 +1,92 @@
 package com.dma.web;
 
 import java.io.IOException;
-import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Test12 {
 	
-	static Document document = null;
-	static XPath xpath = null;
-	static Path path = Paths.get("/home/fr054721/dmagui/ca/model.xml");
-	static String namespace = "/project/namespace/namespace[name='SHARED_ZONE']";
-	static String localeName = "name[@locale='en-zw']";
-
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		// TODO Auto-generated method stub
 		
+		Path input = Paths.get("/home/fr054721/dmagui/ca/views.csv");
+		Path output = Paths.get("/home/fr054721/dmagui/ca/views.json");
+		String delim = ";";
+		String lang = "fr"; 
+		String header = "TABLE_NAME" + delim + "TABLE_TYPE" + delim + "TABLE_LABEL" + delim + "TABLE_DESCRIPTION" + delim +
+				"FIELD_ID" + delim  + "FIELD_NAME" + delim + "FIELD_TYPE" + delim + "FIELD_LABEL" + delim + "FIELD_DESCRIPTION" + delim +
+				"EXPRESSION" + delim + "HIDDEN" + delim + "ICON" + delim + "ALIAS" + delim + "FOLDER" + delim + "ROLE";				
+
+		List<String> lines = Files.readAllLines(input);
 		
-		if(Files.exists(path)){
-			
-			try {
-				String xml = new String(Files.readAllBytes(path));
-				
-				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-				DocumentBuilder builder = factory.newDocumentBuilder();
-				document = builder.parse(new InputSource(new StringReader(xml)));
-				
-				XPathFactory xfact = XPathFactory.newInstance();
-				xpath = xfact.newXPath();
-
-				String xpathExp = namespace + "/querySubject/" + localeName;
-				
-//				xpathExp = "/project/namespace/namespace[name='SHARED_ZONE']/querySubject[name='TEC_CONTRACT']/queryItemFolder[3]/name[@locale='en-zw']";
-//				
-//				Node qiF = (Node) xpath.evaluate(xpathExp, document, XPathConstants.NODE);
-//
-//				System.out.println("qiF=" + qiF.getTextContent());
-//				
-//				System.exit(0);
-				
-				System.out.println("xpathExp=" + xpathExp);
-				
-				NodeList qss = (NodeList) xpath.evaluate(xpathExp, document, XPathConstants.NODESET);
-
-				System.out.println(qss.getLength());
-				
-				for(int i = 0; i < qss.getLength(); i++) {
-					String qsName = qss.item(i).getTextContent(); 
-					System.out.println("qsName=" + qsName);
-					xpathExp = namespace + "/querySubject[name='" + qsName + "']";
-					recurse(xpathExp, document, qsName);
-//					NodeList qis = (NodeList) xpath.evaluate(namespace + "/querySubject[name='" + qsName + "']/queryItem/" + localeName, document, XPathConstants.NODESET);
-//					NodeList qis = (NodeList) xpath.evaluate("/project/namespace/namespace[name='SHARED_ZONE']/querySubject[name='" + qsName + "']/queryItemFolder[name='1_IDENTIFICATION']/queryItem/name[@locale='en-zw']", document, XPathConstants.NODESET);
-//					System.out.println(qis.getLength());
-//					for(int j = 0; j < qis.getLength(); j++) {
-//						Node qi = qis.item(j);
-//						String qiName = qi.getTextContent();
-//						System.out.println("*****" + qiName);
-//					}
-				}
-				
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		System.out.println(lines.size());
+		
+		if(lines.get(0).equalsIgnoreCase(header)) {
+			System.out.println("Header is OK");
+			lines.remove(0);
+		}
+		
+		Map<String, QuerySubject> views = new HashMap<String, QuerySubject>();
+		
+		QuerySubject view = null;
+		
+		for(String line: lines) {
+			if(! views.containsKey(line.split(delim)[0])) {
+				view = new QuerySubject();
+				view.setTable_name(line.split(delim)[0]);
+				view.setType(line.split(delim)[1]);
+				Map<String, String> labels = new HashMap<String, String>();
+				labels.put(lang, line.split(delim)[2]);
+				view.setLabels(labels);
+				Map<String, String> descriptions = new HashMap<String, String>();
+				descriptions.put(lang, line.split(delim)[3]);
+				view.setDescriptions(descriptions);
+				List<Field> fields = new ArrayList<Field>();
+				view.addFields(fields);
+				views.put(line.split(delim)[0], view);
 			}
+			Field field = new Field();
+			field.set_id(line.split(delim)[4]);
+			field.setField_name(line.split(delim)[5]);
+			field.setField_type(line.split(delim)[6]);
+			Map<String, String> labels = new HashMap<String, String>();
+			labels.put(lang, line.split(delim)[7]);
+			field.setLabels(labels);
+			Map<String, String> descriptions = new HashMap<String, String>();
+			descriptions.put(lang, line.split(delim)[8]);
+			field.setDescriptions(descriptions);
+			field.setExpression(line.split(delim)[9]);
+			field.setHidden(Boolean.parseBoolean(line.split(delim)[10].toLowerCase()));
+			field.setIcon(line.split(delim)[11]);
+			field.setAlias(line.split(delim)[12]);
+			field.setFolder(line.split(delim)[13]);
+			field.setRole(line.split(delim)[14]);
+			views.get(line.split(delim)[0]).addField(field);
+			
 		}
-	}
-	
-	public static void recurse(String xpathExp, Document document, String qsName) throws XPathExpressionException {
+		
+		System.out.println(views.keySet());
 
-		int j = 1;
-		Node qiF = (Node) xpath.evaluate(xpathExp + "/queryItemFolder[" + j + "]", document, XPathConstants.NODE);
-		String folder = "";
-		while(qiF != null) {
-			String qiFName = qiF.getTextContent();
-			System.out.println(qsName + ";" + qiFName + ";" + folder + ";Folder");
-			String nextXpathExp = xpathExp + "/queryItemFolder[" + j + "]/" + localeName + "/queryItemFolder[" + j + "]"; 
-			System.out.println("nextXpathExp=" + nextXpathExp);
-			recurse(nextXpathExp, document, qsName);
-			j++;
-			qiF = (Node) xpath.evaluate(xpathExp + "/queryItemFolder[" + j + "]", document, XPathConstants.NODE);
-		}
 		
-//		NodeList qiFs = (NodeList) xpath.evaluate(xpathExp + "/queryItemFolder/" + localeName, document, XPathConstants.NODESET);
-//		String folder = "";
-//		for(int i = 0; i < qiFs.getLength(); i++) {
-//			String qiFName = qiFs.item(i).getTextContent();
-//			System.out.println(qsName + ";" + qiFName + ";" + folder + ";Folder");
-//			String nextXpathExp = xpathExp + "/queryItemFolder[name='" + qiFName + "']/" + localeName; 
-//			System.out.println("nextXpathExp=" + nextXpathExp);
-//			NodeList subqiFs = qiFs.item(i).getChildNodes();
-//			for(int j = 0; j < subqiFs.getLength(); j++) {
-//				String subqiFName = subqiFs.item(j).getTextContent();
-//				System.out.println(qsName + ";" + subqiFName + ";" + qiFName + ";Folder");
-//			}
-//		}
-//		
-//		
-//		NodeList qis = (NodeList) xpath.evaluate(xpathExp + "/queryItem/" + localeName, document, XPathConstants.NODESET);
-//		for(int i = 0; i < qis.getLength(); i++) {
-//			String qiName = qis.item(i).getTextContent();
-//			System.out.println(qsName + ";" + qiName + ";;Field");
-//		}
+		System.out.println("TEC_AUTORIZATION_LINE=" + views.get("TEC_AUTORIZATION_LINE").getFields().size());
+		System.out.println("TEC_PARTY=" + views.get("TEC_PARTY").getFields().size());
+		System.out.println("TEC_CONTRACT=" + views.get("TEC_CONTRACT").getFields().size());
+		System.out.println("TEC_AUTORIZATION=" + views.get("TEC_AUTORIZATION").getFields().size());
 		
+		System.out.println(views.values());
+		
+		
+		Files.deleteIfExists(output);
+		
+		Files.write(output, Arrays.asList(Tools.toJSON(views.values())), StandardCharsets.UTF_8);			
 	}
 	
-	public static void l2(String xpathExp, Document document, String qsName) throws XPathExpressionException {
-		
-		System.out.println("xpathExp=" + xpathExp);
-		NodeList qiFs = (NodeList) xpath.evaluate(xpathExp, document, XPathConstants.NODESET);
-		String folder = "";
-		for(int i = 0; i < qiFs.getLength(); i++) {
-			String qiFName = qiFs.item(i).getTextContent();
-			System.out.println(qsName + ";" + qiFName + ";" + folder + ";Folder");
-			String nextXpathExp = xpathExp + "/queryItemFolder[name='" + qiFName + "']/" + localeName; 
-		}
-	}
-	
-	
-	protected static String getAttrValue(Node node,String attrName) {
-	    if ( ! node.hasAttributes() ) return "";
-	    NamedNodeMap nmap = node.getAttributes();
-	    if ( nmap == null ) return "";
-	    Node n = nmap.getNamedItem(attrName);
-	    if ( n == null ) return "";
-	    return n.getNodeValue();
-	}
-	
-	protected static String getTextContent(Node parentNode,String childName) {
-	    NodeList nlist = parentNode.getChildNodes();
-	    for (int i = 0 ; i < nlist.getLength() ; i++) {
-		    Node n = nlist.item(i);
-		    String name = n.getNodeName();
-		    if ( name != null && name.equals(childName) ) return n.getTextContent();
-	    }
-	    return "";
-	}			
 
 }

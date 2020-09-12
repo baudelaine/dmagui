@@ -1,0 +1,6 @@
+fr054721@fr054721-P50:~/dmagui$ sudo docker run -p 80:9080 -tdi --name dma -v $PWD:/app -v /mnt/models:/mnt/models -v /home/dma:/home/dma  baudelaine/wlp
+b9ee3c674b0ffdf7fce4e2721070cca432db7a09d688dcff924e6215132945eb
+fr054721@fr054721-P50:~/dmagui$ docker start dma
+dma
+fr054721@fr054721-P50:~/dmagui$ docker attach dma
+

@@ -236,7 +236,7 @@ function loadResources(obj, list){
   $.each(list, function(i, item){
     var option = '';
     if(item.jndiName == "XML"){
-      option = '<option class="fontsize" value="' + i + '" data-subtext="' + item.description + '">' + item.jndiName + '</option>';
+      option = '<option class="fontsize" value="' + i + '" data-subtext="' + item.dbEngine + ' - ' + item.description + '">' + item.jndiName + '</option>';
     }
     else{
     option = '<option class="fontsize" value="' + i + '" data-subtext="' + item.dbName + ' - ' + item.dbEngine

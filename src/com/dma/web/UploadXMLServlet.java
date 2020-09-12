@@ -91,6 +91,7 @@ public class UploadXMLServlet extends HttpServlet {
 						Path xml = Paths.get(prj + "/" + item.getName());
 						Files.copy(new BufferedInputStream(item.getInputStream()), xml, StandardCopyOption.REPLACE_EXISTING);
 						xml.toFile().setReadable(true, false);
+						xml.toFile().setWritable(true, false);
 					}
 				}
 			}

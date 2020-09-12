@@ -38,10 +38,53 @@ public class GetResourcesServlet extends HttpServlet {
 		
 		Resource xml = new Resource();
 		xml.setJndiName("XML");
+		xml.setDbEngine("ORA");
 		xml.setDescription("Cognos model with PHYSICAL namespace");
+		result.put("ORAXML", xml);
 		
-		result.put("XML", xml);
-		    
+		
+		xml = new Resource();
+		xml.setJndiName("XML");
+		xml.setDbEngine("DB2");
+		xml.setDescription("Cognos model with PHYSICAL namespace");
+		result.put("DB2XML", xml);
+
+		xml = new Resource();
+		xml.setJndiName("XML");
+		xml.setDbEngine("DB2400");
+		xml.setDescription("Cognos model with PHYSICAL namespace");
+		result.put("DB2400XML", xml);
+		
+		xml = new Resource();
+		xml.setJndiName("XML");
+		xml.setDbEngine("SQLSRV");
+		xml.setDescription("Cognos model with PHYSICAL namespace");
+		result.put("SQLSRVXML", xml);
+		
+		xml = new Resource();
+		xml.setJndiName("XML");
+		xml.setDbEngine("MYSQL");
+		xml.setDescription("Cognos model with PHYSICAL namespace");
+		result.put("MYSQLXML", xml);
+		
+		xml = new Resource();
+		xml.setJndiName("XML");
+		xml.setDbEngine("PGSQL");
+		xml.setDescription("Cognos model with PHYSICAL namespace");
+		result.put("PGSQLXML", xml);
+		
+		xml = new Resource();
+		xml.setJndiName("XML");
+		xml.setDbEngine("IFX");
+		xml.setDescription("Cognos model with PHYSICAL namespace");
+		result.put("IFXXML", xml);
+		
+		xml = new Resource();
+		xml.setJndiName("XML");
+		xml.setDbEngine("TD");
+		xml.setDescription("Cognos model with PHYSICAL namespace");
+		result.put("TDXML", xml);
+		
 		response.setContentType("application/json");
 		response.setCharacterEncoding("UTF-8");
 		response.getWriter().write(Tools.toJSON(result));			

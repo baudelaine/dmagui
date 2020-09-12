@@ -153,6 +153,15 @@ public class SendQuerySubjectsServlet extends HttpServlet {
 				Files.setPosixFilePermissions(projectPath, perms);
 			}
 			
+
+			boolean isXML = false;
+			Project project = (Project) request.getSession().getAttribute("currentProject");
+			Resource resource = project.getResource();
+			if(resource.getJndiName().equalsIgnoreCase("XML")) {
+				isXML = true;
+			}
+			
+			
 			Path zip = Paths.get(getServletContext().getRealPath("/res/model.zip"));
 			if(!Files.exists(zip)){
 				result.put("STATUS", "KO");
